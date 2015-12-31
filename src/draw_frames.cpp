@@ -81,7 +81,7 @@ public:
       cvGetTextSize(frame_id.c_str(), &font_, &text_size, &baseline);
       CvPoint origin = cvPoint(uv.x - text_size.width / 2,
                                uv.y - RADIUS - baseline - 3);
-      cv::putText(drawn_image, frame_id.c_str(), origin, cv::FONT_HERSHEY_SIMPLEX, 12, CV_RGB(255,0,0));
+      cv::putText(image, frame_id.c_str(), origin, cv::FONT_HERSHEY_SIMPLEX, 12, CV_RGB(255,0,0));
     }
 
     pub_.publish(input_bridge->toImageMsg());
