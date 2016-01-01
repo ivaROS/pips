@@ -16,4 +16,19 @@
     <param name="autosize" value="False" />
   </node>
 
+
+<!-- Display the current depth image-->
+
+<node name="depth_input_viewer" pkg="image_view" type="image_view">
+    <remap from="image" to="$(arg image)" />
+    <param name="autosize" value="False" />
+  </node>
+
+<!-- Display the starting depth image with projected outline-->
+
+<node name="depth_output_viewer" pkg="image_view" type="image_view">
+    <remap from="image" to="depth_image_out" />
+    <param name="autosize" value="False" />
+  </node>
+
 </launch>

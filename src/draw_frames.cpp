@@ -13,17 +13,17 @@ class FrameDrawer
 {
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;
-  image_transport::CameraSubscriber sub_;
-  image_transport::Publisher pub_;
+  image_transport::CameraSubscriber sub_,depthsub_;
+  image_transport::Publisher pub_,depthpub_;
   tf::TransformListener tf_listener_;
   image_geometry::PinholeCameraModel cam_model_;
   std::vector<std::string> frame_ids_;
   CvFont font_;
-  bool firstFrame_;
-  sensor_msgs::ImageConstPtr firstImMsg_;
-  tf::StampedTransform starting_frame_transform_;
+  bool firstFrame_,firstDepthFrame_;
+  sensor_msgs::ImageConstPtr firstImMsg_,firstDepthImMsg_;
+  tf::StampedTransform starting_frame_transform_,depth_starting_frame_transform_;
   tf::TransformBroadcaster br;
-  ros::Timer timer;
+  ros::Timer timer, depth_timer;
   std::vector<cv::Point3d> co_offsets_;
 
 public:
@@ -31,8 +31,10 @@ public:
     : it_(nh_), frame_ids_(frame_ids), firstFrame_(true)
   {
     std::string image_topic = nh_.resolveName("image");
-    sub_ = it_.subscribeCamera(image_topic, 10, &FrameDrawer::imageCb, this);
+    sub_ = it_.subscribeCamera(image_topic, 10, &FrameDrawer::rgbImageCb, this);
+    depthsub_ = it_.subscribeCamera(image_topic, 10, &FrameDrawer::depthImageCb, this);
     pub_ = it_.advertise("image_out", 1);
+    depthpub_ = it_.advertise("depth_image_out",1);
     cvInitFont(&font_, CV_FONT_HERSHEY_SIMPLEX, 0.5, 0.5);
 
     double radius = .25;
@@ -55,7 +57,14 @@ public:
   //      ROS_ERROR("sent tf");
   }
 
-  void imageCb(const sensor_msgs::ImageConstPtr& image_msg,
+  void depthtfBroadcastCallBack(const ros::TimerEvent& event)
+  {
+     depth_starting_frame_transform_.stamp_ = ros::Time::now();
+     br.sendTransform(depth_starting_frame_transform_);
+  //      ROS_ERROR("sent tf");
+  }
+
+  void rgbImageCb(const sensor_msgs::ImageConstPtr& image_msg,
                const sensor_msgs::CameraInfoConstPtr& info_msg)
   {
 
@@ -134,7 +143,87 @@ public:
   }
 
 
+  void depthImageCb(const sensor_msgs::ImageConstPtr& image_msg,
+               const sensor_msgs::CameraInfoConstPtr& info_msg)
+  {
+
+    cam_model_.fromCameraInfo(info_msg);
+
+    std::string stationary_frame("odom");
+    std::string tracking_frame_id("base_link");
+    std::string starting_frame_id("depth_start_frame");
+    ros::Duration timeout(1.0 / 30);
+
+
+    if(firstDepthFrame_) {
+
+        if(tf_listener_.waitForTransform("odom", cam_model_.tfFrame(), ros::Time(0), timeout))
+        {
+          tf_listener_.lookupTransform("odom", cam_model_.tfFrame(), ros::Time(0), depth_starting_frame_transform_);
+          depth_starting_frame_transform_.child_frame_id_ = "depth_start_frame";
+          ros::NodeHandle nh;
+        ROS_ERROR("starting depth timer");
+          depth_timer = nh.createTimer(ros::Duration(1.0/30), &FrameDrawer::depthtfBroadcastCallBack, this);
+
+        }
+        else
+        {
+          return;
+        }
+
+        firstDepthImMsg_ = image_msg;
+        firstDepthFrame_ = false;
+        ROS_ERROR("Saved first depth frame");
+    }
+    cv::Mat image;
+    cv_bridge::CvImagePtr input_bridge;
+    try {
+      input_bridge = cv_bridge::toCvCopy(firstDepthImMsg_, sensor_msgs::image_encodings::BGR8);
+      image = input_bridge->image;
+      
+    }
+    catch (cv_bridge::Exception& ex){
+      ROS_ERROR("[draw_frames] Failed to convert image");
+      return;
+    }
+
+
+      tf::StampedTransform transform;
+      try {
+        ros::Time acquisition_time = info_msg->header.stamp;
+
+        tf_listener_.waitForTransform("depth_start_frame", ros::Time(0), "base_link",
+                                      ros::Time(0), "odom", timeout);
+        tf_listener_.lookupTransform("depth_start_frame", ros::Time(0), "base_link",
+                                      ros::Time(0), "odom", transform);
+      }
+      catch (tf::TransformException& ex) {
+        ROS_WARN("[draw_frames] TF exception:\n%s", ex.what());
+        return;
+      }
+
+      tf::Point pt = transform.getOrigin();
+      cv::Point3d pt_cv(pt.x(), pt.y(), pt.z());
+      cv::Point2d uv;
+      uv = cam_model_.project3dToPixel(pt_cv);
+
+      static const int RADIUS = 3;
+      cv::circle(image, uv, RADIUS, CV_RGB(255,0,0), -1);
+
+      for (std::vector<cv::Point3d>::iterator it = co_offsets_.begin(); it != co_offsets_.end(); ++it) {
+      
+        cv::Point3d addedpnt = pt_cv + *it;
+        uv = cam_model_.project3dToPixel(addedpnt);
+
+      cv::circle(image, uv, RADIUS, CV_RGB(0,255,0), -1);
+      }
+
+    depthpub_.publish(input_bridge->toImageMsg());
+  }
+
 };
+
+
 
 int main(int argc, char** argv)
 {
