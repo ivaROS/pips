@@ -30,7 +30,7 @@ public:
     : it_(nh_), frame_ids_(frame_ids), firstFrame_(true)
   {
     std::string image_topic = nh_.resolveName("image");
-    sub_ = it_.subscribeCamera(image_topic, 1, &FrameDrawer::imageCb, this);
+    sub_ = it_.subscribeCamera(image_topic, 10, &FrameDrawer::imageCb, this);
     pub_ = it_.advertise("image_out", 1);
     cvInitFont(&font_, CV_FONT_HERSHEY_SIMPLEX, 0.5, 0.5);
   }
@@ -39,7 +39,7 @@ public:
   {
      starting_frame_transform_.stamp_ = ros::Time::now();
      br.sendTransform(starting_frame_transform_);
-        ROS_ERROR("sent tf");
+  //      ROS_ERROR("sent tf");
   }
 
   void imageCb(const sensor_msgs::ImageConstPtr& image_msg,
@@ -48,20 +48,21 @@ public:
 
     cam_model_.fromCameraInfo(info_msg);
 
-    std::string stationary_frame("/odom");
-    std::string tracking_frame_id("/base_link");
-    std::string starting_frame_id("/start_frame");
+    std::string stationary_frame("odom");
+    std::string tracking_frame_id("base_link");
+    std::string starting_frame_id("start_frame");
     ros::Duration timeout(1.0 / 30);
 
 
     if(firstFrame_) {
 
-        if(tf_listener_.waitForTransform(cam_model_.tfFrame(), "/odom", ros::Time(0), timeout))
+        if(tf_listener_.waitForTransform("odom", cam_model_.tfFrame(), ros::Time(0), timeout))
         {
-          tf_listener_.lookupTransform(cam_model_.tfFrame(), "/odom", ros::Time(0), starting_frame_transform_);
+          tf_listener_.lookupTransform("odom", cam_model_.tfFrame(), ros::Time(0), starting_frame_transform_);
+          starting_frame_transform_.child_frame_id_ = "start_frame";
           ros::NodeHandle nh;
         ROS_ERROR("starting timer");
-          timer = nh.createTimer(ros::Duration(0.1), &FrameDrawer::tfBroadcastCallBack, this);
+          timer = nh.createTimer(ros::Duration(1.0/30), &FrameDrawer::tfBroadcastCallBack, this);
 
         }
         else
@@ -90,10 +91,10 @@ public:
       try {
         ros::Time acquisition_time = info_msg->header.stamp;
 
-        tf_listener_.waitForTransform("/start_frame", ros::Time(0), "/base_link",
-                                      acquisition_time, "/odom", timeout);
-        tf_listener_.lookupTransform("/start_frame", ros::Time(0), "/base_link",
-                                      acquisition_time, "/odom", transform);
+        tf_listener_.waitForTransform("start_frame", ros::Time(0), "base_link",
+                                      ros::Time(0), "odom", timeout);
+        tf_listener_.lookupTransform("start_frame", ros::Time(0), "base_link",
+                                      ros::Time(0), "odom", transform);
       }
       catch (tf::TransformException& ex) {
         ROS_WARN("[draw_frames] TF exception:\n%s", ex.what());
@@ -109,10 +110,10 @@ public:
       cv::circle(image, uv, RADIUS, CV_RGB(255,0,0), -1);
       CvSize text_size;
       int baseline;
-      cvGetTextSize("/base_link", &font_, &text_size, &baseline);
+      cvGetTextSize("base_link", &font_, &text_size, &baseline);
       CvPoint origin = cvPoint(uv.x - text_size.width / 2,
                                uv.y - RADIUS - baseline - 3);
-      cv::putText(image, "/base_link", origin, cv::FONT_HERSHEY_SIMPLEX, 12, CV_RGB(255,0,0));
+      cv::putText(image, "base_link", origin, cv::FONT_HERSHEY_SIMPLEX, 12, CV_RGB(255,0,0));
     
 
     pub_.publish(input_bridge->toImageMsg());
