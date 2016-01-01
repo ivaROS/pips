@@ -1,18 +1,19 @@
 <launch>
 
-<arg name="image" value="camera/rgb/image_color"/>
+<arg name="rgb_image" value="camera/rgb/image_color"/>
+<arg name="depth_image" value="camera/depth/image"/>
 
-<!-- Display the current depth image-->
+<!-- Display the current rgb image-->
 
 <node name="input_viewer" pkg="image_view" type="image_view">
-    <remap from="image" to="$(arg image)" />
+    <remap from="image" to="$(arg rgb_image)" />
     <param name="autosize" value="False" />
   </node>
 
-<!-- Display the starting depth image with projected outline-->
+<!-- Display the starting rgb image with projected outline-->
 
 <node name="output_viewer" pkg="image_view" type="image_view">
-    <remap from="image" to="image_out" />
+    <remap from="image" to="rgb_image_out" />
     <param name="autosize" value="False" />
   </node>
 
@@ -20,7 +21,7 @@
 <!-- Display the current depth image-->
 
 <node name="depth_input_viewer" pkg="image_view" type="image_view">
-    <remap from="image" to="$(arg image)" />
+    <remap from="image" to="$(arg depth_image)" />
     <param name="autosize" value="False" />
   </node>
 

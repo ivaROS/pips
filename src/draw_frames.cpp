@@ -30,10 +30,11 @@ public:
   FrameDrawer(const std::vector<std::string>& frame_ids)
     : it_(nh_), frame_ids_(frame_ids), firstFrame_(true)
   {
-    std::string image_topic = nh_.resolveName("image");
+    std::string image_topic = nh_.resolveName("rgb_image");
+    std::string depth_image_topic = nh_.resolveName("depth_image");
     sub_ = it_.subscribeCamera(image_topic, 10, &FrameDrawer::rgbImageCb, this);
-    depthsub_ = it_.subscribeCamera(image_topic, 10, &FrameDrawer::depthImageCb, this);
-    pub_ = it_.advertise("image_out", 1);
+    depthsub_ = it_.subscribeCamera(depth_image_topic, 10, &FrameDrawer::depthImageCb, this);
+    pub_ = it_.advertise("rgb_image_out", 1);
     depthpub_ = it_.advertise("depth_image_out",1);
     cvInitFont(&font_, CV_FONT_HERSHEY_SIMPLEX, 0.5, 0.5);
 
@@ -82,9 +83,9 @@ public:
         {
           tf_listener_.lookupTransform("odom", cam_model_.tfFrame(), ros::Time(0), starting_frame_transform_);
           starting_frame_transform_.child_frame_id_ = "start_frame";
-          ros::NodeHandle nh;
+
         ROS_ERROR("starting timer");
-          timer = nh.createTimer(ros::Duration(1.0/30), &FrameDrawer::tfBroadcastCallBack, this);
+          timer = nh_.createTimer(ros::Duration(1.0/30), &FrameDrawer::tfBroadcastCallBack, this);
 
         }
         else
@@ -161,9 +162,9 @@ public:
         {
           tf_listener_.lookupTransform("odom", cam_model_.tfFrame(), ros::Time(0), depth_starting_frame_transform_);
           depth_starting_frame_transform_.child_frame_id_ = "depth_start_frame";
-          ros::NodeHandle nh;
+
         ROS_ERROR("starting depth timer");
-          depth_timer = nh.createTimer(ros::Duration(1.0/30), &FrameDrawer::depthtfBroadcastCallBack, this);
+          depth_timer = nh_.createTimer(ros::Duration(1.0/30), &FrameDrawer::depthtfBroadcastCallBack, this);
 
         }
         else
@@ -178,7 +179,7 @@ public:
     cv::Mat image;
     cv_bridge::CvImagePtr input_bridge;
     try {
-      input_bridge = cv_bridge::toCvCopy(firstDepthImMsg_, sensor_msgs::image_encodings::BGR8);
+      input_bridge = cv_bridge::toCvCopy(firstDepthImMsg_, sensor_msgs::image_encodings::TYPE_32FC1);
       image = input_bridge->image;
       
     }
@@ -208,14 +209,14 @@ public:
       uv = cam_model_.project3dToPixel(pt_cv);
 
       static const int RADIUS = 3;
-      cv::circle(image, uv, RADIUS, CV_RGB(255,0,0), -1);
+      cv::circle(image, uv, RADIUS, 2^16-1, -1);
 
       for (std::vector<cv::Point3d>::iterator it = co_offsets_.begin(); it != co_offsets_.end(); ++it) {
       
         cv::Point3d addedpnt = pt_cv + *it;
         uv = cam_model_.project3dToPixel(addedpnt);
 
-      cv::circle(image, uv, RADIUS, CV_RGB(0,255,0), -1);
+      cv::circle(image, uv, RADIUS, 2^16-1, -1);
       }
 
     depthpub_.publish(input_bridge->toImageMsg());
