@@ -6,6 +6,8 @@
 #include <tf/transform_listener.h>
 #include <boost/foreach.hpp>
 #include <sensor_msgs/image_encodings.h>
+#include <tf/transform_broadcaster.h>
+
 
 class FrameDrawer
 {
@@ -18,11 +20,14 @@ class FrameDrawer
   std::vector<std::string> frame_ids_;
   CvFont font_;
   bool firstFrame_;
-  cv::Mat firstImage_;
+  sensor_msgs::ImageConstPtr firstImMsg_;
+  tf::StampedTransform starting_frame_transform_;
+  tf::TransformBroadcaster br;
+  ros::Timer timer;
 
 public:
   FrameDrawer(const std::vector<std::string>& frame_ids)
-    : it_(nh_), frame_ids_(frame_ids), firstFrame_(false)
+    : it_(nh_), frame_ids_(frame_ids), firstFrame_(true)
   {
     std::string image_topic = nh_.resolveName("image");
     sub_ = it_.subscribeCamera(image_topic, 1, &FrameDrawer::imageCb, this);
@@ -30,39 +35,65 @@ public:
     cvInitFont(&font_, CV_FONT_HERSHEY_SIMPLEX, 0.5, 0.5);
   }
 
+  void tfBroadcastCallBack(const ros::TimerEvent& event)
+  {
+     starting_frame_transform_.stamp_ = ros::Time::now();
+     br.sendTransform(starting_frame_transform_);
+        ROS_ERROR("sent tf");
+  }
+
   void imageCb(const sensor_msgs::ImageConstPtr& image_msg,
                const sensor_msgs::CameraInfoConstPtr& info_msg)
   {
+
+    cam_model_.fromCameraInfo(info_msg);
+
+    std::string stationary_frame("/odom");
+    std::string tracking_frame_id("/base_link");
+    std::string starting_frame_id("/start_frame");
+    ros::Duration timeout(1.0 / 30);
+
+
+    if(firstFrame_) {
+
+        if(tf_listener_.waitForTransform(cam_model_.tfFrame(), "/odom", ros::Time(0), timeout))
+        {
+          tf_listener_.lookupTransform(cam_model_.tfFrame(), "/odom", ros::Time(0), starting_frame_transform_);
+          ros::NodeHandle nh;
+        ROS_ERROR("starting timer");
+          timer = nh.createTimer(ros::Duration(0.1), &FrameDrawer::tfBroadcastCallBack, this);
+
+        }
+        else
+        {
+          return;
+        }
+
+        firstImMsg_ = image_msg;
+        firstFrame_ = false;
+        ROS_ERROR("Saved first frame");
+    }
     cv::Mat image;
     cv_bridge::CvImagePtr input_bridge;
     try {
-      input_bridge = cv_bridge::toCvCopy(image_msg, sensor_msgs::image_encodings::BGR8);
+      input_bridge = cv_bridge::toCvCopy(firstImMsg_, sensor_msgs::image_encodings::BGR8);
       image = input_bridge->image;
-      if(firstFrame_) {
-        firstImage_ = image;
-        firstFrame_ = false;
-        ROS_ERROR("Saved first frame");
-      }
+      
     }
     catch (cv_bridge::Exception& ex){
       ROS_ERROR("[draw_frames] Failed to convert image");
       return;
     }
 
-    cv::Mat drawn_image(firstImage_);
 
-    cam_model_.fromCameraInfo(info_msg);
-
-    BOOST_FOREACH(const std::string& frame_id, frame_ids_) 
-    {
       tf::StampedTransform transform;
       try {
         ros::Time acquisition_time = info_msg->header.stamp;
-        ros::Duration timeout(1.0 / 30);
-        tf_listener_.waitForTransform(cam_model_.tfFrame(), frame_id,
-                                      acquisition_time, timeout);
-        tf_listener_.lookupTransform(cam_model_.tfFrame(), frame_id,
-                                     acquisition_time, transform);
+
+        tf_listener_.waitForTransform("/start_frame", ros::Time(0), "/base_link",
+                                      acquisition_time, "/odom", timeout);
+        tf_listener_.lookupTransform("/start_frame", ros::Time(0), "/base_link",
+                                      acquisition_time, "/odom", transform);
       }
       catch (tf::TransformException& ex) {
         ROS_WARN("[draw_frames] TF exception:\n%s", ex.what());
@@ -78,14 +109,16 @@ public:
       cv::circle(image, uv, RADIUS, CV_RGB(255,0,0), -1);
       CvSize text_size;
       int baseline;
-      cvGetTextSize(frame_id.c_str(), &font_, &text_size, &baseline);
+      cvGetTextSize("/base_link", &font_, &text_size, &baseline);
       CvPoint origin = cvPoint(uv.x - text_size.width / 2,
                                uv.y - RADIUS - baseline - 3);
-      cv::putText(image, frame_id.c_str(), origin, cv::FONT_HERSHEY_SIMPLEX, 12, CV_RGB(255,0,0));
-    }
+      cv::putText(image, "/base_link", origin, cv::FONT_HERSHEY_SIMPLEX, 12, CV_RGB(255,0,0));
+    
 
     pub_.publish(input_bridge->toImageMsg());
   }
+
+
 };
 
 int main(int argc, char** argv)
