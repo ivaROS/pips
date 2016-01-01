@@ -3,11 +3,11 @@
 #include <opencv/cv.h>
 #include <cv_bridge/cv_bridge.h>
 #include <image_geometry/pinhole_camera_model.h>
-#include <tf/transform_listener.h>
+#include <tf2_ros/transform_listener.h>
 #include <boost/foreach.hpp>
 #include <sensor_msgs/image_encodings.h>
 #include <tf/transform_broadcaster.h>
-
+#include <tf2_ros/static_transform_broadcaster.h>
 
 class FrameDrawer
 {
@@ -15,20 +15,21 @@ class FrameDrawer
   image_transport::ImageTransport it_;
   image_transport::CameraSubscriber sub_,depthsub_;
   image_transport::Publisher pub_,depthpub_;
-  tf::TransformListener tf_listener_;
+  tf2_ros::Buffer tfBuffer_;
+  tf2_ros::TransformListener tf_listener_;
   image_geometry::PinholeCameraModel cam_model_;
   std::vector<std::string> frame_ids_;
   CvFont font_;
   bool firstFrame_,firstDepthFrame_;
   sensor_msgs::ImageConstPtr firstImMsg_,firstDepthImMsg_;
   tf::StampedTransform starting_frame_transform_,depth_starting_frame_transform_;
-  tf::TransformBroadcaster br;
+  tf2_ros::StaticTransformBroadcaster br;
   ros::Timer timer, depth_timer;
   std::vector<cv::Point3d> co_offsets_;
 
 public:
   FrameDrawer(const std::vector<std::string>& frame_ids)
-    : it_(nh_), frame_ids_(frame_ids), firstFrame_(true)
+    : it_(nh_), frame_ids_(frame_ids), tf_listener_(tfBuffer_), firstFrame_(true), firstDepthFrame_(true)
   {
     std::string image_topic = nh_.resolveName("rgb_image");
     std::string depth_image_topic = nh_.resolveName("depth_image");
@@ -51,19 +52,6 @@ public:
     co_offsets_ = co_offsets;
   }
 
-  void tfBroadcastCallBack(const ros::TimerEvent& event)
-  {
-     starting_frame_transform_.stamp_ = ros::Time::now();
-     br.sendTransform(starting_frame_transform_);
-  //      ROS_ERROR("sent tf");
-  }
-
-  void depthtfBroadcastCallBack(const ros::TimerEvent& event)
-  {
-     depth_starting_frame_transform_.stamp_ = ros::Time::now();
-     br.sendTransform(depth_starting_frame_transform_);
-  //      ROS_ERROR("sent tf");
-  }
 
   void rgbImageCb(const sensor_msgs::ImageConstPtr& image_msg,
                const sensor_msgs::CameraInfoConstPtr& info_msg)
@@ -79,17 +67,17 @@ public:
 
     if(firstFrame_) {
 
-        if(tf_listener_.waitForTransform("odom", cam_model_.tfFrame(), ros::Time(0), timeout))
+        try
         {
-          tf_listener_.lookupTransform("odom", cam_model_.tfFrame(), ros::Time(0), starting_frame_transform_);
-          starting_frame_transform_.child_frame_id_ = "start_frame";
+          geometry_msgs::TransformStamped transform = tfBuffer_.lookupTransform("odom", cam_model_.tfFrame(), ros::Time(0), timeout);
+          transform.child_frame_id = "start_frame";
 
-        ROS_ERROR("starting timer");
-          timer = nh_.createTimer(ros::Duration(1.0/30), &FrameDrawer::tfBroadcastCallBack, this);
+        ROS_ERROR("starting tf broadcast");
+        br.sendTransform(transform);
 
         }
-        else
-        {
+        catch (tf2::TransformException &ex) {
+          ROS_WARN("%s",ex.what());
           return;
         }
 
@@ -110,22 +98,21 @@ public:
     }
 
 
-      tf::StampedTransform transform;
-      try {
-        ros::Time acquisition_time = info_msg->header.stamp;
+        geometry_msgs::TransformStamped transform;
+        try
+        {
+          ros::Time acquisition_time = info_msg->header.stamp;
+          transform = tfBuffer_.lookupTransform("start_frame", ros::Time(0), "base_link", ros::Time(0), "odom", timeout);
+          
+        }
+        catch (tf2::TransformException &ex) {
+          ROS_WARN("[draw_frames] TF exception:\n%s",ex.what());
+          return;
+        }
 
-        tf_listener_.waitForTransform("start_frame", ros::Time(0), "base_link",
-                                      ros::Time(0), "odom", timeout);
-        tf_listener_.lookupTransform("start_frame", ros::Time(0), "base_link",
-                                      ros::Time(0), "odom", transform);
-      }
-      catch (tf::TransformException& ex) {
-        ROS_WARN("[draw_frames] TF exception:\n%s", ex.what());
-        return;
-      }
 
-      tf::Point pt = transform.getOrigin();
-      cv::Point3d pt_cv(pt.x(), pt.y(), pt.z());
+      geometry_msgs::Vector3 pt = transform.transform.translation;
+      cv::Point3d pt_cv(pt.x, pt.y, pt.z);
       cv::Point2d uv;
       uv = cam_model_.project3dToPixel(pt_cv);
 
@@ -158,17 +145,17 @@ public:
 
     if(firstDepthFrame_) {
 
-        if(tf_listener_.waitForTransform("odom", cam_model_.tfFrame(), ros::Time(0), timeout))
+        try
         {
-          tf_listener_.lookupTransform("odom", cam_model_.tfFrame(), ros::Time(0), depth_starting_frame_transform_);
-          depth_starting_frame_transform_.child_frame_id_ = "depth_start_frame";
+          geometry_msgs::TransformStamped transform = tfBuffer_.lookupTransform("odom", cam_model_.tfFrame(), ros::Time(0), timeout);
+          transform.child_frame_id = "depth_start_frame";
 
-        ROS_ERROR("starting depth timer");
-          depth_timer = nh_.createTimer(ros::Duration(1.0/30), &FrameDrawer::depthtfBroadcastCallBack, this);
+        ROS_ERROR("starting depth tf broadcast");
+        br.sendTransform(transform);
 
         }
-        else
-        {
+        catch (tf2::TransformException &ex) {
+          ROS_WARN("%s",ex.what());
           return;
         }
 
@@ -179,7 +166,7 @@ public:
     cv::Mat image;
     cv_bridge::CvImagePtr input_bridge;
     try {
-      input_bridge = cv_bridge::toCvCopy(firstDepthImMsg_, sensor_msgs::image_encodings::TYPE_32FC1);
+      input_bridge = cv_bridge::toCvCopy(firstDepthImMsg_, sensor_msgs::image_encodings::TYPE_32FC1); //Note:if only comparing and not editing image, could use toCvShare to avoid any copying of data.
       image = input_bridge->image;
       
     }
@@ -187,36 +174,34 @@ public:
       ROS_ERROR("[draw_frames] Failed to convert image");
       return;
     }
+      
+      geometry_msgs::TransformStamped transform;
+        try
+        {
+          ros::Time acquisition_time = info_msg->header.stamp;
+          transform = tfBuffer_.lookupTransform("depth_start_frame", ros::Time(0), "base_link", ros::Time(0), "odom", timeout);
+          
+        }
+        catch (tf2::TransformException &ex) {
+          ROS_WARN("[draw_frames] TF exception:\n%s",ex.what());
+          return;
+        }
 
 
-      tf::StampedTransform transform;
-      try {
-        ros::Time acquisition_time = info_msg->header.stamp;
-
-        tf_listener_.waitForTransform("depth_start_frame", ros::Time(0), "base_link",
-                                      ros::Time(0), "odom", timeout);
-        tf_listener_.lookupTransform("depth_start_frame", ros::Time(0), "base_link",
-                                      ros::Time(0), "odom", transform);
-      }
-      catch (tf::TransformException& ex) {
-        ROS_WARN("[draw_frames] TF exception:\n%s", ex.what());
-        return;
-      }
-
-      tf::Point pt = transform.getOrigin();
-      cv::Point3d pt_cv(pt.x(), pt.y(), pt.z());
+      geometry_msgs::Vector3 pt = transform.transform.translation;
+      cv::Point3d pt_cv(pt.x, pt.y, pt.z);
       cv::Point2d uv;
       uv = cam_model_.project3dToPixel(pt_cv);
 
       static const int RADIUS = 3;
-      cv::circle(image, uv, RADIUS, 2^16-1, -1);
+      cv::circle(image, uv, RADIUS, (2^16)-1, -1);
 
       for (std::vector<cv::Point3d>::iterator it = co_offsets_.begin(); it != co_offsets_.end(); ++it) {
       
         cv::Point3d addedpnt = pt_cv + *it;
         uv = cam_model_.project3dToPixel(addedpnt);
 
-      cv::circle(image, uv, RADIUS, 2^16-1, -1);
+      cv::circle(image, uv, RADIUS, (2^16)-1, -1);
       }
 
     depthpub_.publish(input_bridge->toImageMsg());

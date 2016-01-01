@@ -8,6 +8,6 @@
     <remap from="depth_image" to="$(arg depth_image)" />
   </node>
 
-<node name="play_bag" pkg="rosbag" type="play" args="/media/justin/data/bag_files/my_bag_2015-10-20-20-56-35_0.bag /media/justin/data/bag_files/my_bag_2015-10-20-20-56-46_1.bag /media/justin/data/bag_files/my_bag_2015-10-20-20-56-54_2.bag /media/justin/data/bag_files/my_bag_2015-10-20-20-57-01_3.bag /media/justin/data/bag_files/my_bag_2015-10-20-20-57-09_4.bag /media/justin/data/bag_files/my_bag_2015-10-20-20-57-16_5.bag /media/justin/data/bag_files/my_bag_2015-10-20-20-57-24_6.bag /media/justin/data/bag_files/my_bag_2015-10-20-20-57-31_7.bag --clock --pause -s 13 -r 1" />
+<node name="play_bag" pkg="rosbag" type="play" args="/media/justin/data/bag_files/tf_fixed/rgb_down_the_hall_2015-10-20-20-56-35.bag --clock --pause -s 13 -r 1" />
 
 </launch>
