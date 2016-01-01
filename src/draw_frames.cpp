@@ -24,6 +24,7 @@ class FrameDrawer
   tf::StampedTransform starting_frame_transform_;
   tf::TransformBroadcaster br;
   ros::Timer timer;
+  std::vector<cv::Point3d> co_offsets_;
 
 public:
   FrameDrawer(const std::vector<std::string>& frame_ids)
@@ -33,6 +34,18 @@ public:
     sub_ = it_.subscribeCamera(image_topic, 10, &FrameDrawer::imageCb, this);
     pub_ = it_.advertise("image_out", 1);
     cvInitFont(&font_, CV_FONT_HERSHEY_SIMPLEX, 0.5, 0.5);
+
+    double radius = .25;
+    double height = .7;
+    double clearance = .05;
+
+    cv::Point3d topr(radius,-radius,height);
+    cv::Point3d topl(radius,radius,height);
+    cv::Point3d bottomr(radius,-radius,clearance);
+    cv::Point3d bottoml(radius,radius,clearance);
+    cv::Point3d offsets[] = {topr,topl,bottomr,bottoml};
+    std::vector<cv::Point3d> co_offsets(offsets, offsets + sizeof(offsets) / sizeof(cv::Point3d) );
+    co_offsets_ = co_offsets;
   }
 
   void tfBroadcastCallBack(const ros::TimerEvent& event)
@@ -108,13 +121,14 @@ public:
 
       static const int RADIUS = 3;
       cv::circle(image, uv, RADIUS, CV_RGB(255,0,0), -1);
-      CvSize text_size;
-      int baseline;
-      cvGetTextSize("base_link", &font_, &text_size, &baseline);
-      CvPoint origin = cvPoint(uv.x - text_size.width / 2,
-                               uv.y - RADIUS - baseline - 3);
-      cv::putText(image, "base_link", origin, cv::FONT_HERSHEY_SIMPLEX, 12, CV_RGB(255,0,0));
-    
+
+      for (std::vector<cv::Point3d>::iterator it = co_offsets_.begin(); it != co_offsets_.end(); ++it) {
+      
+        cv::Point3d addedpnt = pt_cv + *it;
+        uv = cam_model_.project3dToPixel(addedpnt);
+
+        cv::circle(image, uv, RADIUS, CV_RGB(0,255,0), -1);
+      }
 
     pub_.publish(input_bridge->toImageMsg());
   }
