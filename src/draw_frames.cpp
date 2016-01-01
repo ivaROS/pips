@@ -24,7 +24,7 @@ class FrameDrawer
   tf::StampedTransform starting_frame_transform_;
   tf::TransformBroadcaster br;
   ros::Timer timer;
-  std::vector<tf::Vector3> co_offsets_;
+  std::vector<cv::Point3d> co_offsets_;
 
 public:
   FrameDrawer(const std::vector<std::string>& frame_ids)
@@ -39,12 +39,12 @@ public:
     double height = .7;
     double clearance = .05;
 
-    tf::Vector3 topr(radius,-radius,height);
-    tf::Vector3 topl(radius,radius,height);
-    tf::Vector3 bottomr(radius,-radius,clearance);
-    tf::Vector3 bottoml(radius,radius,clearance);
-    tf::Vector3 offsets[] = {topr,topl,bottomr,bottoml};
-    std::vector<tf::Vector3> co_offsets(offsets, offsets + sizeof(offsets) / sizeof(tf::Vector3) );
+    cv::Point3d topr(radius,-height,radius);
+    cv::Point3d topl(-radius,-height,radius);
+    cv::Point3d bottomr(radius,-clearance,radius);
+    cv::Point3d bottoml(-radius,-clearance,radius);
+    cv::Point3d offsets[] = {topr,topl,bottomr,bottoml};
+    std::vector<cv::Point3d> co_offsets(offsets, offsets + sizeof(offsets) / sizeof(cv::Point3d) );
     co_offsets_ = co_offsets;
   }
 
@@ -122,13 +122,12 @@ public:
       static const int RADIUS = 3;
       cv::circle(image, uv, RADIUS, CV_RGB(255,0,0), -1);
 
-      for (std::vector<tf::Vector3>::iterator it = co_offsets_.begin(); it != co_offsets_.end(); ++it) {
+      for (std::vector<cv::Point3d>::iterator it = co_offsets_.begin(); it != co_offsets_.end(); ++it) {
       
-        tf::Point transfPnt = transform * *it;
+        cv::Point3d addedpnt = pt_cv + *it;
+        uv = cam_model_.project3dToPixel(addedpnt);
 
-        cv::Point3d transfPt_cv(transfPnt.x(), transfPnt.y(), transfPnt.z());
-        uv = cam_model_.project3dToPixel(transfPt_cv);
-        cv::circle(image, uv, RADIUS, CV_RGB(0,255,0), -1);
+      cv::circle(image, uv, RADIUS, CV_RGB(0,255,0), -1);
       }
 
     pub_.publish(input_bridge->toImageMsg());
