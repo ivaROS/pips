@@ -9,6 +9,9 @@
 #include <tf/transform_broadcaster.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 
+#define PUBLISH_DEPTH_IMAGE true
+#define DRAW_DEPTH_POINTS false
+
 class FrameDrawer
 {
   ros::NodeHandle nh_;
@@ -165,11 +168,18 @@ public:
         firstDepthFrame_ = false;
         ROS_ERROR("Saved first depth frame");
     }
-    cv::Mat image;
+    cv::Mat image,image_ref;
     cv_bridge::CvImagePtr input_bridge;
+    cv_bridge::CvImageConstPtr input_bridge_ref;
     try {
-      input_bridge = cv_bridge::toCvCopy(firstDepthImMsg_, sensor_msgs::image_encodings::TYPE_32FC1); //Note:if only comparing and not editing image, could use toCvShare to avoid any copying of data.
-      image = input_bridge->image;
+      if(PUBLISH_DEPTH_IMAGE)
+      {
+        input_bridge = cv_bridge::toCvCopy(firstDepthImMsg_, sensor_msgs::image_encodings::TYPE_32FC1); 
+        image = input_bridge->image;
+      }
+
+      input_bridge_ref = cv_bridge::toCvShare(firstDepthImMsg_);//Note:since only comparing and not editing image, no need to copy data
+      image_ref = input_bridge_ref->image;
       
     }
     catch (cv_bridge::Exception& ex){
@@ -196,7 +206,8 @@ public:
       uv = cam_model_.project3dToPixel(pt_cv);
 
       static const int RADIUS = 3;
-      cv::circle(image, uv, RADIUS, (2^16)-1, -1);
+      if(PUBLISH_DEPTH_IMAGE and DRAW_DEPTH_POINTS)
+            cv::circle(image, uv, RADIUS, (2^16)-1, -1);
 
       std::vector<cv::Point2d> co_uv;
       double co_depth;
@@ -206,33 +217,34 @@ public:
         cv::Point3d addedpnt = pt_cv + *it;
         co_depth = addedpnt.z;
         uv = cam_model_.project3dToPixel(addedpnt);
-        ROS_INFO("Coords: %f, %f", uv.x, uv.y);
+        ROS_DEBUG("Coords: %f, %f", uv.x, uv.y);
         co_uv.push_back(uv);
-    /*    if(uv.y <480 and uv.y >=0 and uv.x <640 and uv.x >=0)
-          ROS_INFO("Intensity: %f", image.at<float>(uv.y, uv.x));
-    */
-      cv::circle(image, uv, RADIUS, (2^16)-1, -1);
+
+      if(PUBLISH_DEPTH_IMAGE and DRAW_DEPTH_POINTS)
+        cv::circle(image, uv, RADIUS, (2^16)-1, -1);
       }
       double minXVal, maxXVal, minYVal,maxYVal;
-      minYVal = cv::min(co_uv.at(0).y,co_uv.at(1).y);
-      minXVal = cv::min(co_uv.at(1).x,co_uv.at(2).x);
-      maxYVal = cv::max(co_uv.at(2).y,co_uv.at(3).y);
-      maxXVal = cv::max(co_uv.at(3).x,co_uv.at(0).x);
-
-/*      cv::Mat coords(co_uv);
-
-      cv::minMaxLoc( coords.colRange(0,1), &minXVal, &maxXVal );
-      cv::minMaxLoc( coords.colRange(1,2), &minYVal, &maxYVal );
+      minYVal = std::min(image_ref.rows-1.0,std::max(0.0,std::min(co_uv.at(0).y,co_uv.at(1).y)));
+      minXVal = std::min(image_ref.cols-1.0,std::max(0.0, std::min(co_uv.at(1).x,co_uv.at(2).x)));
+      maxYVal = std::max(0.0, std::min(image_ref.rows-1.0, std::max(co_uv.at(2).y,co_uv.at(3).y)));
+      maxXVal = std::max(0.0, std::min(image_ref.cols-1.0, std::max(co_uv.at(3).x,co_uv.at(0).x)));
+   
       cv::Point2d topL(minXVal, minYVal);
       cv::Point2d bottomR(maxXVal, maxYVal);
-*/
-        ROS_INFO("Rectangle: %f, %f and %f, %f", co_uv.at(1).x, co_uv.at(1).y, co_uv.at(3).x, co_uv.at(3).y);
-      cv::Rect roi(co_uv.at(1),co_uv.at(3));
- //     cv::Rect roi(minXVal, minYVal, maxXVal, maxYVal);
 
-      cv::rectangle(image, roi, co_depth, CV_FILLED);
+        ROS_DEBUG("Rectangle: %f, %f and %f, %f", co_uv.at(1).x, co_uv.at(1).y, co_uv.at(3).x, co_uv.at(3).y);
+     
+      cv::Rect co_rect(topL, bottomR);
+     // cv::Rect co_rect(co_uv.at(1),co_uv.at(3));
 
-    depthpub_.publish(input_bridge->toImageMsg());
+     // cv::Mat roi(image_ref,co_rect);
+
+      if(PUBLISH_DEPTH_IMAGE)
+      {
+        cv::rectangle(image, co_rect, co_depth, CV_FILLED);
+        depthpub_.publish(input_bridge->toImageMsg());
+      }
+   
   }
 
 };
