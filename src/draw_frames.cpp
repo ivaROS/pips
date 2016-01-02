@@ -47,7 +47,9 @@ public:
     cv::Point3d topl(-radius,-height,radius);
     cv::Point3d bottomr(radius,-clearance,radius);
     cv::Point3d bottoml(-radius,-clearance,radius);
-    cv::Point3d offsets[] = {topr,topl,bottomr,bottoml};
+
+
+    cv::Point3d offsets[] = {topr,topl,bottoml,bottomr};
     std::vector<cv::Point3d> co_offsets(offsets, offsets + sizeof(offsets) / sizeof(cv::Point3d) );
     co_offsets_ = co_offsets;
   }
@@ -196,13 +198,39 @@ public:
       static const int RADIUS = 3;
       cv::circle(image, uv, RADIUS, (2^16)-1, -1);
 
+      std::vector<cv::Point2d> co_uv;
+      double co_depth;
+
       for (std::vector<cv::Point3d>::iterator it = co_offsets_.begin(); it != co_offsets_.end(); ++it) {
       
         cv::Point3d addedpnt = pt_cv + *it;
+        co_depth = addedpnt.z;
         uv = cam_model_.project3dToPixel(addedpnt);
-
+        ROS_INFO("Coords: %f, %f", uv.x, uv.y);
+        co_uv.push_back(uv);
+    /*    if(uv.y <480 and uv.y >=0 and uv.x <640 and uv.x >=0)
+          ROS_INFO("Intensity: %f", image.at<float>(uv.y, uv.x));
+    */
       cv::circle(image, uv, RADIUS, (2^16)-1, -1);
       }
+      double minXVal, maxXVal, minYVal,maxYVal;
+      minYVal = cv::min(co_uv.at(0).y,co_uv.at(1).y);
+      minXVal = cv::min(co_uv.at(1).x,co_uv.at(2).x);
+      maxYVal = cv::max(co_uv.at(2).y,co_uv.at(3).y);
+      maxXVal = cv::max(co_uv.at(3).x,co_uv.at(0).x);
+
+/*      cv::Mat coords(co_uv);
+
+      cv::minMaxLoc( coords.colRange(0,1), &minXVal, &maxXVal );
+      cv::minMaxLoc( coords.colRange(1,2), &minYVal, &maxYVal );
+      cv::Point2d topL(minXVal, minYVal);
+      cv::Point2d bottomR(maxXVal, maxYVal);
+*/
+        ROS_INFO("Rectangle: %f, %f and %f, %f", co_uv.at(1).x, co_uv.at(1).y, co_uv.at(3).x, co_uv.at(3).y);
+      cv::Rect roi(co_uv.at(1),co_uv.at(3));
+ //     cv::Rect roi(minXVal, minYVal, maxXVal, maxYVal);
+
+      cv::rectangle(image, roi, co_depth, CV_FILLED);
 
     depthpub_.publish(input_bridge->toImageMsg());
   }
