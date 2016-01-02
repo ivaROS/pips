@@ -1,4 +1,6 @@
 #include <ros/ros.h>
+#include <iostream>     // std::cout
+#include <algorithm>    // std::min
 #include <image_transport/image_transport.h>
 #include <opencv/cv.h>
 #include <cv_bridge/cv_bridge.h>
@@ -18,10 +20,10 @@ class FrameDrawer
   image_transport::ImageTransport it_;
   image_transport::CameraSubscriber sub_,depthsub_;
   image_transport::Publisher pub_,depthpub_;
+  std::vector<std::string> frame_ids_;
   tf2_ros::Buffer tfBuffer_;
   tf2_ros::TransformListener tf_listener_;
   image_geometry::PinholeCameraModel cam_model_;
-  std::vector<std::string> frame_ids_;
   CvFont font_;
   bool firstFrame_,firstDepthFrame_;
   sensor_msgs::ImageConstPtr firstImMsg_,firstDepthImMsg_;
@@ -77,7 +79,7 @@ public:
           geometry_msgs::TransformStamped transform = tfBuffer_.lookupTransform("odom", cam_model_.tfFrame(), ros::Time(0), timeout);
           transform.child_frame_id = "start_frame";
 
-        ROS_ERROR("starting tf broadcast");
+        ROS_DEBUG("starting tf broadcast");
         br.sendTransform(transform);
 
         }
@@ -88,7 +90,7 @@ public:
 
         firstImMsg_ = image_msg;
         firstFrame_ = false;
-        ROS_ERROR("Saved first frame");
+        ROS_INFO("Saved first frame");
     }
     cv::Mat image;
     cv_bridge::CvImagePtr input_bridge;
@@ -155,7 +157,7 @@ public:
           geometry_msgs::TransformStamped transform = tfBuffer_.lookupTransform("odom", cam_model_.tfFrame(), ros::Time(0), timeout);
           transform.child_frame_id = "depth_start_frame";
 
-        ROS_ERROR("starting depth tf broadcast");
+        ROS_DEBUG("starting depth tf broadcast");
         br.sendTransform(transform);
 
         }
@@ -166,7 +168,7 @@ public:
 
         firstDepthImMsg_ = image_msg;
         firstDepthFrame_ = false;
-        ROS_ERROR("Saved first depth frame");
+        ROS_INFO("Saved first depth frame");
     }
     cv::Mat image,image_ref;
     cv_bridge::CvImagePtr input_bridge;
@@ -232,17 +234,24 @@ public:
       cv::Point2d topL(minXVal, minYVal);
       cv::Point2d bottomR(maxXVal, maxYVal);
 
-        ROS_DEBUG("Rectangle: %f, %f and %f, %f", co_uv.at(1).x, co_uv.at(1).y, co_uv.at(3).x, co_uv.at(3).y);
+      ROS_DEBUG("Raw Rectangle: %f, %f and %f, %f", co_uv.at(1).x, co_uv.at(1).y, co_uv.at(3).x, co_uv.at(3).y);
+      ROS_DEBUG("Cropped Rectangle: %f, %f and %f, %f", topL.x, topL.y, bottomR.x, bottomR.y);
      
       cv::Rect co_rect(topL, bottomR);
-     // cv::Rect co_rect(co_uv.at(1),co_uv.at(3));
 
-     // cv::Mat roi(image_ref,co_rect);
+
+      cv::Mat roi(image_ref,co_rect);
+
+      cv::Mat collisions = (roi > 0) & roi <= co_depth;
+
+
 
       if(PUBLISH_DEPTH_IMAGE)
       {
         cv::rectangle(image, co_rect, co_depth, CV_FILLED);
+        collisions.copyTo(image(co_rect));
         depthpub_.publish(input_bridge->toImageMsg());
+
       }
    
   }
