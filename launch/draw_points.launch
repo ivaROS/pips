@@ -1,4 +1,6 @@
 <launch>
+<arg name="bagfile" default="/media/justin/data/bag_files/tf_fixed/rgb_down_the_hall_2015-10-20-20-56-35.bag"/>
+<arg name="start_time" default="13"/>
 
 <arg name="rgb_image" value="camera/rgb/image_color"/>
 <arg name="depth_image" value="camera/depth/image"/>
@@ -8,6 +10,6 @@
     <remap from="depth_image" to="$(arg depth_image)" />
   </node>
 
-<node name="play_bag" pkg="rosbag" type="play" args="/media/justin/data/bag_files/tf_fixed/rgb_down_the_hall_2015-10-20-20-56-35.bag --clock --pause -s 13 -r 1" />
+<node name="play_bag" pkg="rosbag" type="play" args="$(arg bagfile) --clock --pause -s $(arg start_time) -r 1" />
 
 </launch>

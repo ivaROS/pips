@@ -1,0 +1,10 @@
+<launch>
+<arg name="bagfile" value="/media/justin/data/bag_files/tf_fixed/toward_chair_2016-01-04-15-24-43.bag"/>
+<arg name="start_time" value="0"/>
+
+<include file="$(find pips)/launch/draw_points.launch">
+  <arg name="start_time" value="$(arg start_time)"/>
+  <arg name="bagfile" value="$(arg bagfile)"/>
+</include>
+
+</launch>
