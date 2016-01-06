@@ -11,6 +11,14 @@
 #include <tf/transform_broadcaster.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 
+#include <sensor_msgs/Image.h>
+#include <sensor_msgs/image_encodings.h>
+#include <image_transport/subscriber_filter.h>
+#include <message_filters/subscriber.h>
+#include <message_filters/time_synchronizer.h>
+#include <message_filters/sync_policies/exact_time.h>
+#include <message_filters/sync_policies/approximate_time.h>
+
 #define PUBLISH_DEPTH_IMAGE true
 #define DRAW_DEPTH_POINTS false
 
@@ -18,8 +26,10 @@ class FrameDrawer
 {
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;
-  image_transport::CameraSubscriber sub_,depthsub_;
+  image_transport::CameraSubscriber sub_;
   image_transport::Publisher pub_,depthpub_;
+  message_filters::Subscriber<sensor_msgs::Image> depthsub_;
+  message_filters::Subscriber<sensor_msgs::CameraInfo> depth_info_sub_;
   std::vector<std::string> frame_ids_;
   tf2_ros::Buffer tfBuffer_;
   tf2_ros::TransformListener tf_listener_;
@@ -32,14 +42,27 @@ class FrameDrawer
   ros::Timer timer, depth_timer;
   std::vector<cv::Point3d> co_offsets_;
 
+
+    typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image,
+                                                      sensor_msgs::CameraInfo> image_sync_policy;
+    typedef message_filters::Synchronizer<image_sync_policy> image_synchronizer;
+    boost::shared_ptr<image_synchronizer> synced_images;
+
 public:
   FrameDrawer(const std::vector<std::string>& frame_ids)
     : it_(nh_), frame_ids_(frame_ids), tf_listener_(tfBuffer_), firstFrame_(true), firstDepthFrame_(true)
   {
     std::string image_topic = nh_.resolveName("rgb_image");
-    std::string depth_image_topic = nh_.resolveName("depth_image");
     sub_ = it_.subscribeCamera(image_topic, 10, &FrameDrawer::rgbImageCb, this);
-    depthsub_ = it_.subscribeCamera(depth_image_topic, 10, &FrameDrawer::depthImageCb, this);
+
+    std::string raw_depth_image_topic = nh_.resolveName("raw_depth_image");
+    std::string depth_info_topic = nh_.resolveName("depth_info");
+
+    depthsub_.subscribe(nh_, raw_depth_image_topic, 10);
+    depth_info_sub_.subscribe(nh_, depth_info_topic, 10);
+    synced_images.reset(new image_synchronizer(image_synchronizer(10), depthsub_, depth_info_sub_) );
+    synced_images->registerCallback(bind(&FrameDrawer::depthImageCb, this, _1, _2));
+
     pub_ = it_.advertise("rgb_image_out", 1);
     depthpub_ = it_.advertise("depth_image_out",1);
     cvInitFont(&font_, CV_FONT_HERSHEY_SIMPLEX, 0.5, 0.5);
@@ -242,7 +265,7 @@ public:
 
       cv::Mat roi(image_ref,co_rect);
 
-      cv::Mat collisions = (roi > 0) & roi <= co_depth;
+      cv::Mat collisions = (roi > 0) & (roi <= co_depth);
 
 
 

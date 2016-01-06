@@ -4,10 +4,14 @@
 
 <arg name="rgb_image" value="camera/rgb/image_color"/>
 <arg name="depth_image" value="camera/depth/image"/>
+<arg name="raw_depth_image" value="camera/depth/image_raw"/>
+<arg name="depth_info" value="camera/depth/camera_info"/>
 
 <node name="draw_frames" pkg="pips" type="draw_frames" args="/base_link" output="screen">
     <remap from="rgb_image" to="$(arg rgb_image)" />
     <remap from="depth_image" to="$(arg depth_image)" />
+    <remap from="raw_depth_image" to="$(arg raw_depth_image)" />
+    <remap from="depth_info" to="$(arg depth_info)" />
   </node>
 
 <node name="play_bag" pkg="rosbag" type="play" args="$(arg bagfile) --clock --pause -s $(arg start_time) -r 1" />
