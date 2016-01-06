@@ -32,4 +32,9 @@
     <param name="autosize" value="False" />
   </node>
 
+<node name="depth_output_viewer2" pkg="image_view" type="image_view">
+    <remap from="image" to="depth_image_out2" />
+    <param name="autosize" value="False" />
+  </node>
+
 </launch>

@@ -19,7 +19,7 @@ class FrameDrawer
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;
   image_transport::CameraSubscriber sub_,depthsub_;
-  image_transport::Publisher pub_,depthpub_;
+  image_transport::Publisher pub_,depthpub_,depthpub2_;
   std::vector<std::string> frame_ids_;
   tf2_ros::Buffer tfBuffer_;
   tf2_ros::TransformListener tf_listener_;
@@ -42,6 +42,7 @@ public:
     depthsub_ = it_.subscribeCamera(depth_image_topic, 10, &FrameDrawer::depthImageCb, this);
     pub_ = it_.advertise("rgb_image_out", 1);
     depthpub_ = it_.advertise("depth_image_out",1);
+    depthpub2_ = it_.advertise("depth_image_out2",1);
     cvInitFont(&font_, CV_FONT_HERSHEY_SIMPLEX, 0.5, 0.5);
 
     double radius = .25;
@@ -242,15 +243,17 @@ public:
 
       cv::Mat roi(image_ref,co_rect);
 
-      cv::Mat collisions = (roi > 0) & roi <= co_depth;
+      cv::Mat collisions = (roi > 0) & (roi <= co_depth);
 
 
 
       if(PUBLISH_DEPTH_IMAGE)
       {
         cv::rectangle(image, co_rect, co_depth, CV_FILLED);
-        collisions.copyTo(image(co_rect));
         depthpub_.publish(input_bridge->toImageMsg());
+
+        collisions.copyTo(image(co_rect));
+        depthpub2_.publish(input_bridge->toImageMsg());
 
       }
    
