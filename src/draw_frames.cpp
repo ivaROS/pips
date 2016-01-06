@@ -199,7 +199,7 @@ public:
     try {
       if(PUBLISH_DEPTH_IMAGE)
       {
-        input_bridge = cv_bridge::toCvCopy(firstDepthImMsg_, sensor_msgs::image_encodings::TYPE_32FC1); 
+        input_bridge = cv_bridge::toCvCopy(firstDepthImMsg_,  sensor_msgs::image_encodings::TYPE_32FC1); 
         image = input_bridge->image;
       }
 
@@ -264,6 +264,19 @@ public:
 
 
       cv::Mat roi(image_ref,co_rect);
+      
+      
+      //is it 32bit float? Then unit is m
+      if(input_bridge_ref->encoding == sensor_msgs::image_encodings::TYPE_32FC1) 
+      {
+          
+      }
+      //is it 16bit unsigned int? Then unit is mm
+      else if(input_bridge_ref->encoding == sensor_msgs::image_encodings::MONO16) 
+      {
+        co_depth *= 1000;
+      }
+      
 
       cv::Mat collisions = (roi > 0) & (roi <= co_depth);
 
