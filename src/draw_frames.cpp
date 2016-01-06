@@ -11,6 +11,14 @@
 #include <tf/transform_broadcaster.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 
+#include <sensor_msgs/Image.h>
+#include <sensor_msgs/image_encodings.h>
+#include <image_transport/subscriber_filter.h>
+#include <message_filters/subscriber.h>
+#include <message_filters/time_synchronizer.h>
+#include <message_filters/sync_policies/exact_time.h>
+#include <message_filters/sync_policies/approximate_time.h>
+
 #define PUBLISH_DEPTH_IMAGE true
 #define DRAW_DEPTH_POINTS false
 
@@ -18,8 +26,10 @@ class FrameDrawer
 {
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;
-  image_transport::CameraSubscriber sub_,depthsub_;
+  image_transport::CameraSubscriber sub_,depthsubit_;
   image_transport::Publisher pub_,depthpub_,depthpub2_;
+  message_filters::Subscriber<sensor_msgs::Image> depthsub_;
+  message_filters::Subscriber<sensor_msgs::CameraInfo> depth_info_sub_;
   std::vector<std::string> frame_ids_;
   tf2_ros::Buffer tfBuffer_;
   tf2_ros::TransformListener tf_listener_;
@@ -32,14 +42,30 @@ class FrameDrawer
   ros::Timer timer, depth_timer;
   std::vector<cv::Point3d> co_offsets_;
 
+
+    typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image,
+                                                      sensor_msgs::CameraInfo> image_sync_policy;
+    typedef message_filters::Synchronizer<image_sync_policy> image_synchronizer;
+    boost::shared_ptr<image_synchronizer> synced_images;
+
 public:
   FrameDrawer(const std::vector<std::string>& frame_ids)
     : it_(nh_), frame_ids_(frame_ids), tf_listener_(tfBuffer_), firstFrame_(true), firstDepthFrame_(true)
   {
     std::string image_topic = nh_.resolveName("rgb_image");
-    std::string depth_image_topic = nh_.resolveName("depth_image");
     sub_ = it_.subscribeCamera(image_topic, 10, &FrameDrawer::rgbImageCb, this);
-    depthsub_ = it_.subscribeCamera(depth_image_topic, 10, &FrameDrawer::depthImageCb, this);
+
+
+    std::string depth_image_topic = nh_.resolveName("depth_image");
+    std::string depth_info_topic = nh_.resolveName("depth_info");
+    
+    //depthsubit_ = it_.subscribeCamera(depth_image_topic, 10, &FrameDrawer::depthImageCb, this);
+
+    depthsub_.subscribe(nh_, depth_image_topic, 10);
+    depth_info_sub_.subscribe(nh_, depth_info_topic, 10);
+    synced_images.reset(new image_synchronizer(image_synchronizer(10), depthsub_, depth_info_sub_) );
+    synced_images->registerCallback(bind(&FrameDrawer::depthImageCb, this, _1, _2));
+
     pub_ = it_.advertise("rgb_image_out", 1);
     depthpub_ = it_.advertise("depth_image_out",1);
     depthpub2_ = it_.advertise("depth_image_out2",1);
@@ -171,18 +197,34 @@ public:
         firstDepthFrame_ = false;
         ROS_INFO("Saved first depth frame");
     }
+    
+    int scale = 1;
     cv::Mat image,image_ref;
     cv_bridge::CvImagePtr input_bridge;
     cv_bridge::CvImageConstPtr input_bridge_ref;
     try {
       if(PUBLISH_DEPTH_IMAGE)
       {
-        input_bridge = cv_bridge::toCvCopy(firstDepthImMsg_, sensor_msgs::image_encodings::TYPE_32FC1); 
+        input_bridge = cv_bridge::toCvCopy(firstDepthImMsg_,  sensor_msgs::image_encodings::TYPE_32FC1); 
         image = input_bridge->image;
       }
 
       input_bridge_ref = cv_bridge::toCvShare(firstDepthImMsg_);//Note:since only comparing and not editing image, no need to copy data
       image_ref = input_bridge_ref->image;
+      
+
+            //is it 32bit float? Then unit is m
+      if(input_bridge_ref->encoding == sensor_msgs::image_encodings::TYPE_32FC1) 
+      {
+          
+      }
+      //is it 16bit unsigned int? Then unit is mm
+      else if(input_bridge_ref->encoding == sensor_msgs::image_encodings::TYPE_16UC1) 
+      {
+        scale= 1000.0;
+      }
+      std::cout << "ref type: " << input_bridge_ref->encoding<< ", im type: " << input_bridge->encoding << std::endl;
+
       
     }
     catch (cv_bridge::Exception& ex){
@@ -242,14 +284,20 @@ public:
 
 
       cv::Mat roi(image_ref,co_rect);
+      
+      
+      cv::Mat collisions = (roi > 0) & (roi <= co_depth*scale);
+      
+      collisions.convertTo(collisions,CV_32F,1000);
+      std::cout << "ref roi: " << roi.row(0)<< std::endl;
+      std::cout << "im roi: " << image(co_rect).row(0)<< std::endl;
+      std::cout << "collision: " << collisions.row(0)<< std::endl;
 
-      cv::Mat collisions = (roi > 0) & (roi <= co_depth);
-
-
+      std::cout << "co_depth: " << co_depth << ", scale: " << scale;
 
       if(PUBLISH_DEPTH_IMAGE)
       {
-        cv::rectangle(image, co_rect, co_depth, CV_FILLED);
+        cv::rectangle(image, co_rect, co_depth*scale, CV_FILLED);
         depthpub_.publish(input_bridge->toImageMsg());
 
         collisions.copyTo(image(co_rect));
