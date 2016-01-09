@@ -18,8 +18,10 @@
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <chrono>
 
-#define PUBLISH_DEPTH_IMAGE true
+
+#define PUBLISH_DEPTH_IMAGE false
 #define DRAW_DEPTH_POINTS false
 
 class FrameDrawer
@@ -198,6 +200,11 @@ public:
         ROS_INFO("Saved first depth frame");
     }
     
+    
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    
+    
     int scale = 1;
     cv::Mat image,image_ref;
     cv_bridge::CvImagePtr input_bridge;
@@ -223,7 +230,7 @@ public:
       {
         scale= 1000.0;
       }
-      std::cout << "ref type: " << input_bridge_ref->encoding<< ", im type: " << input_bridge->encoding << std::endl;
+      //std::cout << "ref type: " << input_bridge_ref->encoding<< ", im type: " << input_bridge->encoding << std::endl;
 
       
     }
@@ -262,7 +269,7 @@ public:
         cv::Point3d addedpnt = pt_cv + *it;
         co_depth = addedpnt.z;
         uv = cam_model_.project3dToPixel(addedpnt);
-        ROS_DEBUG("Coords: %f, %f", uv.x, uv.y);
+        //ROS_DEBUG("Coords: %f, %f", uv.x, uv.y);
         co_uv.push_back(uv);
 
       if(PUBLISH_DEPTH_IMAGE and DRAW_DEPTH_POINTS)
@@ -277,8 +284,8 @@ public:
       cv::Point2d topL(minXVal, minYVal);
       cv::Point2d bottomR(maxXVal, maxYVal);
 
-      ROS_DEBUG("Raw Rectangle: %f, %f and %f, %f", co_uv.at(1).x, co_uv.at(1).y, co_uv.at(3).x, co_uv.at(3).y);
-      ROS_DEBUG("Cropped Rectangle: %f, %f and %f, %f", topL.x, topL.y, bottomR.x, bottomR.y);
+      //ROS_DEBUG("Raw Rectangle: %f, %f and %f, %f", co_uv.at(1).x, co_uv.at(1).y, co_uv.at(3).x, co_uv.at(3).y);
+      //ROS_DEBUG("Cropped Rectangle: %f, %f and %f, %f", topL.x, topL.y, bottomR.x, bottomR.y);
      
       cv::Rect co_rect(topL, bottomR);
 
@@ -289,12 +296,18 @@ public:
       cv::Mat collisions = (roi > 0) & (roi <= co_depth*scale);
       
       collisions.convertTo(collisions,CV_32F,1000);
+      
+      auto t2 = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double, std::milli> fp_ms = t2 - t1;
+
+      std::cout << "Collision checking took " << fp_ms.count() << " ms\n";
+/*      
       std::cout << "ref roi: " << roi.row(0)<< std::endl;
       std::cout << "im roi: " << image(co_rect).row(0)<< std::endl;
       std::cout << "collision: " << collisions.row(0)<< std::endl;
 
       std::cout << "co_depth: " << co_depth << ", scale: " << scale;
-
+*/
       if(PUBLISH_DEPTH_IMAGE)
       {
         cv::rectangle(image, co_rect, co_depth*scale, CV_FILLED);
