@@ -22,7 +22,7 @@
 
 #include "collision_checker.h"
 
-#define PUBLISH_DEPTH_IMAGE true
+#define PUBLISH_DEPTH_IMAGE false
 #define DRAW_DEPTH_POINTS false
 
   CollisionChecker::CollisionChecker(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg, geometry_msgs::TransformStamped& optical_transform, std::vector<cv::Point3d> co_points, bool gen_image)
@@ -30,7 +30,8 @@
   {
     scale_ = 1000;
     
-    depthpub_ = it_.advertise("depth_image_out",1);
+    if(PUBLISH_DEPTH_IMAGE)
+      depthpub_ = it_.advertise("depth_image_out",1);
     
     optical_transform_ = tf2::transformToEigen(optical_transform);
 
@@ -80,15 +81,16 @@
 
   bool CollisionChecker::testCollision(double xyz[] )
   {
-      std::cout << "point (start) x: " << xyz[0] << ", y: " << xyz[1] << ", z: " << xyz[2] << std::endl;
+      //std::cout << "point (start) x: " << xyz[0] << ", y: " << xyz[1] << ", z: " << xyz[2] << std::endl;
       Eigen::Map<const Eigen::Vector3d> origin_r(xyz);
 
       auto t1 = std::chrono::high_resolution_clock::now();
     
     
-      cv::Mat image = input_bridge_->image;
+      cv::Mat image;
       if(PUBLISH_DEPTH_IMAGE)
       {  
+         image = input_bridge_->image;
          image_.copyTo(image);
       }
 
