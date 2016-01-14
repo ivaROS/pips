@@ -18,7 +18,7 @@
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
-#include <chrono>
+
 
 #include "collision_checker.h"
 
@@ -152,8 +152,9 @@
       //Calculate elapsed time
       auto t2 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> fp_ms = t2 - t1;
-
-      std::cout << "Collision checking took " << fp_ms.count() << " ms\n";
+      total_duration += fp_ms;
+      
+      std::cout << "Collision checking took " << fp_ms.count() << " ms; accumulated time: " << total_duration.count() << " ms\n";
 
       if(collided)
         std::cout << "Collided!\n";

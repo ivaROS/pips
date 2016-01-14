@@ -6,6 +6,7 @@
 #include <Eigen/Eigen>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
+#include <chrono>
 
 class CollisionChecker
 {
@@ -32,6 +33,7 @@ class CollisionChecker
   
   cv::Mat image_,image_ref_;
   cv_bridge::CvImagePtr input_bridge_, output_bridge_;
+  std::chrono::duration<double, std::milli> total_duration;
         
 } ;
 
