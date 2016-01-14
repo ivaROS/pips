@@ -21,7 +21,7 @@
 #include <chrono>
 
 
-#define PUBLISH_DEPTH_IMAGE false
+#define PUBLISH_DEPTH_IMAGE true
 #define DRAW_DEPTH_POINTS false
 
 class FrameDrawer

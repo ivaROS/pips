@@ -1,0 +1,7 @@
+<launch>
+
+<include file="$(find pips)/launch/draw_points.launch">
+  <arg name="type" value="trajectory_tester"/>
+</include>
+
+</launch>
