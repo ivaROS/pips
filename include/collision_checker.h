@@ -31,7 +31,7 @@ class CollisionChecker
   int scale_;
   
   cv::Mat image_,image_ref_;
-  cv_bridge::CvImagePtr input_bridge_;
+  cv_bridge::CvImagePtr input_bridge_, output_bridge_;
         
 } ;
 

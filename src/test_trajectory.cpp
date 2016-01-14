@@ -100,11 +100,16 @@ public:
 
         try
         {
-          geometry_msgs::TransformStamped depth_base_transform = tfBuffer_.lookupTransform("base_link", info_msg->header.frame_id, ros::Time(0), timeout);
+          //Get the transform that takes a point in the base frame and transforms it to the depth optical
+          geometry_msgs::TransformStamped depth_base_transform = tfBuffer_.lookupTransform(info_msg->header.frame_id, "base_link", ros::Time(0), timeout);
           
+          std::cout << "depth to base: \n" << depth_base_transform << std::endl;
           
+          //Get the transform that takes point in base frame and transforms it to odom frame
           geometry_msgs::TransformStamped base_start_transform = tfBuffer_.lookupTransform("odom", "base_link", ros::Time(0), timeout);
           base_start_transform.child_frame_id = "depth_start_frame";
+
+          std::cout << "base to odom start: \n" << base_start_transform << std::endl;
 
           ROS_DEBUG("starting depth tf broadcast");
           br.sendTransform(base_start_transform);

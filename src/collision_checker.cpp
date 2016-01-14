@@ -38,11 +38,12 @@
 
     std::cout << "init collision checker" << std::endl;
 
+
     try {
       if(PUBLISH_DEPTH_IMAGE)
       {
         input_bridge_ = cv_bridge::toCvCopy(image_msg,  sensor_msgs::image_encodings::TYPE_32FC1); 
-        image_ = input_bridge_->image;
+        (input_bridge_->image).copyTo(image_);
       }
       
       cv_bridge::CvImageConstPtr input_bridge_ref;
@@ -79,24 +80,27 @@
 
   bool CollisionChecker::testCollision(double xyz[] )
   {
+      std::cout << "point (start) x: " << xyz[0] << ", y: " << xyz[1] << ", z: " << xyz[2] << std::endl;
       Eigen::Map<const Eigen::Vector3d> origin_r(xyz);
 
       auto t1 = std::chrono::high_resolution_clock::now();
-      cv::Mat image;
-
     
+    
+      cv::Mat image = input_bridge_->image;
       if(PUBLISH_DEPTH_IMAGE)
-      {
-        image_.copyTo(image);
+      {  
+         image_.copyTo(image);
       }
 
       
       Eigen::Vector3d origin_d = optical_transform_*origin_r;
-
+      //std::cout << "point (optical): " << origin_d << std::endl;
 
       cv::Point3d pt_cv(origin_d(0), origin_d(1), origin_d(2));
       cv::Point2d uv;
       uv = cam_model_.project3dToPixel(pt_cv);
+      
+      //std::cout << "point (camera): " << uv << std::endl;
 
       static const int RADIUS = 3;
       if(PUBLISH_DEPTH_IMAGE and DRAW_DEPTH_POINTS)
@@ -154,7 +158,7 @@
 
       if(PUBLISH_DEPTH_IMAGE)
       {
-         collisions.convertTo(collisions,CV_32F,1000);
+        collisions.convertTo(collisions,CV_32F,1000);
         cv::rectangle(image, co_rect, co_depth*scale_, CV_FILLED);
         depthpub_.publish(input_bridge_->toImageMsg());
 
