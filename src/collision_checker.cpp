@@ -19,11 +19,13 @@
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
+#include <climits>
 
 #include "collision_checker.h"
 
 #define PUBLISH_DEPTH_IMAGE false
 #define DRAW_DEPTH_POINTS false
+#define MAX_RANGE 10
 
   CollisionChecker::CollisionChecker(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg, geometry_msgs::TransformStamped& optical_transform, std::vector<cv::Point3d> co_points, bool gen_image)
     :it_(nh_), co_offsets_(co_points), generate_image_(gen_image)
@@ -48,17 +50,28 @@
       }
       
       cv_bridge::CvImageConstPtr input_bridge_ref;
-      input_bridge_ref = cv_bridge::toCvShare(image_msg);//Note:since only comparing and not editing image, no need to copy data
+      input_bridge_ref = cv_bridge::toCvCopy(image_msg);//Note:since only comparing and not editing image, no need to copy data
       //However, would it be faster to copy the data so I could get rid of 0s and only perform 1 comparision on the image /run rather than 2?
       
       image_ref_ = input_bridge_ref->image;
       
+      //double min, max;
+      //cv::minMaxLoc(image_ref_, &min, &max);
+      
+      //std::cout << "Min: " << min << ", Max: " << max << std::endl;
 
             //is it 32bit float? Then unit is m
       if(input_bridge_ref->encoding == sensor_msgs::image_encodings::TYPE_32FC1) 
       {
           scale_ = 1;
       }
+      
+            
+      image_ref_.setTo(MAX_RANGE * scale_, image_ref_==0);
+
+      //std::cout << "altered mat:\n" << image_ref_ << std::endl;
+
+      
       /*
       //is it 16bit unsigned int? Then unit is mm
       else if(input_bridge_ref->encoding == sensor_msgs::image_encodings::TYPE_16UC1) 
@@ -145,9 +158,10 @@
       cv::Mat roi(image_ref_,co_rect);
       
       
-      cv::Mat collisions = (roi > 0) & (roi <= co_depth*scale_);
+      cv::Mat collisions = (roi <= co_depth*scale_);
+      int num_collisions = cv::countNonZero(collisions);
       
-      bool collided = (cv::countNonZero(collisions)>0);
+      bool collided = (num_collisions>0);
       
       //Calculate elapsed time
       auto t2 = std::chrono::high_resolution_clock::now();
@@ -157,7 +171,7 @@
       std::cout << "Collision checking took " << fp_ms.count() << " ms; accumulated time: " << total_duration.count() << " ms\n";
 
       if(collided)
-        std::cout << "Collided!\n";
+        std::cout << "Collided! (" << num_collisions << ")\n";
 
       if(PUBLISH_DEPTH_IMAGE)
       {
