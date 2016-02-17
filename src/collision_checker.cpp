@@ -4,7 +4,7 @@
 
 
 
-#include <image_geometry/pinhole_camera_model.h>
+
 #include <tf2_ros/transform_listener.h>
 #include <boost/foreach.hpp>
 #include <sensor_msgs/image_encodings.h>
@@ -27,7 +27,7 @@
 #define DRAW_DEPTH_POINTS false
 #define MAX_RANGE 10
 
-  CollisionChecker::CollisionChecker(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg, geometry_msgs::TransformStamped& optical_transform, std::vector<cv::Point3d> co_points, bool gen_image)
+  CollisionChecker::CollisionChecker(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg, geometry_msgs::TransformStamped& base_optical_transform, std::vector<cv::Point3d> co_points, bool gen_image)
     :it_(nh_), co_offsets_(co_points), generate_image_(gen_image)
   {
     scale_ = 1000;
@@ -35,7 +35,8 @@
     if(PUBLISH_DEPTH_IMAGE)
       depthpub_ = it_.advertise("depth_image_out",1);
     
-    optical_transform_ = tf2::transformToEigen(optical_transform);
+    base_to_optical_transform_ = tf2::transformToEigen(base_optical_transform);
+    optical_transform_ = base_to_optical_transform_;
 
     //tf::transformStampedMsgToTF(const geometry_msgs::TransformStamped & msg, TransformStamped& bt)
 
@@ -92,7 +93,21 @@
   }
 
 
-  bool CollisionChecker::testCollision(double xyz[] )
+  // Represents the transform that will project points from the robot's frame to the global frame
+  //(generally odom).
+  void CollisionChecker::setBaseTransform(geometry_msgs::TransformStamped& base_transform)
+  {
+       Eigen::Affine3d coord_to_base_transform = tf2::transformToEigen(base_transform);
+       coord_to_base_transform = coord_to_base_transform.inverse();
+       
+       optical_transform_ = base_to_optical_transform_ * coord_to_base_transform;
+  }
+
+
+  // By default, coordinates [x,y,z] are considered to be in the robot base's coordinate frame.
+  // Some other frame can be set as default by calling setBaseTransform with the transfrom from
+  // the robot's frame to the other frame
+  bool CollisionChecker::testCollision(double xyz[])
   {
       //std::cout << "point (start) x: " << xyz[0] << ", y: " << xyz[1] << ", z: " << xyz[2] << std::endl;
       Eigen::Map<const Eigen::Vector3d> origin_r(xyz);
