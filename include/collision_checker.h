@@ -22,10 +22,12 @@ class CollisionChecker
         bool testCollision(double xyz[] );
         void setBaseTransform(geometry_msgs::TransformStamped& base_transform);
         bool testCollision(const Eigen::Vector3d origin_r);
+        double transformToOptical(double* xyz);
    private :
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;
   image_transport::Publisher depthpub_;
+  ros::Publisher posepub_;
   image_geometry::PinholeCameraModel cam_model_;
 
   Eigen::Affine3d base_to_optical_transform_, optical_transform_;
