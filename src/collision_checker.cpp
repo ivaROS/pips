@@ -23,8 +23,8 @@
 
 #include "collision_checker.h"
 
-#define PUBLISH_DEPTH_IMAGE false
-#define DRAW_DEPTH_POINTS false
+#define PUBLISH_DEPTH_IMAGE true
+#define DRAW_DEPTH_POINTS true
 #define MAX_RANGE 10
 
   CollisionChecker::CollisionChecker(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg, geometry_msgs::TransformStamped& base_optical_transform, std::vector<cv::Point3d> co_points, bool gen_image)
@@ -33,14 +33,14 @@
     scale_ = 1000;
     
     if(PUBLISH_DEPTH_IMAGE)
-      depthpub_ = it_.advertise("depth_image_out",1);
+      depthpub_ = it_.advertise("depth_image_out",2000);
     
     base_to_optical_transform_ = tf2::transformToEigen(base_optical_transform);
     optical_transform_ = base_to_optical_transform_;
 
     //tf::transformStampedMsgToTF(const geometry_msgs::TransformStamped & msg, TransformStamped& bt)
 
-    std::cout << "init collision checker" << std::endl;
+    std::cout << "construct collision checker" << std::endl;
 
 
     try {
@@ -51,17 +51,11 @@
       }
       
       cv_bridge::CvImageConstPtr input_bridge_ref;
-      input_bridge_ref = cv_bridge::toCvCopy(image_msg);//Note:since only comparing and not editing image, no need to copy data
-      //However, would it be faster to copy the data so I could get rid of 0s and only perform 1 comparision on the image /run rather than 2?
+      input_bridge_ref = cv_bridge::toCvCopy(image_msg);
       
       image_ref_ = input_bridge_ref->image;
-      
-      //double min, max;
-      //cv::minMaxLoc(image_ref_, &min, &max);
-      
-      //std::cout << "Min: " << min << ", Max: " << max << std::endl;
 
-            //is it 32bit float? Then unit is m
+      //is it 32bit float? Then unit is m
       if(input_bridge_ref->encoding == sensor_msgs::image_encodings::TYPE_32FC1) 
       {
           scale_ = 1;
@@ -70,17 +64,6 @@
             
       image_ref_.setTo(MAX_RANGE * scale_, image_ref_==0);
 
-      //std::cout << "altered mat:\n" << image_ref_ << std::endl;
-
-      
-      /*
-      //is it 16bit unsigned int? Then unit is mm
-      else if(input_bridge_ref->encoding == sensor_msgs::image_encodings::TYPE_16UC1) 
-      {
-        scale_ = 1000;
-      }
-      //std::cout << "ref type: " << input_bridge_ref->encoding<< ", im type: " << input_bridge->encoding << std::endl;
-      */
       
     }
     catch (cv_bridge::Exception& ex){
@@ -92,6 +75,48 @@
 
   }
 
+
+void CollisionChecker::init(const sensor_msgs::ImageConstPtr& image_msg, geometry_msgs::TransformStamped& base_transform )
+  {
+
+    std::cout << "init collision checker" << std::endl;
+
+    total_duration = std::chrono::duration<double, std::milli>::zero(); //should reset for each set of trajectory generations?
+    
+    ROS_INFO_STREAM("base_transform:" << std::endl << base_transform<< std::endl );
+       Eigen::Affine3d coord_to_base_transform = tf2::transformToEigen(base_transform);
+       
+       //coord_to_base_transform = coord_to_base_transform.inverse();
+    ROS_INFO_STREAM("coord_to_base_transform:\n" << std::endl << coord_to_base_transform.matrix()<< std::endl );
+    
+    ROS_INFO_STREAM("base_to_optical_transform:" << std::endl << base_to_optical_transform_.matrix()<< std::endl );   
+       optical_transform_ = base_to_optical_transform_ * coord_to_base_transform;
+        
+    ROS_INFO_STREAM("optical_transform:" << std::endl << optical_transform_.matrix()<< std::endl );   
+    
+    try {
+      if(PUBLISH_DEPTH_IMAGE)
+      {
+        input_bridge_ = cv_bridge::toCvCopy(image_msg,  sensor_msgs::image_encodings::TYPE_32FC1); 
+        (input_bridge_->image).copyTo(image_);
+      }
+      
+      cv_bridge::CvImageConstPtr input_bridge_ref;
+      input_bridge_ref = cv_bridge::toCvCopy(image_msg);
+      
+      image_ref_ = input_bridge_ref->image;
+            
+      image_ref_.setTo(MAX_RANGE * scale_, image_ref_==0);
+
+      
+    }
+    catch (cv_bridge::Exception& ex){
+      ROS_ERROR("[draw_frames] Failed to convert image");
+      return;
+    }
+    
+
+  }
 
   // Represents the transform that will project points from the robot's frame to the global frame
   //(generally odom).
@@ -183,10 +208,10 @@
       std::chrono::duration<double, std::milli> fp_ms = t2 - t1;
       total_duration += fp_ms;
       
-      std::cout << "Collision checking took " << fp_ms.count() << " ms; accumulated time: " << total_duration.count() << " ms\n";
+      ROS_INFO_STREAM("Collision checking took " << fp_ms.count() << " ms; accumulated time: " << total_duration.count() << " ms\n");
 
       if(collided)
-        std::cout << "Collided! (" << num_collisions << ")\n";
+        ROS_INFO_STREAM("Collided! (" << num_collisions << ")\n");
 
       if(PUBLISH_DEPTH_IMAGE)
       {
