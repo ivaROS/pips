@@ -23,7 +23,7 @@
 
 #include "collision_checker.h"
 
-#define PUBLISH_DEPTH_IMAGE true
+#define PUBLISH_DEPTH_IMAGE false
 #define DRAW_DEPTH_POINTS false
 #define MAX_RANGE 10
 #define DEBUG false
@@ -36,10 +36,8 @@
     if(PUBLISH_DEPTH_IMAGE)
     {
       depthpub_ = it_.advertise("depth_image_out",2000);
-      posepub_ = nh_.advertise<geometry_msgs::PoseStamped>("/testpose", 100);
     }
-    base_to_optical_transform_ = tf2::transformToEigen(base_optical_transform);
-    optical_transform_ = base_to_optical_transform_;
+    optical_transform_ = tf2::transformToEigen(base_optical_transform);
 
     //tf::transformStampedMsgToTF(const geometry_msgs::TransformStamped & msg, TransformStamped& bt)
     if(DEBUG)
@@ -79,29 +77,12 @@
   }
 
 
-void CollisionChecker::init(const sensor_msgs::ImageConstPtr& image_msg, geometry_msgs::TransformStamped& base_transform )
+void CollisionChecker::init(const sensor_msgs::ImageConstPtr& image_msg)
   {
     if(DEBUG)
     std::cout << "init collision checker" << std::endl;
 
-    total_duration = std::chrono::duration<double, std::milli>::zero(); //should reset for each set of trajectory generations?
-    
-    Eigen::Affine3d coord_to_base_transform = tf2::transformToEigen(base_transform);
-    optical_transform_ = base_to_optical_transform_ * coord_to_base_transform;
-    
-    if(DEBUG)
-    {
-    ROS_INFO_STREAM("base_transform:" << std::endl << base_transform<< std::endl );
-
-       
-       //coord_to_base_transform = coord_to_base_transform.inverse();
-    ROS_INFO_STREAM("coord_to_base_transform:\n" << std::endl << coord_to_base_transform.matrix()<< std::endl );
-    
-    ROS_INFO_STREAM("base_to_optical_transform:" << std::endl << base_to_optical_transform_.matrix()<< std::endl );   
-
-        
-    ROS_INFO_STREAM("optical_transform:" << std::endl << optical_transform_.matrix()<< std::endl );   
-    }
+    total_duration = std::chrono::duration<double, std::milli>::zero(); //reset for each set of trajectory generations
     
     try {
       if(PUBLISH_DEPTH_IMAGE)
@@ -127,33 +108,9 @@ void CollisionChecker::init(const sensor_msgs::ImageConstPtr& image_msg, geometr
 
   }
 
-  // Represents the transform that will project points from the robot's frame to the global frame
-  //(generally odom).
-  void CollisionChecker::setBaseTransform(geometry_msgs::TransformStamped& base_transform)
-  {
-       Eigen::Affine3d coord_to_base_transform = tf2::transformToEigen(base_transform);
-       coord_to_base_transform = coord_to_base_transform.inverse();
-       
-       optical_transform_ = base_to_optical_transform_ * coord_to_base_transform;
-  }
-
-
-  void CollisionChecker::transformToOptical(double* xyz)
-  {
-      Eigen::Map<const Eigen::Vector3d> origin_r(xyz);
-      
-      Eigen::Vector3d point = optical_transform_*origin_r;
-      xyz[0] = point(0);
-      xyz[1] = point(1);
-      xyz[2] = point(2);
-      return pointd;
-  }
-  
       
 
-  // By default, coordinates [x,y,z] are considered to be in the robot base's coordinate frame.
-  // Some other frame can be set as default by calling setBaseTransform with the transfrom from
-  // the robot's frame to the other frame
+  //coordinates [x,y,z] are in the robot base's coordinate frame.
   bool CollisionChecker::testCollision(double xyz[])
   {
       //std::cout << "point (start) x: " << xyz[0] << ", y: " << xyz[1] << ", z: " << xyz[2] << std::endl;
@@ -172,17 +129,7 @@ void CollisionChecker::init(const sensor_msgs::ImageConstPtr& image_msg, geometr
       
       Eigen::Vector3d origin_d = optical_transform_*origin_r;
       //std::cout << "point (optical): " << origin_d << std::endl;
-      
-      if(PUBLISH_DEPTH_IMAGE)
-      {
-          geometry_msgs::PoseStamped pose;
-          pose.header.frame_id = "camera_depth_optical_frame";
-          pose.pose.position.x = origin_d(0);
-          pose.pose.position.y = origin_d(1);
-          pose.pose.position.z = origin_d(2);
-          posepub_.publish(pose);
-      
-      }
+
 
       cv::Point3d pt_cv(origin_d(0), origin_d(1), origin_d(2));
       cv::Point2d uv;
@@ -245,7 +192,7 @@ void CollisionChecker::init(const sensor_msgs::ImageConstPtr& image_msg, geometr
         ROS_INFO_STREAM("Collision checking took " << fp_ms.count() << " ms; accumulated time: " << total_duration.count() << " ms\n");
 
       if(collided)
-        //if(DEBUG)
+        if(DEBUG)
           ROS_INFO_STREAM("Collided! (" << num_collisions << ")\n");
 
       if(PUBLISH_DEPTH_IMAGE)

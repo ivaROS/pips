@@ -18,11 +18,9 @@ class CollisionChecker
    public :
         CollisionChecker(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg, geometry_msgs::TransformStamped& optical_transform, std::vector<cv::Point3d> co_points, bool gen_image);
         
-        void init(const sensor_msgs::ImageConstPtr& image_msg, geometry_msgs::TransformStamped& base_transform );
+        void init(const sensor_msgs::ImageConstPtr& image_msg);
         bool testCollision(double xyz[] );
-        void setBaseTransform(geometry_msgs::TransformStamped& base_transform);
-        bool testCollision(const Eigen::Vector3d origin_r);
-        double transformToOptical(double* xyz);
+
    private :
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;
@@ -30,7 +28,7 @@ class CollisionChecker
   ros::Publisher posepub_;
   image_geometry::PinholeCameraModel cam_model_;
 
-  Eigen::Affine3d base_to_optical_transform_, optical_transform_;
+  Eigen::Affine3d optical_transform_;
 
 
   std::vector<cv::Point3d> co_offsets_;
