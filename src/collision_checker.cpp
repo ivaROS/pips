@@ -26,7 +26,7 @@
 #define PUBLISH_DEPTH_IMAGE false
 #define DRAW_DEPTH_POINTS false
 #define MAX_RANGE 10
-#define DEBUG false
+#define DEBUG true
 
   CollisionChecker::CollisionChecker(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg, geometry_msgs::TransformStamped& base_optical_transform, std::vector<cv::Point3d> co_points, bool gen_image)
     :it_(nh_), co_offsets_(co_points), generate_image_(gen_image)
