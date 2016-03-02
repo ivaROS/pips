@@ -117,7 +117,8 @@ public:
           firstDepthImMsg_ = image_msg;
           firstDepthFrame_ = false;
           
-          cc_ = new CollisionChecker(image_msg, info_msg, depth_base_transform, co_offsets_, false);
+          cc_ = new CollisionChecker(depth_base_transform, co_offsets_, false);
+          cc_->setImage(image_msg, info_msg);
           
           ROS_INFO("Saved first depth frame");
 
