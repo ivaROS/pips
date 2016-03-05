@@ -47,7 +47,7 @@
   }
 
 
-  void CollisionChecker::setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
+  void CollisionChecker::setImage(const sensor_msgs::ImageConstPtr image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
   {
     if(DEBUG)
     std::cout << "[collision_checker] Setting new image" << std::endl;

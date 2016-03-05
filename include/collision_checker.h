@@ -18,7 +18,7 @@ class CollisionChecker
   public :
     CollisionChecker(geometry_msgs::TransformStamped& optical_transform, std::vector<cv::Point3d> co_points, bool gen_image);
         
-        void setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
+        void setImage(const sensor_msgs::ImageConstPtr image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
         bool testCollision(double xyz[] );
 
   private :
