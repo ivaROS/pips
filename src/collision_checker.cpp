@@ -55,7 +55,7 @@
     //Convert transform to Eigen
     optical_transform_ = tf2::transformToEigen(base_optical_transform);
 
-    ROS_WARN_STREAM("[collision_checker] Constructing collision checker; co_points size: " << co_points.size());
+    ROS_DEBUG_STREAM("[collision_checker] Constructing collision checker");
 
   }
 
@@ -171,7 +171,10 @@
     cv::Rect co_rect(topL, bottomR);
 
     //The following should be a more elegant way to take the collision outline and crop it to fit in the image
-    //cv::Rect co_rect = Rect(topL, bottomR) &= Rect(Point(0, 0), image_ref_->size());
+    //However, I would have to know which point was which. Rather than force an arbitrary order, a single-time call could create 2 points, one for topl, and one for bottomr r, that would be used in place of co_offsets_; that would also only require projecting 2 points, so no need for the loop.
+    //cv::Rect co_rect1 = cv::Rect(cv::Point2d(co_uv[0].x, co_uv.y), cv::Point2d(co_uv[, bottomR) &= cv::Rect(Point(0, 0), image_ref_->size());
+
+    //ROS_DEBUG_STREAM_THROTTLED(2, "[collision_checker] co_rect(current): " << co_rect << ", proposed: " << co_rect1);
 
     //The collision object rectangle is our ROI in the original image
     cv::Mat roi(image_ref_,co_rect);
@@ -188,8 +191,7 @@
     
     ROS_DEBUG_STREAM("[collision_checker] Collision checking took " << fp_ms.count() << " ms");
 
-    if(collided)
-        ROS_DEBUG_STREAM("[collision_checker] Collided! (" << num_collisions << ")\n");
+    ROS_DEBUG_STREAM_COND(collided, "[collision_checker] Collided! (" << num_collisions << ")");
 
     if(publish_image_)
     {
