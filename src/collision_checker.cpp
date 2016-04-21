@@ -55,7 +55,7 @@
     //Convert transform to Eigen
     optical_transform_ = tf2::transformToEigen(base_optical_transform);
 
-    ROS_DEBUG_STREAM("[collision_checker] Constructing collision checker" << std::endl);
+    ROS_WARN_STREAM("[collision_checker] Constructing collision checker; co_points size: " << co_points.size());
 
   }
 
