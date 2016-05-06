@@ -5,7 +5,6 @@
 <include file="$(find pips)/launch/draw_points.launch">
   <arg name="start_time" value="$(arg start_time)"/>
   <arg name="bagfile" value="$(arg bagfile)"/>
-    <arg name="type" value="trajectory_tester"/>
 </include>
 
 </launch>
