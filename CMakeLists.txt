@@ -46,7 +46,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 add_library(collision_checker src/collision_checker.cpp)
 
 ## Declare a cpp executable
-add_executable(draw_frames src/draw_frames.cpp)
 add_executable(trajectory_tester src/test_trajectory.cpp )
 
 
@@ -56,13 +55,6 @@ target_link_libraries(collision_checker
 
  )
 
-target_link_libraries(draw_frames
-  ${catkin_LIBRARIES}
-
-
-
- )
- 
  
 target_link_libraries(trajectory_tester
   ${catkin_LIBRARIES}
