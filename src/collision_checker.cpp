@@ -180,10 +180,17 @@
     cv::Mat roi(image_ref_,co_rect);
     
     //Check if any points in ROI are closer than collision object's depth
+/*
     cv::Mat collisions = (roi <= co_depth*scale_);
     int num_collisions = cv::countNonZero(collisions);
     bool collided = (num_collisions>0);
-    
+  */
+
+    double min_depth;
+
+    cv::minMaxLoc(roi, &min_depth, NULL, NULL, NULL);
+
+    bool collided = min_depth < co_depth*scale_;  
     //Calculate elapsed time for this computation
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> fp_ms = t2 - t1;
@@ -191,8 +198,10 @@
     
     ROS_DEBUG_STREAM("[collision_checker] Collision checking took " << fp_ms.count() << " ms");
 
-    ROS_DEBUG_STREAM_COND(collided, "[collision_checker] Collided! (" << num_collisions << ")");
+   // ROS_DEBUG_STREAM_COND(collided, "[collision_checker] Collided! (" << num_collisions << ")");
+    ROS_DEBUG_STREAM_COND(collided, "[collision_checker] Collided! Nearest world point: " << min_depth);
 
+/*
     if(publish_image_)
     {
       //Draw collision object on depth image and publish it
@@ -201,7 +210,7 @@
       depthpub_.publish(input_bridge_->toImageMsg());
 
     }
-    
+  */  
     return collided;
   }
 
