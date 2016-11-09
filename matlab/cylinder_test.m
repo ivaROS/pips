@@ -1,10 +1,13 @@
-Xc = [0.5,0,5];
+Xc = [-0.3,0,2]; %coordinates of robot origin in camera frame (right = x, down = y, out = z)
 
 r = .18;    %radius of robot
 height = .4;%height of robot
 
 dim = [640,480];    %[width,height] of image
 
+simulated_image = ones(dim(2),dim(1)) * Xc(3);
+
+%Default kinect calibration values used by ROS
 K = [575.8157348632812, 0.0, 314.5; 0.0, 575.8157348632812, 235.5; 0.0, 0.0, 1.0];
 
 h_squared = Xc(1)^2 + Xc(3)^2;
@@ -13,22 +16,33 @@ h = sqrt(h_squared);
 theta_c = atan2(Xc(1),Xc(3));
 theta_d = asin(r/h);
 
-Xt_l = [h*sin(theta_c - theta_d), Xc(2), h*cos(theta_c - theta_d)]';
-Xt_r = [h*sin(theta_c + theta_d), Xc(2), h*cos(theta_c + theta_d)]';
+Xt_lb = [h*sin(theta_c - theta_d), Xc(2), h*cos(theta_c - theta_d)]';
+Xt_rb = [h*sin(theta_c + theta_d), Xc(2), h*cos(theta_c + theta_d)]';
 
-U_l = Xt_l/Xt_l(3);
-U_r = Xt_r/Xt_r(3);
+Xt_lt = Xt_lb + [0,-height,0]';
 
-p_l = K * U_l;
-p_r = K * U_r;
+U_lb = Xt_lb/Xt_lb(3);
+U_rb = Xt_rb/Xt_rb(3);
+U_lt = Xt_lt/Xt_lt(3);
 
-p_l_int = max(0,floor(p_l));
-p_r_int = min(ceil(p_r),dim(1));
+p_lb = K * U_lb;
+p_rb = K * U_rb;
+p_lt = K * U_lt;
 
-p_reproj = p_l_int;
+p_l_int = max(1,floor(p_lb(1))); %remember to use 0 indexing in C
+p_r_int = min(ceil(p_rb(1)),dim(1));
 
+p_b_int = min(ceil(p_rb(2)),dim(2));
+p_t_int = max(1,floor(p_lt(2)));
 
-for p_x = p_l_int(1)+1:p_r_int(1)-1
+row_range = p_t_int:p_b_int;
+
+p_reproj = round(p_lb);
+
+simulated_image(row_range,p_l_int) = Xt_lb(3);
+simulated_image(row_range,p_r_int) = Xt_rb(3);
+
+for p_x = p_l_int+1:p_r_int-1
     
     p_reproj(1) = p_x; %coordinates of pixel we need to calculate depth for
     
@@ -55,6 +69,8 @@ for p_x = p_l_int(1)+1:p_r_int(1)-1
     %get depth for that pixel
     depth = xh(3);
     
-    
-
+    simulated_image(row_range,p_reproj(1)) = depth;
 end
+
+figure(1);
+imagesc(simulated_image);
