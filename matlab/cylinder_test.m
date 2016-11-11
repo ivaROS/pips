@@ -1,4 +1,4 @@
-Xc = [.6,.3,1.5]; %coordinates of hallucinated robot origin in camera frame (right = x, down = y, out = z)
+Xc = [-.3,.3,1.5]; %coordinates of hallucinated robot origin in camera frame (right = x, down = y, out = z)
 
 r = .18;    %radius of robot
 height = .4;%height of robot
@@ -35,19 +35,23 @@ p_rb = K * U_rb;
 p_lt = K * U_lt;
 p_rt = K * U_rt;
 
+p_lb_x = min(max(1,floor(p_lb(1))),dim(1)); %remember to use 0 indexing in C
+p_lb_y = max(min(dim(2),ceil(p_lb(2))),1);
+p_lb_ind = [p_lb_x; p_lb_y];
 
-p_l_int = max(1,floor(p_lb(1))); %remember to use 0 indexing in C
-p_r_int = min(ceil(p_rb(1)),dim(1));
+p_lt_ind = max([1;1],min(floor(p_lt(1:2)),dim'));
 
-p_b_int = min(ceil(p_rb(2)),dim(2));
-p_t_int = max(1,floor(p_lt(2)));
+p_rb_x = max(1,min(ceil(p_rb(1)),dim(1)));
+p_rb_y = max(min(dim(2),ceil(p_rb(2))),1);
+p_rb_ind = [p_rb_x; p_rb_y];
 
-row_range = p_t_int:p_b_int;
+p_rt_ind = max([1;1],min(ceil(p_rt(1:2)),dim'));
 
-simulated_image(row_range,p_l_int) = Xt_lb(3);
-simulated_image(row_range,p_r_int) = Xt_rb(3);
 
-for p_x = p_l_int+1:p_r_int-1
+simulated_image(p_lt_ind(2):p_lb_ind(2),p_lb_ind(1)) = Xt_lb(3);
+simulated_image(p_rt_ind(2):p_rb_ind(2),p_rb_ind(1)) = Xt_rb(3);
+
+for p_x = p_lb_ind(1)+1:p_rb_ind(1)-1
     
     %reprojecting x pixel coordinate at center of y coordinates to ray
     L = K\[p_x;K(2,3);1];
@@ -97,3 +101,4 @@ end
 
 figure(1);
 imagesc(simulated_image);
+colorbar()
