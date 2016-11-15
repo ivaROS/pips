@@ -36,9 +36,8 @@ class CollisionChecker
     
     std::shared_ptr<HallucinatedRobotModel> robot_model_;
     
-    std::vector<cv::Point3d> co_offsets_;
     bool publish_image_;
-    int scale_;
+    unsigned int scale_;
     
     cv::Mat image_,image_ref_;
     cv_bridge::CvImagePtr input_bridge_, output_bridge_;

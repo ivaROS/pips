@@ -1,6 +1,6 @@
+#include "collision_checker.h"
+
 #include <ros/ros.h>
-#include <iostream>     // std::cout
-#include <algorithm>    // std::min
 #include <image_transport/image_transport.h>
 #include <opencv/cv.h>
 #include <cv_bridge/cv_bridge.h>
@@ -18,8 +18,11 @@
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
+
 #include <chrono>
-#include "collision_checker.h"
+#include <iostream>     // std::cout
+#include <algorithm>    // std::min
+
 
 
 
@@ -41,7 +44,7 @@ class TestTrajectory
   tf::StampedTransform starting_frame_transform_,depth_starting_frame_transform_;
   tf2_ros::StaticTransformBroadcaster br;
   ros::Timer timer, depth_timer;
-  std::vector<cv::Point3d> co_offsets_;
+  std::shared_ptr<HallucinatedRobotModel> robot_model_;
   CollisionChecker* cc_;
 
 
@@ -67,19 +70,12 @@ public:
     synced_images->registerCallback(bind(&TestTrajectory::depthImageCb, this, _1, _2));
 
 
-    double radius = .25;
-    double height = .7;
-    double clearance = .05;
+    double radius = .178;
+    double height = .48;
+    double floor_tolerance = .03;
+    double safety_expansion = .02;
 
-    cv::Point3d topr(radius,-height,radius);
-    cv::Point3d topl(-radius,-height,radius);
-    cv::Point3d bottomr(radius,-clearance,radius);
-    cv::Point3d bottoml(-radius,-clearance,radius);
-
-
-    cv::Point3d offsets[] = {topr,topl,bottoml,bottomr};
-    std::vector<cv::Point3d> co_offsets(offsets, offsets + sizeof(offsets) / sizeof(cv::Point3d) );
-    co_offsets_ = co_offsets;
+    robot_model_ = std::make_shared<RectangularModel>(radius, height, safety_expansion, floor_tolerance);
   }
 
 
@@ -117,7 +113,7 @@ public:
           firstDepthImMsg_ = image_msg;
           firstDepthFrame_ = false;
           
-          cc_ = new CollisionChecker(depth_base_transform, co_offsets_, false);
+          cc_ = new CollisionChecker(depth_base_transform, robot_model_, false);
           cc_->setImage(image_msg, info_msg);
           
           ROS_INFO("Saved first depth frame");

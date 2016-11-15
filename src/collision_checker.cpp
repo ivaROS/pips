@@ -40,25 +40,9 @@
   Name: CollisionChecker::CollisionChecker
   Inputs:
     base_optical_transform: The transform from the base coordinate frame to the depth sensor's optical frame.
-    co_points: The points used to construct the collision object, represented as offsets from the base's origin in the base's coordinate frame (x: forward, y: left, z: up).
+    robot_model: The object that defines how the hallucinated robot is represented and that performs the actual collision comparison.
     pub_image: When enabled, the collision object's projection is added to the current depth image and published. Only enable when debugging- during normal usage far too many images would be published.
   */ 
-  CollisionChecker::CollisionChecker(geometry_msgs::TransformStamped& base_optical_transform, std::vector<cv::Point3d> co_points, bool pub_image)
-    :it_(nh_), co_offsets_(co_points), publish_image_(pub_image)
-  {
-
-    if(publish_image_)
-    {
-      //Create publisher with large queue due to sheer number of images produced
-      depthpub_ = it_.advertise("depth_image_out",2000);
-    }
-    
-    //Convert transform to Eigen
-    optical_transform_ = tf2::transformToEigen(base_optical_transform);
-
-    ROS_DEBUG_STREAM("[collision_checker] Constructing collision checker");
-
-  }
   
   CollisionChecker::CollisionChecker(geometry_msgs::TransformStamped& base_optical_transform, std::shared_ptr<HallucinatedRobotModel> model, bool pub_image) :
     it_(nh_), robot_model_(model), publish_image_(pub_image)
@@ -160,47 +144,6 @@
     //Convert datatype of coordinates
     cv::Point3d pt_cv(origin_d(0), origin_d(1), origin_d(2));
 
-    /*
-    cv::Point2d co_uv[4];
-    double co_depth;
-
-    for (int it = 0; it <4; ++it) {
-      //Add specified offsets to robot's base position
-      cv::Point3d addedpnt = pt_cv + co_offsets_[it];
-      
-      //Store the depth of the collision object
-      co_depth = addedpnt.z;
-      
-      //Project point to pixel coordinates
-      cv::Point2d uv = cam_model_.project3dToPixel(addedpnt);
-      //ROS_DEBUG("Coords: %f, %f", uv.x, uv.y);
-      co_uv[it] = uv;
-
-    }
-    
-
-    //Using the 4 points, construct a rectangle
-    double minXVal, maxXVal, minYVal,maxYVal;
-    minYVal = std::min(image_ref_.rows-1.0,std::max(0.0,std::min(co_uv[0].y,co_uv[1].y)));
-    minXVal = std::min(image_ref_.cols-1.0,std::max(0.0, std::min(co_uv[1].x,co_uv[2].x)));
-    maxYVal = std::max(0.0, std::min(image_ref_.rows-1.0, std::max(co_uv[2].y,co_uv[3].y)));
-    maxXVal = std::max(0.0, std::min(image_ref_.cols-1.0, std::max(co_uv[3].x,co_uv[0].x)));
-
-    cv::Point2d topL(minXVal, minYVal);
-    cv::Point2d bottomR(maxXVal, maxYVal);
-
-    cv::Rect co_rect(topL, bottomR);
-
-    //The following should be a more elegant way to take the collision outline and crop it to fit in the image
-    //However, I would have to know which point was which. Rather than force an arbitrary order, a single-time call could create 2 points, one for topl, and one for bottomr r, that would be used in place of co_offsets_; that would also only require projecting 2 points, so no need for the loop.
-    //cv::Rect co_rect1 = cv::Rect(cv::Point2d(co_uv[0].x, co_uv.y), cv::Point2d(co_uv[, bottomR) &= cv::Rect(Point(0, 0), image_ref_->size());
-
-    //ROS_DEBUG_STREAM_THROTTLED(2, "[collision_checker] co_rect(current): " << co_rect << ", proposed: " << co_rect1);
-
-    //The collision object rectangle is our ROI in the original image
-    cv::Mat roi(image_ref_,co_rect);
-      */
-    
     //Check if any points in ROI are closer than collision object's depth
 /*
     cv::Mat collisions = (roi <= co_depth*scale_);
@@ -209,14 +152,7 @@
   */
   
 
-/*
-    double min_depth;
 
-    cv::minMaxLoc(roi, &min_depth, NULL, NULL, NULL);
-
-    bool collided = min_depth < co_depth*scale_;  
-    
-    */
     
     
     bool collided = robot_model_->testCollision(pt_cv);
