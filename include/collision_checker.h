@@ -1,6 +1,9 @@
 #ifndef COLLISION_CHECKER_H
 #define COLLISION_CHECKER_H
 
+
+#include "rectangular_model.h"
+
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <opencv/cv.h>
@@ -16,7 +19,8 @@ class CollisionChecker
 
 
   public :
-    CollisionChecker(geometry_msgs::TransformStamped& optical_transform, std::vector<cv::Point3d> co_points, bool gen_image);
+    CollisionChecker(geometry_msgs::TransformStamped& optical_transform, std::vector<cv::Point3d> co_points, bool pub_image);
+    CollisionChecker(geometry_msgs::TransformStamped& optical_transform, std::shared_ptr<HallucinatedRobotModel> model, bool pub_image);
         
         void setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
         bool testCollision(double xyz[] );
@@ -29,7 +33,9 @@ class CollisionChecker
     image_geometry::PinholeCameraModel cam_model_;
   
     Eigen::Affine3d optical_transform_;
-  
+    
+    std::shared_ptr<HallucinatedRobotModel> robot_model_;
+    
     std::vector<cv::Point3d> co_offsets_;
     bool publish_image_;
     int scale_;

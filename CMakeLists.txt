@@ -45,11 +45,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 ## Declare the collision_checker library
 add_library(collision_checker src/collision_checker.cpp)
 
+add_library(robot_models src/rectangular_model.cpp)
+
 ## Declare a cpp executable
 add_executable(trajectory_tester src/test_trajectory.cpp )
 
 
 target_link_libraries(collision_checker
+  robot_models
   ${catkin_LIBRARIES}
 
 

@@ -19,6 +19,7 @@
 #include <climits>
 
 #include "collision_checker.h"
+#include "rectangular_model.h"
 
 #define MAX_RANGE 10    //Maximum expected range of sensor, used to fill unknowns (0's) in image
 #define SCALE_METERS 1
@@ -58,8 +59,27 @@
     ROS_DEBUG_STREAM("[collision_checker] Constructing collision checker");
 
   }
+  
+  CollisionChecker::CollisionChecker(geometry_msgs::TransformStamped& base_optical_transform, std::shared_ptr<HallucinatedRobotModel> model, bool pub_image) :
+    it_(nh_), robot_model_(model), publish_image_(pub_image)
+  {
+    if(publish_image_)
+      {
+        //Create publisher with large queue due to sheer number of images produced
+        depthpub_ = it_.advertise("depth_image_out",2000);
+      }
+      
+      //Convert transform to Eigen
+      optical_transform_ = tf2::transformToEigen(base_optical_transform);
 
+      ROS_DEBUG_STREAM("[collision_checker] Constructing collision checker");
 
+  
+  
+  }
+  
+  
+  
   /*
   Description: Sets the CollisionChecker's depth image and camera model. Called whenever there is a new image.
   Name: CollisionChecker::setImage
@@ -103,6 +123,7 @@
   */  
     //Reinitialize camera model with each image in case resolution has changed
     cam_model_.fromCameraInfo(info_msg);
+    robot_model_->updateModel(image_ref_, cam_model_, scale_);
 
   }
 
@@ -139,7 +160,7 @@
     //Convert datatype of coordinates
     cv::Point3d pt_cv(origin_d(0), origin_d(1), origin_d(2));
 
-    
+    /*
     cv::Point2d co_uv[4];
     double co_depth;
 
@@ -178,6 +199,7 @@
 
     //The collision object rectangle is our ROI in the original image
     cv::Mat roi(image_ref_,co_rect);
+      */
     
     //Check if any points in ROI are closer than collision object's depth
 /*
@@ -185,12 +207,20 @@
     int num_collisions = cv::countNonZero(collisions);
     bool collided = (num_collisions>0);
   */
+  
 
+/*
     double min_depth;
 
     cv::minMaxLoc(roi, &min_depth, NULL, NULL, NULL);
 
     bool collided = min_depth < co_depth*scale_;  
+    
+    */
+    
+    
+    bool collided = robot_model_->testCollision(pt_cv);
+    
     //Calculate elapsed time for this computation
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> fp_ms = t2 - t1;
@@ -199,18 +229,18 @@
     ROS_DEBUG_STREAM("[collision_checker] Collision checking took " << fp_ms.count() << " ms");
 
    // ROS_DEBUG_STREAM_COND(collided, "[collision_checker] Collided! (" << num_collisions << ")");
-    ROS_DEBUG_STREAM_COND(collided, "[collision_checker] Collided! Nearest world point: " << min_depth);
+    //ROS_DEBUG_STREAM_COND(collided, "[collision_checker] Collided! Nearest world point: " << min_depth);
 
-/*
-    if(publish_image_)
+
+    if(publish_image_ && depthpub_.getNumSubscribers() > 0)
     {
       //Draw collision object on depth image and publish it
-      collisions.convertTo(collisions,CV_32F,1000);
-      cv::rectangle(image, co_rect, co_depth*scale_, CV_FILLED);
+      //collisions.convertTo(collisions,CV_32F,1000);
+      //cv::rectangle(image, co_rect, co_depth*scale_, CV_FILLED);
       depthpub_.publish(input_bridge_->toImageMsg());
 
     }
-  */  
+  
     return collided;
   }
 
