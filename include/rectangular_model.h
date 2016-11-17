@@ -30,6 +30,7 @@ class HallucinatedRobotModel
     cv::Mat image_ref_;
     double robot_radius_, robot_height_, floor_tolerance_;
     double scale_;
+    bool show_im_=false;
 
 
 
