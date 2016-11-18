@@ -87,12 +87,14 @@
 
 
       /*Note: I should write my own matrix-matrix/matrix-scalar method that returns boolean as soon as condition satisfied*/
-      cv::Mat lCol = image_ref_.col(p_lt_ind.x).rowRange(p_lt_ind.y,p_lb_ind.y);
-      if(cv::countNonZero(lCol < Xt_lb.z) > 0)
+      cv::Mat lCol = cv::Mat(image_ref_,col);//image_ref_.col(p_lt_ind.x).rowRange(p_lt_ind.y,p_lb_ind.y);
+      
+      viz.col(p_lt_ind.x).rowRange(p_lt_ind.y,p_lb_ind.y) = Xt_lb.z*scale_;
+      //std::cout << "lcol value = " << X_h.z*scale_ "\n";
+      if(cv::countNonZero(lCol < Xt_lb.z*scale_) > 0)
       {
         if(show_im_)
         {
-            viz.col(p_lt_ind.x).rowRange(p_lt_ind.y,p_lb_ind.y) = Xt_lb.z;
             collided = true;
         }
         else
@@ -101,12 +103,12 @@
         }
       }
       
-      
+      viz.col(p_rt_ind.x).rowRange(p_rt_ind.y,p_rb_ind.y) = Xt_rb.z*scale_;
       if(cv::countNonZero((cv::Mat)image_ref_.col(p_rt_ind.x).rowRange(p_rt_ind.y,p_rb_ind.y) < Xt_rb.z*scale_) > 0)
       {
         if(show_im_)
         {
-            viz.col(p_rt_ind.x).rowRange(p_rt_ind.y,p_rb_ind.y) = Xt_rb.z*scale_;
+
             collided = true;
         }
         else
@@ -158,11 +160,16 @@
       cv::Point2d p_xht =  cam_model_.project3dToPixel(X_ht);
       
       cv::Rect column = getColumn(image_ref_, p_xht,p_xhb);
+      
+      if(show_im_)
+      {
+            cv::Mat(viz,column) = X_h.z*scale_;
+      }
+      
       if(cv::countNonZero(cv::Mat(image_ref_,column) < X_h.z*scale_)>0)
       {
         if(show_im_)
         {
-            cv::Mat(viz,column) = X_h.z*scale_;
             collided = true;
         }
         else
@@ -182,7 +189,7 @@
       cv::convertScaleAbs(viz, viz, 255 / max);
       
       cv::imshow("Visualization", viz);
-      cv::waitKey(30);
+      cv::waitKey(0);
     }
     return collided;
   }
