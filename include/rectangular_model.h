@@ -4,11 +4,15 @@
 
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
-#include <opencv/cv.h>
+//#include <opencv/cv.h>
 #include <Eigen/Eigen>
 #include <image_transport/image_transport.h>
 #include <image_geometry/pinhole_camera_model.h>
 #include <cv_bridge/cv_bridge.h>
+
+#include <opencv2/core/core.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
 
 class HallucinatedRobotModel
 {
@@ -21,6 +25,18 @@ class HallucinatedRobotModel
       image_ref_ = image;
       cam_model_ = cam_model;
       scale_ = scale;
+      
+      if(show_im_)
+      {
+        double min;
+        double max;
+        cv::minMaxIdx(image_ref_, &min, &max);
+        cv::Mat adjIm;
+        cv::convertScaleAbs(image_ref_, adjIm, 255 / max);
+        
+        cv::imshow("Original image", adjIm);
+        cv::waitKey(30);
+      }
     }
 
     
@@ -30,7 +46,7 @@ class HallucinatedRobotModel
     cv::Mat image_ref_;
     double robot_radius_, robot_height_, floor_tolerance_;
     double scale_;
-    bool show_im_=false;
+    bool show_im_=true;
 
 
 
@@ -49,6 +65,8 @@ class RectangularModel : public HallucinatedRobotModel
 
 class CylindricalModel : public HallucinatedRobotModel
 {
+    private:
+    cv::Rect getColumn(const cv::Mat& image, const cv::Point2d& top, const cv::Point2d& bottom);
     public:
     CylindricalModel(double radius, double height, double safety_expansion, double floor_tolerance);
     bool testCollision(const cv::Point3d pt);

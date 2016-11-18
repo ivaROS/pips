@@ -3,7 +3,14 @@
 
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
-#include <opencv/cv.h>
+
+//#include <opencv/cv.h>
+
+#include <opencv2/core/core.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
+
+
 #include <Eigen/Eigen>
 #include <image_transport/image_transport.h>
 #include <image_geometry/pinhole_camera_model.h>
@@ -21,141 +28,183 @@
   // Initially, will use the model, but will likely switch over in the future.
   bool CylindricalModel::testCollision(const cv::Point3d pt)
   {
-    double h_squared = pt.x*pt.x + pt.z*pt.z;
-    double h = std::sqrt(h_squared);
-    
-    double theta_c = std::atan2(pt.x,pt.z);
-    double theta_d = std::asin(robot_radius_/h);
-    
-    cv::Point3d Xt_lb(h*std::sin(theta_c - theta_d), pt.y+floor_tolerance_, h*std::cos(theta_c - theta_d));
-    cv::Point3d Xt_rb(h*std::sin(theta_c + theta_d), pt.y+floor_tolerance_, h*std::cos(theta_c + theta_d));
-
-    cv::Point3d Xt_lt = Xt_lb + cv::Point3d(0,-robot_height_,0);
-    cv::Point3d Xt_rt = Xt_rb + cv::Point3d(0,-robot_height_,0);
-
-    cv::Point2d p_lb = cam_model_.project3dToPixel(Xt_lb);
-    cv::Point2d p_rb = cam_model_.project3dToPixel(Xt_rb);
-    cv::Point2d p_lt = cam_model_.project3dToPixel(Xt_lt);
-    cv::Point2d p_rt = cam_model_.project3dToPixel(Xt_rt);
-
-    unsigned int p_lb_x = std::min(std::max(0,(int)std::floor(p_lb.x)),image_ref_.cols-1);
-    unsigned int p_lb_y = std::max(std::min(image_ref_.rows-1,(int)std::ceil(p_lb.y)),0);
-    cv::Point2i  p_lb_ind(p_lb_x, p_lb_y);
-
-    unsigned int p_lt_x = std::max(0,std::min((int)floor(p_lt.x),image_ref_.cols-1));
-    unsigned int p_lt_y = std::max(0,std::min((int)floor(p_lt.y),image_ref_.rows-1));
-    cv::Point2i  p_lt_ind(p_lt_x, p_lt_y);
-
-    unsigned int p_rb_x = std::max(0,std::min((int)ceil(p_rb.x),image_ref_.cols-1));
-    unsigned int p_rb_y = std::max(std::min(image_ref_.rows,(int)ceil(p_rb.y)),1);
-    cv::Point2i  p_rb_ind(p_rb_x, p_rb_y);
-
-    unsigned int p_rt_x = std::max(0,std::min((int)ceil(p_rt.x),image_ref_.cols-1));
-    unsigned int p_rt_y = std::max(0,std::min((int)ceil(p_rt.y),image_ref_.rows-1));
-    cv::Point2i  p_rt_ind(p_rt_x, p_rt_y);
-    
     cv::Mat viz;
     if(show_im_)
     {
         viz = image_ref_.clone();
     }
+    bool collided = false;
     
+    unsigned int left = 0;
+    unsigned int right = image_ref_.cols;
     
-    /*    
-    simulated_image(p_lt_ind(2):p_lb_ind(2),p_lb_ind(1)) = Xt_lb(3);
-    simulated_image(p_rt_ind(2):p_rb_ind(2),p_rb_ind(1)) = Xt_rb(3);
-    */
+    double h_squared = pt.x*pt.x + pt.z*pt.z;
+    double h = std::sqrt(h_squared);
     
-    /*Note: I should write my own matrix-matrix/matrix-scalar method that returns boolean as soon as condition satisfied*/
-    cv::Mat lCol = image_ref_.col(p_lt_ind.x).rowRange(p_lt_ind.y,p_lb_ind.y);
-    if(cv::countNonZero(lCol < Xt_lb.z) > 0)
+    // We only calculate the actual side borders of the robot if it is far enough away that they could be seen
+    if(h > robot_radius_)
     {
+      
+      double theta_c = std::atan2(pt.x,pt.z);
+      double theta_d = std::asin(robot_radius_/h);
+      
+      cv::Point3d Xt_lb(h*std::sin(theta_c - theta_d), pt.y+floor_tolerance_, h*std::cos(theta_c - theta_d));
+      cv::Point3d Xt_rb(h*std::sin(theta_c + theta_d), pt.y+floor_tolerance_, h*std::cos(theta_c + theta_d));
+
+      cv::Point3d Xt_lt = Xt_lb + cv::Point3d(0,-robot_height_,0);
+      cv::Point3d Xt_rt = Xt_rb + cv::Point3d(0,-robot_height_,0);
+
+      cv::Point2d p_lb = cam_model_.project3dToPixel(Xt_lb);
+      cv::Point2d p_rb = cam_model_.project3dToPixel(Xt_rb);
+      cv::Point2d p_lt = cam_model_.project3dToPixel(Xt_lt);
+      cv::Point2d p_rt = cam_model_.project3dToPixel(Xt_rt);
+      
+      std::cout << "pt= " << pt << "\nh_squared= " << h_squared << "\nh= " << h << "\ntheta_c= " << theta_c << "\ntheta_d= " << theta_d << "\nXt_lb= " << Xt_lb << "\nXt_rb= " << Xt_rb << "\n";
+
+      unsigned int p_lb_x = std::min(std::max(0,(int)std::floor(p_lb.x)),image_ref_.cols-1);
+      unsigned int p_lb_y = std::max(std::min(image_ref_.rows-1,(int)std::ceil(p_lb.y)),0);
+      cv::Point2i  p_lb_ind(p_lb_x, p_lb_y);
+
+      unsigned int p_lt_x = std::max(0,std::min((int)floor(p_lt.x),image_ref_.cols-1));
+      unsigned int p_lt_y = std::max(0,std::min((int)floor(p_lt.y),image_ref_.rows-1));
+      cv::Point2i  p_lt_ind(p_lt_x, p_lt_y);
+
+      unsigned int p_rb_x = std::max(0,std::min((int)ceil(p_rb.x),image_ref_.cols-1));
+      unsigned int p_rb_y = std::max(std::min(image_ref_.rows,(int)ceil(p_rb.y)),1);
+      cv::Point2i  p_rb_ind(p_rb_x, p_rb_y);
+
+      unsigned int p_rt_x = std::max(0,std::min((int)ceil(p_rt.x),image_ref_.cols-1));
+      unsigned int p_rt_y = std::max(0,std::min((int)ceil(p_rt.y),image_ref_.rows-1));
+      cv::Point2i  p_rt_ind(p_rt_x, p_rt_y);
+      
+      cv::Rect col = getColumn(image_ref_,p_lt,p_lb);
+      
+      std::cout << "p_lb = " << p_lb << ", p_lt = " << p_lt << "\noriginal method:\np_lb_ind=" << p_lb_ind << "\np_lt_ind=" << p_lt_ind << "\nnew method:\n" << col << "\n";
+      
+      left = p_lb_ind.x + 1;
+      right = p_rb_ind.x - 1;
+      
+
+
+      /*Note: I should write my own matrix-matrix/matrix-scalar method that returns boolean as soon as condition satisfied*/
+      cv::Mat lCol = image_ref_.col(p_lt_ind.x).rowRange(p_lt_ind.y,p_lb_ind.y);
+      if(cv::countNonZero(lCol < Xt_lb.z) > 0)
+      {
         if(show_im_)
         {
             viz.col(p_lt_ind.x).rowRange(p_lt_ind.y,p_lb_ind.y) = Xt_lb.z;
+            collided = true;
         }
         else
         {
-            return false;
+            return true;
         }
-    }
-    
-    
-    if(cv::countNonZero((cv::Mat)image_ref_.col(p_rt_ind.x).rowRange(p_rt_ind.y,p_rb_ind.y) < Xt_rb.z*scale_) > 0)
-    {
+      }
+      
+      
+      if(cv::countNonZero((cv::Mat)image_ref_.col(p_rt_ind.x).rowRange(p_rt_ind.y,p_rb_ind.y) < Xt_rb.z*scale_) > 0)
+      {
         if(show_im_)
         {
             viz.col(p_rt_ind.x).rowRange(p_rt_ind.y,p_rb_ind.y) = Xt_rb.z*scale_;
+            collided = true;
         }
         else
         {
-            return false;
+            return true;
         }
+      }
     }
 
 
-for(unsigned int p_x = p_lb_ind.x+1; p_x < p_rb_ind.x-1; ++p_x)
-{
-    
-    /*%reprojecting x pixel coordinate at center of y coordinates to ray
-    L = K\[p_x;K(2,3);1];
-    %%Equivalent to the below 
-    %L = K\p_reproj;    %reprojecting pixel to ray
-    %L(2) = 0;
-    */
-    
-    cv::Point3d ray = cam_model_.projectPixelTo3dRay(cv::Point2d(p_x,pt.y));
-    //ray.y = 0;
-    
-    
-    //equations for intersection of ray and circle
-    double a = ray.x*ray.x + ray.z*ray.z;
-    double b = -2*(ray.x*pt.x + ray.z*pt.z);
-    double c = h_squared - robot_radius_*robot_radius_;
-    
-    ROS_ASSERT_MSG(b*b - 4*a*c >=0, "Complex solution for ray-circle intersection!");
-
-    /*
-    Solve for parameter t that yields intersection
-    Note that we only care about the more distant intersection (the + solution)
-    */
-    double t = (-b + std::sqrt(b*b-4*a*c))/(2*a);
-    
-    //Get world coordinates of intersection
-    cv::Point3d X_h = ray*t;
-    
-    //for bottom:
-    cv::Point3d X_hb = X_h + cv::Point3d(0,floor_tolerance_,0);
-    
-    //for top:
-    cv::Point3d X_ht = X_h + cv::Point3d(0,robot_height_,0);
-    
-    //project back to pixels to get y coordinate
-    cv::Point2d p_xhb =  cam_model_.project3dToPixel(X_hb);
-    cv::Point2d p_xht =  cam_model_.project3dToPixel(X_ht);
-    
-    cv::Rect column((int)std::floor(p_xht.x),(int)std::floor(p_xht.y),1,(int)std::ceil(p_xhb.y)-(int)std::floor(p_xht.y)); //need to make sure that this is equivalent to what I actually want. One advantage of using a Rect is that matrix bounds are automatically handled- False! they are not handled, unless I find union with a rect of the size of the image. 
-    
-    //cv::Mat column = image_ref_.col(p_xhb.x).rowRange(std::max(1,(int)std::floor(p_xht.y)),std::min(image_ref_.rows-1,(int)std::ceil(p_xhb.y)));
-    
-    if(cv::countNonZero(cv::Mat(image_ref_,column) < X_h.z*scale_)>0)
+    for(unsigned int p_x = left; p_x < right; ++p_x)
     {
+        
+      /*%reprojecting x pixel coordinate at center of y coordinates to ray
+      L = K\[p_x;K(2,3);1];
+      %%Equivalent to the below 
+      %L = K\p_reproj;    %reprojecting pixel to ray
+      %L(2) = 0;
+      */
+      
+      cv::Point3d ray = cam_model_.projectPixelTo3dRay(cv::Point2d(p_x,pt.y));
+      //ray.y = 0;
+      
+      
+      //equations for intersection of ray and circle
+      double a = ray.x*ray.x + ray.z*ray.z;
+      double b = -2*(ray.x*pt.x + ray.z*pt.z);
+      double c = h_squared - robot_radius_*robot_radius_;
+      
+      ROS_ASSERT_MSG(b*b - 4*a*c >=0, "Complex solution for ray-circle intersection!");
+
+      /*
+      Solve for parameter t that yields intersection
+      Note that we only care about the more distant intersection (the + solution)
+      */
+      double t = (-b + std::sqrt(b*b-4*a*c))/(2*a);
+      
+      //Get world coordinates of intersection
+      cv::Point3d X_h = ray*t;
+      
+      //for bottom:
+      cv::Point3d X_hb = X_h + cv::Point3d(0,floor_tolerance_,0);
+      
+      //for top:
+      cv::Point3d X_ht = X_h + cv::Point3d(0,robot_height_,0);
+      
+      //project back to pixels to get y coordinate
+      cv::Point2d p_xhb =  cam_model_.project3dToPixel(X_hb);
+      cv::Point2d p_xht =  cam_model_.project3dToPixel(X_ht);
+      
+      cv::Rect column = getColumn(image_ref_, p_xht,p_xhb);
+      if(cv::countNonZero(cv::Mat(image_ref_,column) < X_h.z*scale_)>0)
+      {
         if(show_im_)
         {
             cv::Mat(viz,column) = X_h.z*scale_;
+            collided = true;
         }
         else
         {
-            return false;
+            return true;
         }
+      }
+      
     }
     
-   } 
-   
-   return true;
+    if(show_im_)
+    {
+      double min;
+      double max;
+      cv::minMaxIdx(viz, &min, &max);
+      cv::Mat adjMap;
+      cv::convertScaleAbs(viz, viz, 255 / max);
+      
+      cv::imshow("Visualization", viz);
+      cv::waitKey(30);
+    }
+    return collided;
   }
 
-
+cv::Rect CylindricalModel::getColumn(const cv::Mat& image, const cv::Point2d& top, const cv::Point2d& bottom)
+{
+    //By forming a Rect in this way, doesn't matter which point is the top and which is the bottom.
+    cv::Rect_<double> r(top,bottom);
+    
+    int x = std::floor(r.tl().x);
+    int y = std::floor(r.tl().y);
+    int width = 1;
+    int height = std::ceil(r.br().y)-y;
+    
+    cv::Rect column(x,y,width,height);
+    cv::Rect imageBounds(0,0,image.cols,image.rows);
+    cv::Rect bounded = column & imageBounds;
+    
+    std::cout << "Input: \ntop = " << top << "\nbottom = " << bottom << "\noutput: column=" << column << ", imageBounds= " << imageBounds << ", bounded= " << bounded << "\n";
+    
+    return bounded;
+}
 
   
 RectangularModel::RectangularModel(double radius, double height, double safety_expansion, double floor_tolerance)
