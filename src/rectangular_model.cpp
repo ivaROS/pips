@@ -48,11 +48,14 @@
       double theta_c = std::atan2(pt.x,pt.z);
       double theta_d = std::asin(robot_radius_/h);
       
-      cv::Point3d Xt_lb(h*std::sin(theta_c - theta_d), pt.y+floor_tolerance_, h*std::cos(theta_c - theta_d));
-      cv::Point3d Xt_rb(h*std::sin(theta_c + theta_d), pt.y+floor_tolerance_, h*std::cos(theta_c + theta_d));
+      cv::Point3d Xc_l(h*std::sin(theta_c - theta_d), pt.y, h*std::cos(theta_c - theta_d));
+      cv::Point3d Xc_r(h*std::sin(theta_c + theta_d), pt.y, h*std::cos(theta_c + theta_d));
 
-      cv::Point3d Xt_lt = Xt_lb + cv::Point3d(0,-robot_height_,0);
-      cv::Point3d Xt_rt = Xt_rb + cv::Point3d(0,-robot_height_,0);
+      cv::Point3d Xt_lb = Xc_l + cv::Point3d(0,-floor_tolerance_,0);
+      cv::Point3d Xt_rb = Xc_r + cv::Point3d(0,-floor_tolerance_,0);
+
+      cv::Point3d Xt_lt = Xc_l + cv::Point3d(0,-robot_height_,0);
+      cv::Point3d Xt_rt = Xc_r + cv::Point3d(0,-robot_height_,0);
 
       cv::Point2d p_lb = cam_model_.project3dToPixel(Xt_lb);
       cv::Point2d p_rb = cam_model_.project3dToPixel(Xt_rb);
@@ -81,40 +84,62 @@
       
       std::cout << "p_lb = " << p_lb << ", p_lt = " << p_lt << "\noriginal method:\np_lb_ind=" << p_lb_ind << "\np_lt_ind=" << p_lt_ind << "\nnew method:\n" << col << "\n";
       
-      left = p_lb_ind.x + 1;
-      right = p_rb_ind.x - 1;
+      col = getColumn(image_ref_,p_rt,p_rb);
+      std::cout << "p_rb = " << p_rb << ", p_rt = " << p_rt << "\noriginal method:\np_rb_ind=" << p_rb_ind << "\np_rt_ind=" << p_rt_ind << "\nnew method:\n" << col << "\n";
       
-
-
-      /*Note: I should write my own matrix-matrix/matrix-scalar method that returns boolean as soon as condition satisfied*/
-      cv::Mat lCol = cv::Mat(image_ref_,col);//image_ref_.col(p_lt_ind.x).rowRange(p_lt_ind.y,p_lb_ind.y);
-      
-      viz.col(p_lt_ind.x).rowRange(p_lt_ind.y,p_lb_ind.y) = Xt_lb.z*scale_;
-      //std::cout << "lcol value = " << X_h.z*scale_ "\n";
-      if(cv::countNonZero(lCol < Xt_lb.z*scale_) > 0)
+      if(p_lb.x > 0)
       {
+        left = p_lb_ind.x + 1;
+        cv::Rect col = getColumn(image_ref_,p_lt,p_lb);
+        double depth = Xt_lb.z*scale_;
+
+        /*Note: I should write my own matrix-matrix/matrix-scalar method that returns boolean as soon as condition satisfied*/
+
         if(show_im_)
         {
-            collided = true;
+          cv::Mat(viz,col) = depth;
         }
-        else
+        //std::cout << "lcol value = " << X_h.z*scale_ "\n";
+        if(cv::countNonZero(cv::Mat(image_ref_,col) < depth) > 0)
         {
-            return true;
+          if(show_im_)
+          {
+              collided = true;
+          }
+          else
+          {
+              return true;
+          }
         }
+        
       }
       
-      viz.col(p_rt_ind.x).rowRange(p_rt_ind.y,p_rb_ind.y) = Xt_rb.z*scale_;
-      if(cv::countNonZero((cv::Mat)image_ref_.col(p_rt_ind.x).rowRange(p_rt_ind.y,p_rb_ind.y) < Xt_rb.z*scale_) > 0)
+      
+      //Right column
+      if(p_rb.x < image_ref_.cols-1)
       {
+        right = p_rb_ind.x - 1;
+        cv::Rect col = getColumn(image_ref_,p_rt,p_rb);
+        double depth = Xt_rb.z*scale_;
         if(show_im_)
         {
-
-            collided = true;
+          cv::Mat(viz,col) = depth;
         }
-        else
+        //viz.col(p_rt_ind.x).rowRange(p_rt_ind.y,p_rb_ind.y) = Xt_rb.z*scale_;
+        if(cv::countNonZero(cv::Mat(image_ref_,col) < depth) > 0)
         {
-            return true;
+          if(show_im_)
+          {
+
+              collided = true;
+          }
+          else
+          {
+              return true;
+          }
         }
+        
+
       }
     }
 
@@ -148,25 +173,26 @@
       
       //Get world coordinates of intersection
       cv::Point3d X_h = ray*t;
+      X_h.y = pt.y;
       
       //for bottom:
-      cv::Point3d X_hb = X_h + cv::Point3d(0,floor_tolerance_,0);
+      cv::Point3d X_hb = X_h + cv::Point3d(0,-floor_tolerance_,0);
       
       //for top:
-      cv::Point3d X_ht = X_h + cv::Point3d(0,robot_height_,0);
+      cv::Point3d X_ht = X_h + cv::Point3d(0,-robot_height_,0);
       
       //project back to pixels to get y coordinate
       cv::Point2d p_xhb =  cam_model_.project3dToPixel(X_hb);
       cv::Point2d p_xht =  cam_model_.project3dToPixel(X_ht);
       
       cv::Rect column = getColumn(image_ref_, p_xht,p_xhb);
-      
+      double depth = X_h.z*scale_;
       if(show_im_)
       {
-            cv::Mat(viz,column) = X_h.z*scale_;
+            cv::Mat(viz,column) = depth;
       }
       
-      if(cv::countNonZero(cv::Mat(image_ref_,column) < X_h.z*scale_)>0)
+      if(cv::countNonZero(cv::Mat(image_ref_,column) < depth)>0)
       {
         if(show_im_)
         {
@@ -190,6 +216,7 @@
       
       cv::imshow("Visualization", viz);
       cv::waitKey(0);
+      //return false;
     }
     return collided;
   }
@@ -199,16 +226,17 @@ cv::Rect CylindricalModel::getColumn(const cv::Mat& image, const cv::Point2d& to
     //By forming a Rect in this way, doesn't matter which point is the top and which is the bottom.
     cv::Rect_<double> r(top,bottom);
     
-    int x = std::floor(r.tl().x);
-    int y = std::floor(r.tl().y);
+    int x = std::round(r.tl().x);
+    int y = std::round(r.tl().y);
     int width = 1;
-    int height = std::ceil(r.br().y)-y;
+    int height = std::round(r.br().y)-y;
     
     cv::Rect column(x,y,width,height);
     cv::Rect imageBounds(0,0,image.cols,image.rows);
     cv::Rect bounded = column & imageBounds;
     
-    std::cout << "Input: \ntop = " << top << "\nbottom = " << bottom << "\noutput: column=" << column << ", imageBounds= " << imageBounds << ", bounded= " << bounded << "\n";
+
+    std::cout << "Col = " << r << ", rect=" << column << ", bounded= " << bounded << "\n";
     
     return bounded;
 }

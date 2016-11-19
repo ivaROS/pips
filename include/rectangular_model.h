@@ -35,7 +35,7 @@ class HallucinatedRobotModel
         cv::convertScaleAbs(image_ref_, adjIm, 255 / max);
         
         cv::imshow("Original image", adjIm);
-        cv::waitKey(30);
+        cv::waitKey(1);
       }
     }
 
