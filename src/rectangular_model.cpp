@@ -16,6 +16,9 @@
 #include <image_geometry/pinhole_camera_model.h>
 #include <cv_bridge/cv_bridge.h>
 
+#include <iomanip>      // std::setprecision
+
+
   CylindricalModel::CylindricalModel(double radius, double height, double safety_expansion, double floor_tolerance)
   {
       robot_radius_ = radius + safety_expansion;
@@ -62,7 +65,7 @@
       cv::Point2d p_lt = cam_model_.project3dToPixel(Xt_lt);
       cv::Point2d p_rt = cam_model_.project3dToPixel(Xt_rt);
       
-      std::cout << "pt= " << pt << "\nh_squared= " << h_squared << "\nh= " << h << "\ntheta_c= " << theta_c << "\ntheta_d= " << theta_d << "\nXt_lb= " << Xt_lb << "\nXt_rb= " << Xt_rb << "\n";
+      //std::cout << "pt= " << pt << "\nh_squared= " << h_squared << "\nh= " << h << "\ntheta_c= " << theta_c << "\ntheta_d= " << theta_d << "\nXt_lb= " << Xt_lb << "\nXt_rb= " << Xt_rb << "\n";
 
       unsigned int p_lb_x = std::min(std::max(0,(int)std::floor(p_lb.x)),image_ref_.cols-1);
       unsigned int p_lb_y = std::max(std::min(image_ref_.rows-1,(int)std::ceil(p_lb.y)),0);
@@ -82,10 +85,10 @@
       
       cv::Rect col = getColumn(image_ref_,p_lt,p_lb);
       
-      std::cout << "p_lb = " << p_lb << ", p_lt = " << p_lt << "\noriginal method:\np_lb_ind=" << p_lb_ind << "\np_lt_ind=" << p_lt_ind << "\nnew method:\n" << col << "\n";
+      //std::cout << "p_lb = " << p_lb << ", p_lt = " << p_lt << "\noriginal method:\np_lb_ind=" << p_lb_ind << "\np_lt_ind=" << p_lt_ind << "\nnew method:\n" << col << "\n";
       
       col = getColumn(image_ref_,p_rt,p_rb);
-      std::cout << "p_rb = " << p_rb << ", p_rt = " << p_rt << "\noriginal method:\np_rb_ind=" << p_rb_ind << "\np_rt_ind=" << p_rt_ind << "\nnew method:\n" << col << "\n";
+      //std::cout << "p_rb = " << p_rb << ", p_rt = " << p_rt << "\noriginal method:\np_rb_ind=" << p_rb_ind << "\np_rt_ind=" << p_rt_ind << "\nnew method:\n" << col << "\n";
       
       if(p_lb.x > 0)
       {
@@ -226,17 +229,17 @@ cv::Rect CylindricalModel::getColumn(const cv::Mat& image, const cv::Point2d& to
     //By forming a Rect in this way, doesn't matter which point is the top and which is the bottom.
     cv::Rect_<double> r(top,bottom);
     
-    int x = std::round(r.tl().x);
-    int y = std::round(r.tl().y);
+    int x = r.tl().x + .00000000001;  // Add a tiny number to handle cases where the process of projecting to ray, finding intersection, and projecting back to the image plane introduces a tiny numerical error, apparently only with smaller values that are odd. The added value will never push the number to the next integer value but is much larger than any error seen so far
+    int y = std::floor(r.tl().y);
     int width = 1;
-    int height = std::round(r.br().y)-y;
+    int height = std::ceil(r.br().y)-y + 1; //ROI's from rectangles are noninclusive on the right/bottom sides, so need to add 1 to include the bottom row
     
     cv::Rect column(x,y,width,height);
     cv::Rect imageBounds(0,0,image.cols,image.rows);
     cv::Rect bounded = column & imageBounds;
-    
 
-    std::cout << "Col = " << r << ", rect=" << column << ", bounded= " << bounded << "\n";
+    
+    //std::cout << std::setprecision(16) << "top = " << top << ", bottom = " << bottom << ", Col = " << r << "tl: " << r.tl() << " br: " << r.br() << ", rect=" << column << ", bounded= " << bounded << "\n"; // Debugging printout to troubleshoot incorrect x values for columns. The 'magic number' added above resolved the problem.
     
     return bounded;
 }
