@@ -24,6 +24,7 @@ class CollisionChecker
         
         void setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
         bool testCollision(double xyz[] );
+        cv::Mat generateDepthImage(double xyz[] );
 
   private :
     ros::NodeHandle nh_;

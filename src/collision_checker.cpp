@@ -184,6 +184,22 @@
   
     return collided;
   }
+  
+  cv::Mat CollisionChecker::generateDepthImage(double xyz[])
+  {
+    //Convert coordinates to Eigen Vector
+    Eigen::Map<const Eigen::Vector3d> origin_r(xyz);
+    
+    //Transform coordinates of robot base into camera's optical frame
+    Eigen::Vector3d origin_d = optical_transform_*origin_r;
+    //std::cout << "point (optical): " << origin_d << std::endl;
+
+    //Convert datatype of coordinates
+    cv::Point3d pt_cv(origin_d(0), origin_d(1), origin_d(2));
+
+    return robot_model_->generateHallucinatedRobot(pt_cv);
+    
+  }
 
 
 
