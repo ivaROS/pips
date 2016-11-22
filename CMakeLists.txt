@@ -24,7 +24,7 @@ find_package(Eigen3 REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIR}
-  LIBRARIES collision_checker
+  LIBRARIES collision_checker robot_models
   CATKIN_DEPENDS image_geometry cv_bridge
   DEPENDS Eigen3 
 )
