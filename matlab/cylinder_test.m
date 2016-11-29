@@ -1,4 +1,4 @@
-Xc = [-.3,.3,1.5]; %coordinates of hallucinated robot origin in camera frame (right = x, down = y, out = z)
+Xc = [.3,.2,1]'; %coordinates of hallucinated robot origin in camera frame (right = x, down = y, out = z)
 
 robot_radius = .178;    %radius of robot
 robot_height = .48;%height of robot
@@ -22,8 +22,8 @@ if(h > robot_radius)
     theta_c = atan2(Xc(1),Xc(3));
     theta_d = asin(robot_radius/h);
 
-    Xt_lb = [h*sin(theta_c - theta_d), Xc(2)-floor_tolerance, h*cos(theta_c - theta_d)]';
-    Xt_rb = [h*sin(theta_c + theta_d), Xc(2)-floor_tolerance, h*cos(theta_c + theta_d)]';
+    Xt_lb = [h*sin(theta_c - theta_d), Xc(2)-floor_tolerance, h*cos(theta_c - theta_d)]'
+    Xt_rb = [h*sin(theta_c + theta_d), Xc(2)-floor_tolerance, h*cos(theta_c + theta_d)]'
 
     Xt_lt = Xt_lb + [0,-robot_height+floor_tolerance,0]';
     Xt_rt = Xt_rb + [0,-robot_height+floor_tolerance,0]';
@@ -113,3 +113,19 @@ end
 figure(1);
 imagesc(simulated_image);
 colorbar()
+
+figure(2);
+
+X0 = [0;0;0];
+pointList = [X0, Xt_lb, Xc, Xt_rb, X0];
+
+hold on
+th = 0:pi/50:2*pi;
+xunit = robot_radius * cos(th) + Xc(1);
+yunit = robot_radius * sin(th) + Xc(3);
+h = plot(xunit, yunit);
+
+plot(pointList(1,:),pointList(3,:));
+hold off
+
+axis equal
