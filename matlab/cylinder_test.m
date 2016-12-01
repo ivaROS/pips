@@ -18,12 +18,14 @@ left = 0;
 right = dim(1);
 
 if(h > robot_radius)
+    
+    tangentDist = sqrt(h_squared - robot_radius^2);
 
     theta_c = atan2(Xc(1),Xc(3));
     theta_d = asin(robot_radius/h);
 
-    Xt_lb = [h*sin(theta_c - theta_d), Xc(2)-floor_tolerance, h*cos(theta_c - theta_d)]'
-    Xt_rb = [h*sin(theta_c + theta_d), Xc(2)-floor_tolerance, h*cos(theta_c + theta_d)]'
+    Xt_lb = [tangentDist*sin(theta_c - theta_d), Xc(2)-floor_tolerance, tangentDist*cos(theta_c - theta_d)]'
+    Xt_rb = [tangentDist*sin(theta_c + theta_d), Xc(2)-floor_tolerance, tangentDist*cos(theta_c + theta_d)]'
 
     Xt_lt = Xt_lb + [0,-robot_height+floor_tolerance,0]';
     Xt_rt = Xt_rb + [0,-robot_height+floor_tolerance,0]';
@@ -119,13 +121,13 @@ figure(2);
 X0 = [0;0;0];
 pointList = [X0, Xt_lb, Xc, Xt_rb, X0];
 
-hold on
 th = 0:pi/50:2*pi;
 xunit = robot_radius * cos(th) + Xc(1);
 yunit = robot_radius * sin(th) + Xc(3);
-h = plot(xunit, yunit);
+h = plot(xunit, yunit, 'r');
+hold on
 
-plot(pointList(1,:),pointList(3,:));
+plot(pointList(1,:),pointList(3,:), 'b');
 hold off
 
 axis equal

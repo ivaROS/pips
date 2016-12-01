@@ -47,12 +47,13 @@
     // We only calculate the actual side borders of the robot if it is far enough away that they could be seen
     if(h > robot_radius_)
     {
+      double tangentDist = std::sqrt(h_squared - robot_radius_*robot_radius_);
       
       double theta_c = std::atan2(pt.x,pt.z);
       double theta_d = std::asin(robot_radius_/h);
       
-      cv::Point3d Xc_l(h*std::sin(theta_c - theta_d), pt.y, h*std::cos(theta_c - theta_d));
-      cv::Point3d Xc_r(h*std::sin(theta_c + theta_d), pt.y, h*std::cos(theta_c + theta_d));
+      cv::Point3d Xc_l(tangentDist*std::sin(theta_c - theta_d), pt.y, tangentDist*std::cos(theta_c - theta_d));
+      cv::Point3d Xc_r(tangentDist*std::sin(theta_c + theta_d), pt.y, tangentDist*std::cos(theta_c + theta_d));
 
       cv::Point3d Xt_lb = Xc_l + cv::Point3d(0,-floor_tolerance_,0);
       cv::Point3d Xt_rb = Xc_r + cv::Point3d(0,-floor_tolerance_,0);
@@ -165,6 +166,11 @@
       double a = ray.x*ray.x + ray.z*ray.z;
       double b = -2*(ray.x*pt.x + ray.z*pt.z);
       double c = h_squared - robot_radius_*robot_radius_;
+      
+      if(b*b - 4*a*c <0)
+      {
+        ROS_ERROR_STREAM("complex solution! Left=" << left << ", right=" << right << ", p_x="<< p_x << ", ray=" << ray << ", h_squared="<< h_squared );
+      }
       
       ROS_ASSERT_MSG(b*b - 4*a*c >=0, "Complex solution for ray-circle intersection!");
 
