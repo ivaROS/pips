@@ -24,9 +24,31 @@ if(h > robot_radius)
     theta_c = atan2(Xc(1),Xc(3));
     theta_d = asin(robot_radius/h);
 
-    Xt_lb = [tangentDist*sin(theta_c - theta_d), Xc(2)-floor_tolerance, tangentDist*cos(theta_c - theta_d)]'
-    Xt_rb = [tangentDist*sin(theta_c + theta_d), Xc(2)-floor_tolerance, tangentDist*cos(theta_c + theta_d)]'
+    Xt_lb = [tangentDist*sin(theta_c - theta_d), Xc(2)-floor_tolerance, tangentDist*cos(theta_c - theta_d)]';
+    Xt_rb = [tangentDist*sin(theta_c + theta_d), Xc(2)-floor_tolerance, tangentDist*cos(theta_c + theta_d)]';
 
+    
+    %algabraic solution
+    rootpart = sqrt(Xc(3)^2*robot_radius^2*(Xc(1)^2+Xc(3)^2-robot_radius^2));
+    Tx1 = (Xc(1)^3 +Xc(1)*Xc(3)^2-Xc(1)*robot_radius^2 + rootpart)/(Xc(1)^2+Xc(3)^2);
+    Tx2 = (Xc(1)^3 +Xc(1)*Xc(3)^2-Xc(1)*robot_radius^2 - rootpart)/(Xc(1)^2+Xc(3)^2);
+
+    rootpart2 = Xc(1)*sqrt(Xc(3)^2*robot_radius^2*(Xc(1)^2+Xc(3)^2-robot_radius^2));
+    
+    Ty1 = (Xc(1)^2*Xc(3)^2+Xc(3)^4-Xc(3)^2*robot_radius^2 - rootpart2)/(Xc(3)*(Xc(1)^2+Xc(3)^2));
+    Ty2 = (Xc(1)^2*Xc(3)^2+Xc(3)^4-Xc(3)^2*robot_radius^2 + rootpart2)/(Xc(3)*(Xc(1)^2+Xc(3)^2));
+    
+    t1=[Tx1,Ty1]';
+    t2 =[Tx2,Ty2]';
+    
+    %This confirms that the analytic solution is identical to the
+    %trigonometric
+    Xt_lb';
+    Xt_rb';
+
+    t1';
+    t2';
+    
     Xt_lt = Xt_lb + [0,-robot_height+floor_tolerance,0]';
     Xt_rt = Xt_rb + [0,-robot_height+floor_tolerance,0]';
 
