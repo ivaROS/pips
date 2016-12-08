@@ -1,4 +1,4 @@
-Xc = [.3,.2,1]'; %coordinates of hallucinated robot origin in camera frame (right = x, down = y, out = z)
+Xc = [.5,.3,2]'; %coordinates of hallucinated robot origin in camera frame (right = x, down = y, out = z)
 
 robot_radius = .178;    %radius of robot
 robot_height = .48;%height of robot
@@ -65,73 +65,66 @@ if(h > robot_radius)
 
     p_lb_x = min(max(1,floor(p_lb(1))),dim(1)); %remember to use 0 indexing in C
     p_lb_y = max(min(dim(2),ceil(p_lb(2))),1);
-    p_lb_ind = [p_lb_x; p_lb_y];
+    p_lb_ind = [p_lb_x; p_lb_y]
 
-    p_lt_ind = max([1;1],min(floor(p_lt(1:2)),dim'));
+    p_lt_ind = max([1;1],min(floor(p_lt(1:2)),dim'))
 
     p_rb_x = max(1,min(ceil(p_rb(1)),dim(1)));
     p_rb_y = max(min(dim(2),ceil(p_rb(2))),1);
-    p_rb_ind = [p_rb_x; p_rb_y];
+    p_rb_ind = [p_rb_x; p_rb_y]
 
-    p_rt_ind = max([1;1],min(ceil(p_rt(1:2)),dim'));
+    p_rt_ind = max([1;1],min(ceil(p_rt(1:2)),dim'))
 
     left = p_lb_ind(1)+1;
     right = p_rb_ind(1)-1;
+    
+    top = min(p_lt_ind(2),p_rt_ind(2))+1;
+    bottom = min(p_lb_ind(2),p_rb_ind(2))-1;
 
     simulated_image(p_lt_ind(2):p_lb_ind(2),p_lb_ind(1)) = Xt_lb(3);
     simulated_image(p_rt_ind(2):p_rb_ind(2),p_rb_ind(1)) = Xt_rb(3);
 
 end
 
-for p_x = left:right
+%first do top
+py = top;
+keepGoing = true;
+
+while keepGoing
     
     %reprojecting x pixel coordinate at center of y coordinates to ray
-    L = K\[p_x;K(2,3);1];
+    L = K\[1;py;1];
     
-    %%Equivalent to the below 
-    %L = K\p_reproj;    %reprojecting pixel to ray
-    %L(2) = 0;
     
-    %equations for intersection of ray and circle
-    a = L(1)^2 + L(3)^2;
-    b = -2*(L(1)*Xc(1) + L(3)*Xc(3));
-    c = h_squared - robot_radius^2;
+    %equations for intersection of plane and circle
     
-    if b^2-4*a*c < 0
-        disp('Error! Complex solution!\n');
-        return;
-    end
+    y = Xc(2)-robot_height;
+    tz = y*L(3)/L(2);
+    
+        
+    if (L(2)^2*Xc(3)^2-L(2)^2*robot_radius-2*L(2)*L(3)*Xc(3)*y+L(3)^2*y^2) < 0
+        disp('Complex solution! No intersection, so beginning rectangle\n');
+        keepGoing=false;
+        rectangleTop = py;
+    else
 
-    %solve for parameter t that yields intersection
-    %Note that we only care about the more distant intersection 
-    %(the + solution)
-    t = (-b + sqrt(b^2-4*a*c))/(2*a);
     
-    %get world coordinates of intersection
-    X_h = L*t;
+    rootPart = sqrt(-L(2)^2*(L(2)^2*Xc(3)^2-L(2)^2*robot_radius-2*L(2)*L(3)*Xc(3)*y+L(3)^2*y^2));
+    tx1 = (L(2)^2*Xc(1) - rootPart)/(L(2)^2);
+    tx2 = (L(2)^2*Xc(1) + rootPart)/(L(2)^2);
     
-    %set the y coordinate back to that of the base of the robot
-    X_h(2) = Xc(2);
+    px1 = K*[tx1;y;tz];
+    px2 = K*[tx2;y;tz];
+
+    validRange1 = floor(left):px1;
+    validRange2 = ceil(px2):right;
     
-    %for bottom:
-    X_hb = X_h + [0,-floor_tolerance,0]';
+    simulated_image(py,validRange1) = 10;
+        simulated_image(py,validRange2) = 10;
+
     
-    %for top:
-    X_ht = X_h + [0,-robot_height,0]';
-    
-    %project back to pixels to get y coordinate
-    U_xht = X_ht/X_ht(3);
-    p_xht = K*U_xht;
-    
-    U_xhb = X_hb/X_hb(3);
-    p_xhb = K*U_xhb;
-    
-    %get depth for that pixel
-    depth = X_h(3);
-    
-    row_range = max(1,floor(p_xht(2))):min(dim(2),ceil(p_xhb(2)));
-    
-    simulated_image(row_range,p_x) = depth;
+    py = py+1;
+    end
 end
 
 figure(1);
