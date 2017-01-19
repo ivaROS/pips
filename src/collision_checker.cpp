@@ -201,5 +201,20 @@
     
   }
 
+//
+  void CollisionChecker::generateImageCoord(const double xyz[], double * uv)
+  {
+    //Convert coordinates to Eigen Vector
+    Eigen::Map<const Eigen::Vector3d> origin_r(xyz);
+    
+    //Transform coordinates of robot base into camera's optical frame
+    Eigen::Vector3d origin_d = optical_transform_*origin_r;
+    //std::cout << "point (optical): " << origin_d << std::endl;
+
+    // convert into image coordinate
+
+    
+  }
+
 
 

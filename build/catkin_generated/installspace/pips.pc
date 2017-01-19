@@ -1,0 +1,8 @@
+prefix=/usr/local
+
+Name: pips
+Description: Description of pips
+Version: 0.0.0
+Cflags: -I/usr/local/include -I/usr/include/eigen3
+Libs: -L/usr/local/lib -lcollision_checker -lrobot_models
+Requires: image_geometry cv_bridge
