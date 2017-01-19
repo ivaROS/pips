@@ -1,1 +1,0 @@
-/usr/bin/c++  -fPIC  -Wall -std=c++11   -shared -Wl,-soname,librobot_models.so -o devel/lib/librobot_models.so CMakeFiles/robot_models.dir/src/rectangular_model.cpp.o 
