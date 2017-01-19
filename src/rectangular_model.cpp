@@ -234,7 +234,7 @@
   a lot of this could be cleaned up into separate functions, but this will work for now */
   cv::Mat CylindricalModel::generateHallucinatedRobot(const cv::Point3d pt)
   {
-    cv::Mat viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type());
+    cv::Mat viz = image_ref_.clone();//cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type());
     
     unsigned int left = 0;
     unsigned int right = image_ref_.cols;

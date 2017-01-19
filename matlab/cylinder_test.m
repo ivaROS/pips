@@ -92,13 +92,18 @@ keepGoing = true;
 
 while keepGoing
     
-    %reprojecting x pixel coordinate at center of y coordinates to ray
-    L = K\[1;py;1];
+    p_ray = [0;py];
     
+    %reprojecting x pixel coordinate at center of y coordinates to ray
+    v_ray = K\[p_ray(1);p_ray(2);1];
+    v_row = [1;0;0];
     
     %equations for intersection of plane and circle
     
     y = Xc(2)-robot_height;
+
+    
+    
     tz = y*L(3)/L(2);
     
         
