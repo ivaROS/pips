@@ -84,6 +84,9 @@
       unsigned int p_rt_y = std::max(0,std::min((int)ceil(p_rt.y),image_ref_.rows-1));
       cv::Point2i  p_rt_ind(p_rt_x, p_rt_y);
       
+      ROS_DEBUG_STREAM("pt= " << pt << "\nh_squared= " << h_squared << "\nh= " << h << "\ntheta_c= " << theta_c << "\ntheta_d= " << theta_d << "\nXt_lb= " << Xt_lb << "\nXt_rb= " << Xt_rb << "\nXt_lt= " << Xt_lt << "\nXt_rt= " << Xt_rt << "\np_lb= " << p_lb << "\np_rb= " << p_rb << "\np_lt= " << p_lt << "\np_rt= " << p_rt << "\np_lb_ind= " << p_lb_ind << "\np_rb_ind= " << p_rb_ind << "\np_lt_ind= " << p_lt_ind << "\np_rt_ind= " << p_rt_ind);
+      
+      
       //cv::Rect col = getColumn(image_ref_,p_lt,p_lb);
       
       //std::cout << "p_lb = " << p_lb << ", p_lt = " << p_lt << "\noriginal method:\np_lb_ind=" << p_lb_ind << "\np_lt_ind=" << p_lt_ind << "\nnew method:\n" << col << "\n";
@@ -122,7 +125,7 @@
       //Right column
       if(p_rb.x < image_ref_.cols-1)
       {
-        right = p_rb_ind.x - 1;
+        right = p_rb_ind.x;
         cv::Rect col = getColumn(image_ref_,p_rt,p_rb);
         double depth = Xt_rb.z*scale_;
         if(show_im_)
@@ -170,6 +173,7 @@
       if(b*b - 4*a*c <0)
       {
         ROS_ERROR_STREAM("complex solution! Left=" << left << ", right=" << right << ", p_x="<< p_x << ", ray=" << ray << ", h_squared="<< h_squared );
+        ROS_BREAK();
       }
       
       ROS_ASSERT_MSG(b*b - 4*a*c >=0, "Complex solution for ray-circle intersection!");
