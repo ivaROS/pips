@@ -3,7 +3,9 @@
 
 
 #include "rectangular_model.h"
+#include <pips/GenerateDepthImage.h>
 
+#include "ros/ros.h"
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <opencv/cv.h>
@@ -38,6 +40,8 @@ private :
 
     Eigen::Affine3d optical_transform_;
     
+    ros::ServiceServer depth_generation_service_;
+    
     std::shared_ptr<HallucinatedRobotModel> robot_model_;
     
     bool publish_image_;
@@ -46,6 +50,8 @@ private :
     cv::Mat image_,image_ref_;
     cv_bridge::CvImagePtr input_bridge_, output_bridge_;
     std::chrono::duration<double, std::milli> total_duration;
+    
+    bool getDepthImage(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res);
 
 } ;
 

@@ -56,6 +56,9 @@
       //Convert transform to Eigen
       optical_transform_ = tf2::transformToEigen(base_optical_transform);
 
+      depth_generation_service_ = nh_.advertiseService("generate_depth_image", &CollisionChecker::getDepthImage, this);
+
+
       ROS_DEBUG_STREAM("[collision_checker] Constructing collision checker");
 
   
@@ -199,6 +202,26 @@
 
     return robot_model_->generateHallucinatedRobot(pt_cv);
     
+  }
+  
+  bool CollisionChecker::getDepthImage(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res)
+  {
+    ROS_INFO_STREAM("Depth image generation request received.");
+    
+    double coords[3];
+    coords[0] = req.pose.position.x;
+    coords[1] = req.pose.position.y;
+    coords[2] = req.pose.position.z;
+    
+    cv_bridge::CvImage out_msg;
+    //out_msg.header   = ; // Same timestamp and tf frame as input image
+    out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;// (scale_ == SCALE_METERS) ? sensor_msgs::image_encodings::TYPE_32FC1 : sensor_msgs::image_encodings::TYPE_16UC1;
+    out_msg.image = generateDepthImage(coords);
+    
+    res.image = *out_msg.toImageMsg();
+
+    
+    return true;
   }
 
 //

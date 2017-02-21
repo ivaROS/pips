@@ -238,7 +238,7 @@
   a lot of this could be cleaned up into separate functions, but this will work for now */
   cv::Mat CylindricalModel::generateHallucinatedRobot(const cv::Point3d pt)
   {
-    cv::Mat viz = image_ref_.clone();//cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type());
+    cv::Mat viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type()); //image_ref_.clone();
     
     unsigned int left = 0;
     unsigned int right = image_ref_.cols;
@@ -283,6 +283,12 @@
       unsigned int p_rt_y = std::max(0,std::min((int)ceil(p_rt.y),image_ref_.rows-1));
       cv::Point2i  p_rt_ind(p_rt_x, p_rt_y);
       
+      ROS_INFO_STREAM("pt= " << pt << "\nh_squared= " << h_squared << "\nh= " << h << "\ntheta_c= " << theta_c << "\ntheta_d= " << theta_d << "\nXt_lb= " << Xt_lb << "\nXt_rb= " << Xt_rb << "\nXt_lt= " << Xt_lt << "\nXt_rt= " << Xt_rt << "\np_lb= " << p_lb << "\np_rb= " << p_rb << "\np_lt= " << p_lt << "\np_rt= " << p_rt << "\np_lb_ind= " << p_lb_ind << "\np_rb_ind= " << p_rb_ind << "\np_lt_ind= " << p_lt_ind << "\np_rt_ind= " << p_rt_ind);
+      
+      // Catch cases where completely off screen
+      if(p_lb.x > image_ref_.cols -1 || p_rb.x < 0)
+        return viz;
+      
       //left column
       if(p_lb.x > 0)
       {
@@ -303,6 +309,8 @@
     }
 
 
+
+      
     for(unsigned int p_x = left; p_x < right; ++p_x)
     {
 

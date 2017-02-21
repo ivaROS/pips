@@ -17,16 +17,28 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   tf2
   tf2_eigen
+  message_generation
+  geometry_msgs
 )
 
 find_package(Eigen3 REQUIRED)
 
+add_service_files(
+  FILES
+  GenerateDepthImage.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+  sensor_msgs
+)
 
 
 catkin_package(
   INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIR}
   LIBRARIES collision_checker robot_models
-  CATKIN_DEPENDS image_geometry cv_bridge
+  CATKIN_DEPENDS image_geometry cv_bridge message_runtime
   DEPENDS Eigen3 
 )
 
