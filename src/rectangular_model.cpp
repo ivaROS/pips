@@ -1,5 +1,5 @@
 
-#include "rectangular_model.h"
+#include "hallucinated_robot_model.h"
 
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -19,12 +19,6 @@
 #include <iomanip>      // std::setprecision
 
 
-  
-RectangularModel::RectangularModel(double radius, double height, double safety_expansion, double floor_tolerance)
-{
-  setParameters(radius, height, safety_expansion, floor_tolerance, show_im_);
-}
-
 void RectangularModel::setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im)
 {
     cv::Point3d topr(radius+safety_expansion,-height,radius+safety_expansion);
@@ -36,11 +30,8 @@ void RectangularModel::setParameters(double radius, double height, double safety
     cv::Point3d offsets[] = {topr,topl,bottoml,bottomr};
     std::vector<cv::Point3d> co_offsets(offsets, offsets + sizeof(offsets) / sizeof(cv::Point3d) );
     
-    {
-      boost::mutex::scoped_lock lock(parameter_mutex_);
-      co_offsets_ = co_offsets;
-      show_im_ = show_im;
-    }
+    co_offsets_ = co_offsets;
+    show_im_ = show_im;
 }
 
 /* Takes in the position of robot base in camera coordinate frame */
@@ -51,24 +42,22 @@ bool RectangularModel::testCollision(const cv::Point3d pt)
     cv::Point2d co_uv[4];
     double co_depth;
 
-    {
-      boost::mutex::scoped_lock lock(parameter_mutex_);
-      for (int it = 0; it <4; ++it) 
-      {
-        //Add specified offsets to robot's base position
-        cv::Point3d addedpnt = pt + co_offsets_[it];
-        
-        //Store the depth of the collision object
-        co_depth = addedpnt.z;
-        
-        //Project point to pixel coordinates
-        cv::Point2d uv = cam_model_.project3dToPixel(addedpnt);
-        //ROS_DEBUG("Coords: %f, %f", uv.x, uv.y);
-        co_uv[it] = uv;
 
-      }
+    for (int it = 0; it <4; ++it) 
+    {
+      //Add specified offsets to robot's base position
+      cv::Point3d addedpnt = pt + co_offsets_[it];
+      
+      //Store the depth of the collision object
+      co_depth = addedpnt.z;
+      
+      //Project point to pixel coordinates
+      cv::Point2d uv = cam_model_->project3dToPixel(addedpnt);
+      //ROS_DEBUG("Coords: %f, %f", uv.x, uv.y);
+      co_uv[it] = uv;
+
     }
-    
+
 
     //Using the 4 points, construct a rectangle
     double minXVal, maxXVal, minYVal,maxYVal;
@@ -121,7 +110,7 @@ cv::Mat RectangularModel::generateHallucinatedRobot(const cv::Point3d pt)
       co_depth = addedpnt.z;
       
       //Project point to pixel coordinates
-      cv::Point2d uv = cam_model_.project3dToPixel(addedpnt);
+      cv::Point2d uv = cam_model_->project3dToPixel(addedpnt);
       //ROS_DEBUG("Coords: %f, %f", uv.x, uv.y);
       co_uv[it] = uv;
 

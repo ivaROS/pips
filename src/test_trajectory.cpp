@@ -44,8 +44,7 @@ class TestTrajectory
   tf::StampedTransform starting_frame_transform_,depth_starting_frame_transform_;
   tf2_ros::StaticTransformBroadcaster br;
   ros::Timer timer, depth_timer;
-  std::shared_ptr<HallucinatedRobotModel> robot_model_;
-  CollisionChecker* cc_;
+  std::shared_ptr<CollisionChecker> cc_;
 
 
     typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image,
@@ -68,14 +67,6 @@ public:
     depth_info_sub_.subscribe(nh_, depth_info_topic, 10);
     synced_images.reset(new image_synchronizer(image_synchronizer(10), depthsub_, depth_info_sub_) );
     synced_images->registerCallback(bind(&TestTrajectory::depthImageCb, this, _1, _2));
-
-
-    double radius = .178;
-    double height = .48;
-    double floor_tolerance = .03;
-    double safety_expansion = .02;
-
-    robot_model_ = std::make_shared<RectangularModel>(radius, height, safety_expansion, floor_tolerance);
   }
 
 
@@ -113,7 +104,7 @@ public:
           firstDepthImMsg_ = image_msg;
           firstDepthFrame_ = false;
           
-          cc_ = new CollisionChecker(depth_base_transform, robot_model_, false);
+          cc_ = std::make_shared<CollisionChecker>(depth_base_transform);
           cc_->setImage(image_msg, info_msg);
           
           ROS_INFO("Saved first depth frame");

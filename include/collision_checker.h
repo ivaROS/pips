@@ -2,7 +2,7 @@
 #define COLLISION_CHECKER_H
 
 
-#include "rectangular_model.h"
+#include "hallucinated_robot_model.h"
 #include <pips/GenerateDepthImage.h>
 
 #include "ros/ros.h"
@@ -22,7 +22,7 @@ class CollisionChecker
 
 public :
     CollisionChecker(geometry_msgs::TransformStamped& optical_transform, std::vector<cv::Point3d> co_points, bool pub_image);
-    CollisionChecker(geometry_msgs::TransformStamped& optical_transform, std::shared_ptr<HallucinatedRobotModel> model, bool pub_image);
+    CollisionChecker(geometry_msgs::TransformStamped& optical_transform);
 
     void setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
     bool testCollision(double xyz[] );

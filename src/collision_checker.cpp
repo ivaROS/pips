@@ -1,3 +1,7 @@
+#include "collision_checker.h"
+
+#include "hallucinated_robot_model.h"
+
 #include <ros/ros.h>
 #include <iostream>     // std::cout
 #include <algorithm>    // std::min
@@ -18,8 +22,8 @@
 
 #include <climits>
 
-#include "collision_checker.h"
-#include "rectangular_model.h"
+
+
 
 #define MAX_RANGE 10    //Maximum expected range of sensor, used to fill unknowns (0's) in image
 #define SCALE_METERS 1
@@ -44,8 +48,11 @@
     pub_image: When enabled, the collision object's projection is added to the current depth image and published. Only enable when debugging- during normal usage far too many images would be published.
   */ 
   
-  CollisionChecker::CollisionChecker(geometry_msgs::TransformStamped& base_optical_transform, bool pub_image) :
-    it_(nh_), publish_image_(pub_image), robot_model_(nh_)
+  /* The publish_image_ parameter will either be moved to dyanmic reconfigure or will be automatically toggled 
+     based on the presence of subscribers
+  */
+  CollisionChecker::CollisionChecker(geometry_msgs::TransformStamped& base_optical_transform) :
+    it_(nh_), publish_image_(false), robot_model_(nh_)
   {
     if(publish_image_)
       {
@@ -114,7 +121,7 @@
   */  
     //Reinitialize camera model with each image in case resolution has changed
 
-    robot_model_->updateModel(image_ref_, info_msg, scale_);
+    robot_model_.updateModel(image_ref_, info_msg, scale_);
 
   }
 
@@ -162,7 +169,7 @@
 
     
     
-    bool collided = robot_model_->testCollision(pt_cv);
+    bool collided = robot_model_.testCollision(pt_cv);
     
     //Calculate elapsed time for this computation
     auto t2 = std::chrono::high_resolution_clock::now();
@@ -199,7 +206,7 @@
     //Convert datatype of coordinates
     cv::Point3d pt_cv(origin_d(0), origin_d(1), origin_d(2));
 
-    return robot_model_->generateHallucinatedRobot(pt_cv);
+    return robot_model_.generateHallucinatedRobot(pt_cv);
     
   }
   
@@ -223,7 +230,7 @@
     return true;
   }
 
-//
+  // Incomplete and Not currently used
   void CollisionChecker::generateImageCoord(const double xyz[], double * uv)
   {
     //Convert coordinates to Eigen Vector

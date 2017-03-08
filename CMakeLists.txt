@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pips)
 
-LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
+#LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
 
 ## Find catkin macros and libraries
@@ -19,9 +19,14 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_eigen
   message_generation
   geometry_msgs
+  dynamic_reconfigure
 )
 
 find_package(Eigen3 REQUIRED)
+
+generate_dynamic_reconfigure_options(
+  cfg/HallucinatedRobotModel.cfg
+  )
 
 add_service_files(
   FILES
@@ -58,7 +63,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 ## Declare the collision_checker library
 add_library(collision_checker src/collision_checker.cpp)
 
-add_library(robot_models src/rectangular_model.cpp)
+add_library(robot_models 
+  src/rectangular_model.cpp
+  src/cylindrical_model.cpp
+  )
+
+add_dependencies(robot_models
+   ${PROJECT_NAME}_gencfg
+   )
 
 ## Declare a cpp executable
 add_executable(trajectory_tester src/test_trajectory.cpp )

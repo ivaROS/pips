@@ -1,5 +1,5 @@
 
-#include "rectangular_model.h"
+#include "hallucinated_robot_model.h"
 
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -18,17 +18,9 @@
 
 #include <iomanip>      // std::setprecision
 
-
-  CylindricalModel::CylindricalModel(double radius, double height, double safety_expansion, double floor_tolerance)
-  {
-      setParameters(radius, height, safety_expansion, floor_tolerance, show_im_);
-      
-  }
   
   void CylindricalModel::setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im)
-  {
-      boost::mutex::scoped_lock lock(parameter_mutex_);
-      
+  {   
       robot_radius_ = radius + safety_expansion;
       robot_height_ = height;
       floor_tolerance_ = floor_tolerance;
@@ -40,7 +32,6 @@
   // Initially, will use the model, but will likely switch over in the future.
   bool CylindricalModel::testCollision(const cv::Point3d pt)
   {
-    boost::mutex::scoped_lock lock(parameter_mutex_);
     
     cv::Mat viz;
     if(show_im_)
@@ -72,10 +63,10 @@
       cv::Point3d Xt_lt = Xc_l + cv::Point3d(0,-robot_height_,0);
       cv::Point3d Xt_rt = Xc_r + cv::Point3d(0,-robot_height_,0);
 
-      cv::Point2d p_lb = cam_model_.project3dToPixel(Xt_lb);
-      cv::Point2d p_rb = cam_model_.project3dToPixel(Xt_rb);
-      cv::Point2d p_lt = cam_model_.project3dToPixel(Xt_lt);
-      cv::Point2d p_rt = cam_model_.project3dToPixel(Xt_rt);
+      cv::Point2d p_lb = cam_model_->project3dToPixel(Xt_lb);
+      cv::Point2d p_rb = cam_model_->project3dToPixel(Xt_rb);
+      cv::Point2d p_lt = cam_model_->project3dToPixel(Xt_lt);
+      cv::Point2d p_rt = cam_model_->project3dToPixel(Xt_rt);
       
       //std::cout << "pt= " << pt << "\nh_squared= " << h_squared << "\nh= " << h << "\ntheta_c= " << theta_c << "\ntheta_d= " << theta_d << "\nXt_lb= " << Xt_lb << "\nXt_rb= " << Xt_rb << "\n";
 
@@ -172,7 +163,7 @@
       %L(2) = 0;
       */
       
-      cv::Point3d ray = cam_model_.projectPixelTo3dRay(cv::Point2d(p_x,pt.y));
+      cv::Point3d ray = cam_model_->projectPixelTo3dRay(cv::Point2d(p_x,pt.y));
       //ray.y = 0;
       
       
@@ -183,7 +174,7 @@
       
       if(b*b - 4*a*c <0)
       {
-        ROS_ERROR_STREAM("complex solution! Left=" << left << ", right=" << right << ", p_x="<< p_x << ", ray=" << ray << ", h_squared="<< h_squared );
+        ROS_ERROR_STREAM_NAMED(name_, "complex solution! Left=" << left << ", right=" << right << ", p_x="<< p_x << ", ray=" << ray << ", h_squared="<< h_squared );
         ROS_BREAK();
       }
       
@@ -206,8 +197,8 @@
       cv::Point3d X_ht = X_h + cv::Point3d(0,-robot_height_,0);
       
       //project back to pixels to get y coordinate
-      cv::Point2d p_xhb =  cam_model_.project3dToPixel(X_hb);
-      cv::Point2d p_xht =  cam_model_.project3dToPixel(X_ht);
+      cv::Point2d p_xhb =  cam_model_->project3dToPixel(X_hb);
+      cv::Point2d p_xht =  cam_model_->project3dToPixel(X_ht);
       
       cv::Rect column = getColumn(image_ref_, p_xht,p_xhb);
       double depth = X_h.z*scale_;
@@ -249,7 +240,6 @@
   a lot of this could be cleaned up into separate functions, but this will work for now */
   cv::Mat CylindricalModel::generateHallucinatedRobot(const cv::Point3d pt)
   {
-    boost::mutex::scoped_lock lock(parameter_mutex_);
     
     cv::Mat viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type()); //image_ref_.clone();
     
@@ -275,10 +265,10 @@
       cv::Point3d Xt_lt = Xc_l + cv::Point3d(0,-robot_height_,0);
       cv::Point3d Xt_rt = Xc_r + cv::Point3d(0,-robot_height_,0);
 
-      cv::Point2d p_lb = cam_model_.project3dToPixel(Xt_lb);
-      cv::Point2d p_rb = cam_model_.project3dToPixel(Xt_rb);
-      cv::Point2d p_lt = cam_model_.project3dToPixel(Xt_lt);
-      cv::Point2d p_rt = cam_model_.project3dToPixel(Xt_rt);
+      cv::Point2d p_lb = cam_model_->project3dToPixel(Xt_lb);
+      cv::Point2d p_rb = cam_model_->project3dToPixel(Xt_rb);
+      cv::Point2d p_lt = cam_model_->project3dToPixel(Xt_lt);
+      cv::Point2d p_rt = cam_model_->project3dToPixel(Xt_rt);
       
       unsigned int p_lb_x = std::min(std::max(0,(int)std::floor(p_lb.x)),image_ref_.cols-1);
       unsigned int p_lb_y = std::max(std::min(image_ref_.rows-1,(int)std::ceil(p_lb.y)),0);
@@ -296,7 +286,7 @@
       unsigned int p_rt_y = std::max(0,std::min((int)ceil(p_rt.y),image_ref_.rows-1));
       cv::Point2i  p_rt_ind(p_rt_x, p_rt_y);
       
-      ROS_INFO_STREAM("pt= " << pt << "\nh_squared= " << h_squared << "\nh= " << h << "\ntheta_c= " << theta_c << "\ntheta_d= " << theta_d << "\nXt_lb= " << Xt_lb << "\nXt_rb= " << Xt_rb << "\nXt_lt= " << Xt_lt << "\nXt_rt= " << Xt_rt << "\np_lb= " << p_lb << "\np_rb= " << p_rb << "\np_lt= " << p_lt << "\np_rt= " << p_rt << "\np_lb_ind= " << p_lb_ind << "\np_rb_ind= " << p_rb_ind << "\np_lt_ind= " << p_lt_ind << "\np_rt_ind= " << p_rt_ind);
+      ROS_DEBUG_STREAM_NAMED(name_, "pt= " << pt << "\nh_squared= " << h_squared << "\nh= " << h << "\ntheta_c= " << theta_c << "\ntheta_d= " << theta_d << "\nXt_lb= " << Xt_lb << "\nXt_rb= " << Xt_rb << "\nXt_lt= " << Xt_lt << "\nXt_rt= " << Xt_rt << "\np_lb= " << p_lb << "\np_rb= " << p_rb << "\np_lt= " << p_lt << "\np_rt= " << p_rt << "\np_lb_ind= " << p_lb_ind << "\np_rb_ind= " << p_rb_ind << "\np_lt_ind= " << p_lt_ind << "\np_rt_ind= " << p_rt_ind);
       
       // Catch cases where completely off screen
       if(p_lb.x > image_ref_.cols -1 || p_rb.x < 0)
@@ -327,7 +317,7 @@
     for(unsigned int p_x = left; p_x < right; ++p_x)
     {
 
-      cv::Point3d ray = cam_model_.projectPixelTo3dRay(cv::Point2d(p_x,pt.y));
+      cv::Point3d ray = cam_model_->projectPixelTo3dRay(cv::Point2d(p_x,pt.y));
       //ray.y = 0;
       
       
@@ -355,8 +345,8 @@
       cv::Point3d X_ht = X_h + cv::Point3d(0,-robot_height_,0);
       
       //project back to pixels to get y coordinate
-      cv::Point2d p_xhb =  cam_model_.project3dToPixel(X_hb);
-      cv::Point2d p_xht =  cam_model_.project3dToPixel(X_ht);
+      cv::Point2d p_xhb =  cam_model_->project3dToPixel(X_hb);
+      cv::Point2d p_xht =  cam_model_->project3dToPixel(X_ht);
       
       cv::Rect column = getColumn(image_ref_, p_xht,p_xhb);
       double depth = X_h.z*scale_;
