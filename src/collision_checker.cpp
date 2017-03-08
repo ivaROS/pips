@@ -44,8 +44,8 @@
     pub_image: When enabled, the collision object's projection is added to the current depth image and published. Only enable when debugging- during normal usage far too many images would be published.
   */ 
   
-  CollisionChecker::CollisionChecker(geometry_msgs::TransformStamped& base_optical_transform, std::shared_ptr<HallucinatedRobotModel> model, bool pub_image) :
-    it_(nh_), robot_model_(model), publish_image_(pub_image)
+  CollisionChecker::CollisionChecker(geometry_msgs::TransformStamped& base_optical_transform, bool pub_image) :
+    it_(nh_), publish_image_(pub_image), robot_model_(nh_)
   {
     if(publish_image_)
       {
@@ -58,10 +58,9 @@
 
       depth_generation_service_ = nh_.advertiseService("generate_depth_image", &CollisionChecker::getDepthImage, this);
 
-
       ROS_DEBUG_STREAM("[collision_checker] Constructing collision checker");
 
-  
+   
   
   }
   
@@ -114,8 +113,8 @@
     }
   */  
     //Reinitialize camera model with each image in case resolution has changed
-    cam_model_.fromCameraInfo(info_msg);
-    robot_model_->updateModel(image_ref_, cam_model_, scale_);
+
+    robot_model_->updateModel(image_ref_, info_msg, scale_);
 
   }
 

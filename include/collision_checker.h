@@ -36,13 +36,13 @@ private :
     image_transport::ImageTransport it_;
     image_transport::Publisher depthpub_;
     ros::Publisher posepub_;
-    image_geometry::PinholeCameraModel cam_model_;
+    std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_;
 
     Eigen::Affine3d optical_transform_;
     
     ros::ServiceServer depth_generation_service_;
     
-    std::shared_ptr<HallucinatedRobotModel> robot_model_;
+    HallucinatedRobotModel robot_model_;
     
     bool publish_image_;
     unsigned int scale_;
