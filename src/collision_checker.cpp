@@ -91,16 +91,13 @@
       input_bridge_ref = cv_bridge::toCvCopy(image_msg);
       
       //If data type 32bit float, unit is m; else mm
-      //Note: this does not appear to be true with Gazebo, where the image type published on image_raw is 32FC1, but the numbers are ints.
-      //Another gazebo difference: unknown values are given as 'nan' rather than 0
       scale_ = (input_bridge_ref->encoding == sensor_msgs::image_encodings::TYPE_32FC1) ? SCALE_METERS : SCALE_MM;
       
       //Make a copy of depth image and set all 0's (unknowns) in image to some large value
       image_ref_ = input_bridge_ref->image;
       image_ref_.setTo(MAX_RANGE * scale_, image_ref_==0);
 
-      //This handles the gazebo case, but is not necessary on the robot. It would be better to write a separate conversion node that can reside on the gazebo side and replaces Nans with 0's. Update: comparison of a Nan with a number will always return false. So it won't trigger a collision, so this is unnecessary after all.
-      //image_ref_.setTo(MAX_RANGE * scale_, image_ref_!=image_ref_); 
+      //A gazebo difference: unknown values are given as 'nan' rather than 0. However, comparison of a Nan with a number will always return false, so it won't trigger a collision
 
       if(publish_image_)
       {
