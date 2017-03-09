@@ -368,7 +368,7 @@ cv::Rect CylindricalModel::getColumn(const cv::Mat& image, const cv::Point2d& to
     int width = 1;
     int height = std::ceil(r.br().y)-y + 1; //ROI's from rectangles are noninclusive on the right/bottom sides, so need to add 1 to include the bottom row
     
-    cv::Rect column(x,y,width,height);
+    cv::Rect column(y,x,height,width);
     cv::Rect imageBounds(0,0,image.cols,image.rows);
     cv::Rect bounded = column & imageBounds;
 
