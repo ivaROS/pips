@@ -79,21 +79,72 @@ bool RectangularModel::testCollision(const cv::Point3d pt)
 
     //The collision object rectangle is our ROI in the original image
     cv::Mat roi(image_ref_,co_rect);
+
+
+    bool collided = isLessThan(roi, co_depth*scale_);
     
-    //Check if any points in ROI are closer than collision object's depth
+    return collided;
+}
+
+bool RectangularModel::isLessThan(const cv::Mat& image, float depth)
+{
+/*
+    double min_depth;
+    cv::minMaxLoc(image, &min_depth, NULL, NULL, NULL);
+
+    return min_depth < depth;
+    */
+    
+    //Built in approach:
 /*
     cv::Mat collisions = (roi <= co_depth*scale_);
     int num_collisions = cv::countNonZero(collisions);
     bool collided = (num_collisions>0);
   */
+    
+    int nRows = image.rows;
+    int nCols = image.cols;
 
-    double min_depth;
-
-    cv::minMaxLoc(roi, &min_depth, NULL, NULL, NULL);
-
-    bool collided = min_depth < co_depth*scale_;  
-    return collided;
+    
+    //Could use templates to remove the duplication of this code
+    if(image.depth() == CV_32FC1)
+    {
+      int i,j;
+      const float* p;
+      for( i = 0; i < nRows; ++i)
+      {
+          p = image.ptr<float>(i);
+          for ( j = 0; j < nCols; ++j)
+          {
+              if(p[j] < depth)
+              {
+                return true;
+              }
+                
+          }
+      }
+    }
+    else if (image.depth() == CV_16UC1)
+    {
+      int i,j;
+      const unsigned short int* p;
+      for( i = 0; i < nRows; ++i)
+      {
+          p = image.ptr<unsigned short int>(i);
+          for ( j = 0; j < nCols; ++j)
+          {
+              if(p[j] < depth)
+              {
+                return true;
+              }
+                
+          }
+      }
+    }
+    
+    return false;
 }
+
 
 cv::Mat RectangularModel::generateHallucinatedRobot(const cv::Point3d pt)
 {

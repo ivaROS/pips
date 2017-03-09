@@ -85,6 +85,8 @@ class RectangularModel : public HallucinatedRobotModelImpl
     std::string getName() { return "RectangularModel"; }
     virtual void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
     
+    private:
+    bool isLessThan(const cv::Mat& image, float depth);
 };
 
 
