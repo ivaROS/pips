@@ -35,12 +35,12 @@ class HallucinatedRobotModelImpl
     
     virtual void setParameters(double robot_radius, double robot_height, double floor_tolerance, double safety_expansion, bool show_im)=0;
 
-    void init(std::shared_ptr<image_geometry::PinholeCameraModel> cam_model)
+    virtual void init(std::shared_ptr<image_geometry::PinholeCameraModel> cam_model)
     {
       cam_model_ = cam_model;
     }
     
-    void updateModel(cv::Mat& image, double scale)
+    virtual void updateModel(cv::Mat& image, double scale)
     {
       image_ref_ = image;
       scale_ = scale;
@@ -100,6 +100,8 @@ class CylindricalModel : public HallucinatedRobotModelImpl
     cv::Mat generateHallucinatedRobot(const cv::Point3d pt);
     std::string getName() { return "CylindricalModel"; }
     virtual void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
+    
+    virtual void updateModel(cv::Mat& image, double scale);
     
 };
 
