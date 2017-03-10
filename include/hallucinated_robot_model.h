@@ -16,6 +16,9 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
+#include <boost/thread/shared_mutex.hpp>
+
+
 
 class HallucinatedRobotModelImpl
 {
@@ -122,39 +125,48 @@ class HallucinatedRobotModel
   
   void configCB(pips::HallucinatedRobotModelConfig &config, uint32_t level)
   {
-    ROS_INFO_STREAM_NAMED(name_, "Reconfigure Request:");
+
     
-    boost::mutex::scoped_lock lock(model_mutex_); /* Mutex prevents dynamic reconfigure from changing anything while model in use */
+    model_mutex_.lock();
     
     /* if the model type in the reconfigure request is different than the previous, we need to instantiate the new one */
     if(config.model_type != model_type_)
     {
+
       if(config.model_type == pips::HallucinatedRobotModel_rectangular)
       {
         model_ = std::make_shared<RectangularModel>();
+        ROS_INFO_STREAM_NAMED(name_, "Reconfigure Request: Switching to Rectangular Model");
       }
       else if (config.model_type == pips::HallucinatedRobotModel_cylindrical)
       {
         model_ = std::make_shared<CylindricalModel>();
+        ROS_INFO_STREAM_NAMED(name_, "Reconfigure Request: Switching to Cylindrical Model");
       }
       
       model_->init(cam_model_);
+      model_->updateModel(image_ref_, scale_);  // TODO: need to catch initial condition where image_ref_ is empty
+      
+      model_type_ = config.model_type;
     }
-    
     model_->setParameters(config.robot_radius, config.robot_height, config.floor_tolerance, config.safety_expansion, config.show_im);
     
+    
+    model_mutex_.unlock();
   }
   
   bool testCollision(const cv::Point3d pt)
   {
-    boost::mutex::scoped_lock lock(model_mutex_);
+    model_mutex_.lock_shared();
     return model_->testCollision(pt);
+    model_mutex_.unlock_shared();
   }
   
   cv::Mat generateHallucinatedRobot(const cv::Point3d pt)
   {
-    boost::mutex::scoped_lock lock(model_mutex_);
+    model_mutex_.lock_shared();
     return model_->generateHallucinatedRobot(pt);
+    model_mutex_.unlock_shared();
   }
   
   void updateModel(cv::Mat& image, const sensor_msgs::CameraInfoConstPtr& info_msg, double scale)
@@ -164,8 +176,9 @@ class HallucinatedRobotModel
     image_ref_ = image;
     
     {
-      boost::mutex::scoped_lock lock(model_mutex_);
+      model_mutex_.lock();
       model_->updateModel(image, scale);
+      model_mutex_.unlock();
     }
   }
   
@@ -179,7 +192,7 @@ class HallucinatedRobotModel
   
   int model_type_ = -1;
   
-  boost::mutex model_mutex_;
+  boost::shared_mutex model_mutex_; // Allows simultaneous read operations; prevents anything else from happening while writing
   std::string name_ = "HallucinatedRobotModel";
   
   ros::NodeHandle nh_;
