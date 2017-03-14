@@ -145,14 +145,19 @@ class HallucinatedRobotModel
       }
       
       model_->init(cam_model_);
-      model_->updateModel(image_ref_, scale_);  // TODO: need to catch initial condition where image_ref_ is empty
+      
+      if(!image_ref_.empty())
+      {
+        model_->updateModel(image_ref_, scale_);  // catches initial condition where image_ref_ is empty
+      }
       
       model_type_ = config.model_type;
     }
     model_->setParameters(config.robot_radius, config.robot_height, config.floor_tolerance, config.safety_expansion, config.show_im);
     
-    
+    ROS_INFO_STREAM_NAMED(name_, "unlocking mutex");
     model_mutex_.unlock();
+    ROS_INFO_STREAM_NAMED(name_, "mutex unlocked");
   }
   
   bool testCollision(const cv::Point3d pt)
