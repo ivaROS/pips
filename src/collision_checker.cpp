@@ -51,17 +51,18 @@
   /* The publish_image_ parameter will either be moved to dyanmic reconfigure or will be automatically toggled 
      based on the presence of subscribers
   */
-  CollisionChecker::CollisionChecker(geometry_msgs::TransformStamped& base_optical_transform) :
-    it_(nh_), publish_image_(false), robot_model_(nh_)
+  CollisionChecker::CollisionChecker() :
+    it_(nh_), robot_model_(nh_)
   {
+  
+    publish_image_ = false;
+    //This should either be completely removed or made configurable. Probably just removed since I added the depth generation service
     if(publish_image_)
       {
         //Create publisher with large queue due to sheer number of images produced
         depthpub_ = it_.advertise("depth_image_out",2000);
       }
-      
-      //Convert transform to Eigen
-      optical_transform_ = tf2::transformToEigen(base_optical_transform);
+
 
       depth_generation_service_ = nh_.advertiseService("generate_depth_image", &CollisionChecker::getDepthImage, this);
 
@@ -71,7 +72,11 @@
   
   }
   
-  
+    void CollisionChecker::setTransform(geometry_msgs::TransformStamped& base_optical_transform)
+    {
+      //Convert transform to Eigen
+      optical_transform_ = tf2::transformToEigen(base_optical_transform);
+    }
   
   /*
   Description: Sets the CollisionChecker's depth image and camera model. Called whenever there is a new image.
@@ -80,15 +85,15 @@
     image_msg: The depth image. Either the image_raw (16bit unsigned) or image (32 bit float) topics may be used, but the raw topic is preferred.
     info_msgs: The CameraInfo msg accompanying the image msg. It is necessary to update the camera model each time in order to permit changing the camera's resolution during operation.
   */ 
-  void CollisionChecker::setSensorData(const SensorDataPtr& sensor_data)
+  void CollisionChecker::setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
   {
     ROS_DEBUG_STREAM("[collision_checker] Setting new image" << std::endl);
     
-    DepthDataPtr depth_data = std::static_pointer_cast<DepthData>(sensor_data);
+    
     try {
       
       cv_bridge::CvImagePtr input_bridge_ref;
-      input_bridge_ref = cv_bridge::toCvCopy(depth_data->image_msg);
+      input_bridge_ref = cv_bridge::toCvCopy(image_msg);
       
       //If data type 32bit float, unit is m; else mm
       scale_ = (input_bridge_ref->encoding == sensor_msgs::image_encodings::TYPE_32FC1) ? SCALE_METERS : SCALE_MM;
@@ -102,7 +107,7 @@
       if(publish_image_)
       {
         //Make extra copy of depth image for publishing purposes
-        input_bridge_ = cv_bridge::toCvCopy(depth_data->image_msg,  sensor_msgs::image_encodings::TYPE_32FC1); 
+        input_bridge_ = cv_bridge::toCvCopy(image_msg,  sensor_msgs::image_encodings::TYPE_32FC1); 
         (input_bridge_->image).copyTo(image_);
       }
       
@@ -118,7 +123,7 @@
   */  
     //Reinitialize camera model with each image in case resolution has changed
 
-    robot_model_.updateModel(image_ref_, depth_data->info_msg, scale_);
+    robot_model_.updateModel(image_ref_, info_msg, scale_);
 
   }
 

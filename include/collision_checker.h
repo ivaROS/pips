@@ -52,15 +52,13 @@ class CollisionChecker
 
 
 public :
-    CollisionChecker(geometry_msgs::TransformStamped& optical_transform, std::vector<cv::Point3d> co_points, bool pub_image);
-    CollisionChecker(geometry_msgs::TransformStamped& optical_transform);
+    CollisionChecker();
 
     void setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
-    void setSensorData(const SensorDataPtr& depth_data);
     bool testCollision(double xyz[] );
     cv::Mat generateDepthImage(double xyz[] );
-
-    //
+    void setTransform(geometry_msgs::TransformStamped& base_optical_transform);
+    
     void generateImageCoord(const double xyz[], double * uv);
 
 private :

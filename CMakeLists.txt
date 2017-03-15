@@ -73,7 +73,7 @@ add_dependencies(robot_models
    )
 
 ## Declare a cpp executable
-add_executable(trajectory_tester src/test_trajectory.cpp )
+#add_executable(trajectory_tester src/test_trajectory.cpp )
 
 
 target_link_libraries(collision_checker
@@ -84,7 +84,7 @@ target_link_libraries(collision_checker
  )
 
  
-target_link_libraries(trajectory_tester
-  ${catkin_LIBRARIES}
-  collision_checker
- )
+#target_link_libraries(trajectory_tester
+#  ${catkin_LIBRARIES}
+#  collision_checker
+# )
