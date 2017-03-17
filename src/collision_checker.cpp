@@ -2,6 +2,8 @@
 
 #include "hallucinated_robot_model.h"
 
+#include <cv_bridge/cv_bridge.h>
+
 #include <ros/ros.h>
 #include <iostream>     // std::cout
 #include <algorithm>    // std::min
@@ -51,8 +53,8 @@
   /* The publish_image_ parameter will either be moved to dyanmic reconfigure or will be automatically toggled 
      based on the presence of subscribers
   */
-  CollisionChecker::CollisionChecker() :
-    it_(nh_), robot_model_(nh_)
+  CollisionChecker::CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) :
+    nh_(nh, name_), pnh_(pnh, name_), it_(nh_), robot_model_(nh_)
   {
   
     publish_image_ = false;
@@ -66,7 +68,7 @@
 
       depth_generation_service_ = nh_.advertiseService("generate_depth_image", &CollisionChecker::getDepthImage, this);
 
-      ROS_DEBUG_STREAM("[collision_checker] Constructing collision checker");
+      ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
 
    
   
@@ -87,7 +89,7 @@
   */ 
   void CollisionChecker::setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
   {
-    ROS_DEBUG_STREAM("[collision_checker] Setting new image" << std::endl);
+    ROS_DEBUG_STREAM_NAMED(name_, "Setting new image" << std::endl);
     
     
     try {
@@ -113,7 +115,7 @@
       
     }
     catch (cv_bridge::Exception& ex){
-      ROS_ERROR("[collision_checker] Failed to convert image");
+      ROS_ERROR_NAMED(name_, "Failed to convert image");
       return;
     }
 /*    catch (cv::Exception& ex){
@@ -178,7 +180,7 @@
     std::chrono::duration<double, std::milli> fp_ms = t2 - t1;
     
     
-    ROS_DEBUG_STREAM("[collision_checker] Collision checking took " << fp_ms.count() << " ms");
+    ROS_DEBUG_STREAM_NAMED(name_, "Collision checking took " << fp_ms.count() << " ms");
 
    // ROS_DEBUG_STREAM_COND(collided, "[collision_checker] Collided! (" << num_collisions << ")");
     //ROS_DEBUG_STREAM_COND(collided, "[collision_checker] Collided! Nearest world point: " << min_depth);
@@ -214,7 +216,7 @@
   
   bool CollisionChecker::getDepthImage(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res)
   {
-    ROS_INFO_STREAM("Depth image generation request received.");
+    ROS_INFO_STREAM_NAMED(name_, "Depth image generation request received.");
     
     double coords[3];
     coords[0] = req.pose.position.x;

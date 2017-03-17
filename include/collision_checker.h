@@ -8,7 +8,7 @@
 #include "ros/ros.h"
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
-#include <opencv/cv.h>
+//#include <opencv/cv.h>
 #include <Eigen/Eigen>
 #include <image_transport/image_transport.h>
 #include <image_geometry/pinhole_camera_model.h>
@@ -16,10 +16,15 @@
 #include <chrono>
 #include <memory>
 
+
+//class cv::Mat;
+
+
 /* This file currently is designed to work as though it were a generic interface but is specific to pips. 
   The code will be separated into interface and implementation specific versions later   
 */
 // Ex: this struct definition must be in the generic interface, which will be included by derived classes such as pips
+/*
 struct SensorData
 {
   virtual const std_msgs::Header getHeader() = 0;
@@ -46,13 +51,15 @@ struct DepthData : public SensorData
 
 typedef std::shared_ptr<DepthData> DepthDataPtr;
 
+*/
+
 class CollisionChecker
 {
 
 
 
 public :
-    CollisionChecker();
+    CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh);
 
     void setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
     bool testCollision(double xyz[] );
@@ -62,7 +69,8 @@ public :
     void generateImageCoord(const double xyz[], double * uv);
 
 private :
-    ros::NodeHandle nh_;
+    std::string name_ = "CollisionChecker";
+    ros::NodeHandle nh_, pnh_;
     image_transport::ImageTransport it_;
     image_transport::Publisher depthpub_;
     ros::Publisher posepub_;
