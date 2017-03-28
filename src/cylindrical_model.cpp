@@ -378,21 +378,11 @@ cv::Rect CylindricalModel::getColumn(const cv::Mat& image, const cv::Point2d& to
     return bounded;
 }
 
-void CylindricalModel::updateModel(cv::Mat& image, double scale)
+cv::Mat CylindricalModel::getImage(cv_bridge::CvImagePtr& cv_image_ref)
 {
-  image_ref_ = image.t();
-  scale_ = scale;
-  
-  if(show_im_)
-  {
-    double min;
-    double max;
-    cv::minMaxIdx(image_ref_, &min, &max);
-    cv::Mat adjIm;
-    cv::convertScaleAbs(image_ref_, adjIm, 255 / max);
-    
-    cv::imshow("Original image", adjIm);
-    cv::waitKey(1);
-  }
+   cv::Mat transposed = cv_image_ref->image.t();
+   return transposed;
 }
+    
+
 

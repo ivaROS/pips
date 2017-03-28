@@ -91,20 +91,19 @@
   {
     ROS_DEBUG_STREAM_NAMED(name_, "Setting new image" << std::endl);
     
-    
     try {
       
-      cv_bridge::CvImagePtr input_bridge_ref;
-      input_bridge_ref = cv_bridge::toCvCopy(image_msg);
+      input_bridge_ref_ = cv_bridge::toCvCopy(image_msg);
       
       //If data type 32bit float, unit is m; else mm
-      scale_ = (input_bridge_ref->encoding == sensor_msgs::image_encodings::TYPE_32FC1) ? SCALE_METERS : SCALE_MM;
+      scale_ = (input_bridge_ref_->encoding == sensor_msgs::image_encodings::TYPE_32FC1) ? SCALE_METERS : SCALE_MM;
       
       //Make a copy of depth image and set all 0's (unknowns) in image to some large value
-      image_ref_ = input_bridge_ref->image;
+      image_ref_ = input_bridge_ref_->image;
       image_ref_.setTo(MAX_RANGE * scale_, image_ref_==0);
 
       //A gazebo difference: unknown values are given as 'nan' rather than 0. However, comparison of a Nan with a number will always return false, so it won't trigger a collision
+      //That also means that a simulation-only version could skip the data copy and 0 replacement. Futhermore, the driver could be customized to use Nans too
 
       if(publish_image_)
       {
@@ -125,7 +124,7 @@
   */  
     //Reinitialize camera model with each image in case resolution has changed
 
-    robot_model_.updateModel(image_ref_, info_msg, scale_);
+    robot_model_.updateModel(input_bridge_ref_, info_msg, scale_);
 
   }
 
@@ -134,7 +133,7 @@
   Description: Tests if the specified base coordinates would result in a collision. Global variables are not modified, allowing this method to be called from multiple threads simultaneously
   Name: CollisionChecker::testCollision
   Inputs:
-    xyz: test coordinates [x,y,z] in the robot base's coordinate frame.
+    xyz: test coordinates [x,y,z] in the robot base's coordinate frame. Need to add \theta
   Output:
     bool: coordinates cause collision
   */ 

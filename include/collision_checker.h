@@ -86,6 +86,9 @@ private :
     unsigned int scale_;
     
     cv::Mat image_,image_ref_;
+    
+    cv_bridge::CvImagePtr input_bridge_ref_;
+    
     cv_bridge::CvImagePtr input_bridge_, output_bridge_;
     std::chrono::duration<double, std::milli> total_duration;
     
