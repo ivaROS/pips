@@ -378,7 +378,7 @@ cv::Rect CylindricalModel::getColumn(const cv::Mat& image, const cv::Point2d& to
     return bounded;
 }
 
-cv::Mat CylindricalModel::getImage(cv_bridge::CvImagePtr& cv_image_ref)
+cv::Mat CylindricalModel::getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
 {
    cv::Mat transposed = cv_image_ref->image.t();
    return transposed;

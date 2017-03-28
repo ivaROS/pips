@@ -41,7 +41,7 @@ class HallucinatedRobotModelImpl
       cam_model_ = cam_model;
     }
     
-    void updateModel(cv_bridge::CvImagePtr& cv_image_ref, double scale)
+    void updateModel(cv_bridge::CvImage::ConstPtr& cv_image_ref, double scale)
     {
       cv_image_ref_ = cv_image_ref;
       image_ref_ = getImage(cv_image_ref);
@@ -60,7 +60,7 @@ class HallucinatedRobotModelImpl
       }
     }
     
-    virtual cv::Mat getImage(cv_bridge::CvImagePtr& cv_image_ref)
+    virtual cv::Mat getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
     {
       return cv_image_ref->image;
     }
@@ -72,7 +72,7 @@ class HallucinatedRobotModelImpl
 
     std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_;
     cv::Mat image_ref_;
-    cv_bridge::CvImagePtr cv_image_ref_;
+    cv_bridge::CvImage::ConstPtr cv_image_ref_;
     double robot_radius_, robot_height_, floor_tolerance_;
     double scale_;
     bool show_im_=false;
@@ -108,7 +108,7 @@ class CylindricalModel : public HallucinatedRobotModelImpl
     cv::Mat generateHallucinatedRobot(const cv::Point3d pt);
     std::string getName() { return "CylindricalModel"; }
     virtual void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
-    virtual cv::Mat getImage(cv_bridge::CvImagePtr& cv_image_ref);
+    virtual cv::Mat getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref);
 
 };
 
@@ -188,7 +188,7 @@ class HallucinatedRobotModel
     return model_->generateHallucinatedRobot(pt);
   }
   
-  void updateModel(cv_bridge::CvImagePtr cv_image_ref, const sensor_msgs::CameraInfoConstPtr& info_msg, double scale)
+  void updateModel(const cv_bridge::CvImage::ConstPtr& cv_image_ref, const sensor_msgs::CameraInfoConstPtr& info_msg, double scale)
   {
     cv_image_ref_ = cv_image_ref;
     scale_ = scale;
@@ -214,7 +214,7 @@ class HallucinatedRobotModel
   boost::mutex model_mutex_;
   std::string name_ = "HallucinatedRobotModel";
   
-  cv_bridge::CvImagePtr cv_image_ref_;
+  cv_bridge::CvImage::ConstPtr cv_image_ref_;
   
   ros::NodeHandle nh_;
   
