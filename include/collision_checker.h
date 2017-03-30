@@ -62,11 +62,29 @@ public :
     CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh);
 
     void setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
-    bool testCollision(double xyz[] );
-    cv::Mat generateDepthImage(double xyz[] );
+    bool testCollision(PoseType pose);
+    cv::Mat generateDepthImage(PoseType pose);
+    
     void setTransform(geometry_msgs::TransformStamped& base_optical_transform);
     
     void generateImageCoord(const double xyz[], double * uv);
+    
+    template<typename T>
+    bool testCollision(T pose_in)
+    {
+      PoseType pose_out;
+      convertPose(pose_in, pose_out);
+      return testCollision(pose_out);
+    }
+
+    template<typename T>
+    cv::Mat generateDepthImage(T pose_in)
+    {
+      PoseType pose_out;
+      convertPose(pose_in, pose_out);
+      return generateDepthImage(pose_out);
+    }
+    
 
 private :
     std::string name_ = "CollisionChecker";
@@ -77,6 +95,7 @@ private :
     std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_;
 
     Eigen::Affine3d optical_transform_;
+    geometry_msgs::TransformStamped base_optical_transform_;
     
     ros::ServiceServer depth_generation_service_;
     
@@ -93,8 +112,29 @@ private :
     std::chrono::duration<double, std::milli> total_duration;
     
     bool getDepthImage(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res);
-
+    geometry_msgs::Pose transformPose(const geometry_msgs::Pose& pose);
+    
 } ;
+/*
+    template<typename T, typename S>
+    void getPose(T pose_in, S pose_out)
+    {
+      tf2::fromMsg(pose_in, pose_out);
+      return pose_out;
+    }
+    
+    template<typename T>
+    PoseType getPose(T pose_in)
+    {
+      PoseTyp pose_out;
+      getPose(pose_in, pose_out);
+      return pose_out;
+    }
+*/
+
+
+    //PoseType getPose(geometry_msgs::Point point);        
+    //eigen::Affine3d getPose(geometry_msgs::Pose pose);
 
 #endif /* COLLISION_CHECKER_H */
 

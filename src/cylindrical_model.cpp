@@ -28,6 +28,8 @@
       show_im_ = show_im;
   }
   
+  // Should use my custom comparison code from RectangularModel, make it more general and move it somewhere (maybe a header?), then use it from both of these
+  
   // Question: is it better to use the camera model's methods for clarity, or to use pure Eigen matrices for speed?
   // Initially, will use the model, but will likely switch over in the future.
   bool CylindricalModel::testCollision(const cv::Point3d pt)

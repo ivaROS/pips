@@ -170,29 +170,3 @@ cv::Mat DenseModel::generateHallucinatedRobot(const geometry_msgs::Pose& pose)
 
 
 
-
-
-
-int main(int argc, char **argv)
-{
-    std::string name= "depth_model";
-    ros::init(argc, argv, name);
-    ros::start();
-    ros::NodeHandle nh;
-    ros::NodeHandle pnh("~");
-    
-    depth_projection::DenseModel model(nh, pnh);
-    model.init();
-
-
-    ros::AsyncSpinner spinner(4); // Use 4 threads
-    spinner.start();
-    ros::waitForShutdown();
-
-
-	return 0;
-}
-
-
-
-

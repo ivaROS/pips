@@ -22,6 +22,8 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
 )
 
+#tf2_eigen must be at least version 0.5.15
+
 find_package(Eigen3 REQUIRED)
 
 generate_dynamic_reconfigure_options(

@@ -78,6 +78,7 @@
     {
       //Convert transform to Eigen
       optical_transform_ = tf2::transformToEigen(base_optical_transform);
+      base_optical_transform_ = base_optical_transform;
     }
   
   /*
@@ -137,10 +138,10 @@
   Output:
     bool: coordinates cause collision
   */ 
-  bool CollisionChecker::testCollision(double xyz[])
+  bool CollisionChecker::testCollision(geometry_msgs::Pose pose)
   {
     //Convert coordinates to Eigen Vector
-    Eigen::Map<const Eigen::Vector3d> origin_r(xyz);
+   // Eigen::Map<const Eigen::Vector3d> origin_r(xyz);
     
     //Start the clock
     auto t1 = std::chrono::high_resolution_clock::now();
@@ -154,25 +155,9 @@
       image_.copyTo(image);
     }
 
-    //Transform coordinates of robot base into camera's optical frame
-    Eigen::Vector3d origin_d = optical_transform_*origin_r;
-    //std::cout << "point (optical): " << origin_d << std::endl;
-
-    //Convert datatype of coordinates
-    cv::Point3d pt_cv(origin_d(0), origin_d(1), origin_d(2));
-
-    //Check if any points in ROI are closer than collision object's depth
-/*
-    cv::Mat collisions = (roi <= co_depth*scale_);
-    int num_collisions = cv::countNonZero(collisions);
-    bool collided = (num_collisions>0);
-  */
-  
-
-
+    geometry_msgs::Pose pose_t = transformPose(pose);
     
-    
-    bool collided = robot_model_.testCollision(pt_cv);
+    bool collided = robot_model_.testCollision(pose_t);
     
     //Calculate elapsed time for this computation
     auto t2 = std::chrono::high_resolution_clock::now();
@@ -197,35 +182,39 @@
     return collided;
   }
   
-  cv::Mat CollisionChecker::generateDepthImage(double xyz[])
+  geometry_msgs::Pose CollisionChecker::transformPose(const geometry_msgs::Pose& pose)
   {
-    //Convert coordinates to Eigen Vector
-    Eigen::Map<const Eigen::Vector3d> origin_r(xyz);
-    
+  // It would probably be better not to convert from whatever to geometry_msgs::Pose to Eigen::Affine3d back to geometry and then to whatever... But this seems the cleanest
+    Eigen::Affine3d pose_eig;
+    tf2::fromMsg(pose, pose_eig);
+
     //Transform coordinates of robot base into camera's optical frame
-    Eigen::Vector3d origin_d = optical_transform_*origin_r;
-    //std::cout << "point (optical): " << origin_d << std::endl;
-
-    //Convert datatype of coordinates
-    cv::Point3d pt_cv(origin_d(0), origin_d(1), origin_d(2));
-
-    return robot_model_.generateHallucinatedRobot(pt_cv);
+    Eigen::Affine3d pose_eig_t;
+    
+    tf2::doTransform(pose_eig, pose_eig_t, base_optical_transform_);
+    
+    geometry_msgs::Pose pose_t;
+    convertPose(pose_eig_t, pose_t);
+    
+    return pose_t;
+    
+  }
+  
+  cv::Mat CollisionChecker::generateDepthImage(PoseType pose)
+  {
+    return robot_model_.generateHallucinatedRobot(transformPose(pose));
     
   }
   
   bool CollisionChecker::getDepthImage(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res)
   {
     ROS_INFO_STREAM_NAMED(name_, "Depth image generation request received.");
-    
-    double coords[3];
-    coords[0] = req.pose.position.x;
-    coords[1] = req.pose.position.y;
-    coords[2] = req.pose.position.z;
+
     
     cv_bridge::CvImage out_msg;
     //out_msg.header   = ; // Same timestamp and tf frame as input image
     out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;// (scale_ == SCALE_METERS) ? sensor_msgs::image_encodings::TYPE_32FC1 : sensor_msgs::image_encodings::TYPE_16UC1;
-    out_msg.image = generateDepthImage(coords);
+    out_msg.image = generateDepthImage(req.pose);
     
     res.image = *out_msg.toImageMsg();
 
@@ -247,6 +236,25 @@
 
     
   }
-
+  
+  
+  
+  
+  /*
+  PoseType getPose(geometry_msgs::Point point)
+  {
+    geometry_msgs::Pose pose;
+    pose.position = point;
+    
+    return getPose(pose);
+  }
+  
+  eigen::Affine3d getPose(geometry_msgs::Pose pose_out)
+  {
+    eigen::Affine3d pose_out;
+    tf2::fromMsg(pose_in, pose_out);
+  }
+  
+  */
 
 
