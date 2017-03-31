@@ -23,7 +23,14 @@
 
 typedef geometry_msgs::Pose PoseType;
 
-// should really put these in some sort of namespace...
+// should really put these in some sort of namespace... and probably into a separate header
+
+  template<typename T>
+  void convertPose(const T& A, const T& B)
+  {
+    B = A;
+  }
+  
   inline
   void convertPose(const PoseType pose_in, cv::Point3d& pose_out)
   {
@@ -46,19 +53,27 @@ typedef geometry_msgs::Pose PoseType;
 
   inline
   void convertPose(const Eigen::Affine3d& in, geometry_msgs::Pose& msg) {
+    msg = tf2::toMsg(in);
   //tf2::fromMsg(*currentPose_, pose); // This should work with most recent version of tf2_eigen
-     msg.position.x = in.translation().x();
+   /*  msg.position.x = in.translation().x();
      msg.position.y = in.translation().y();
      msg.position.z = in.translation().z();
      msg.orientation.x = Eigen::Quaterniond(in.rotation()).x();
      msg.orientation.y = Eigen::Quaterniond(in.rotation()).y();
      msg.orientation.z = Eigen::Quaterniond(in.rotation()).z();
-     msg.orientation.w = Eigen::Quaterniond(in.rotation()).w();
+     msg.orientation.w = Eigen::Quaterniond(in.rotation()).w(); */
+  }
+  
+  /* Note: not sure whether this one actually works */
+  inline
+  void convertPose(const geometry_msgs::Pose& msg, const Eigen::Affine3d& out)
+  {
+    tf2::fromMsg(msg, out);
   }
 
 
 
-class HallucinatedRobotModelImpl
+template<typename S> class HallucinatedRobotModelImpl
 {
 
     public: 
@@ -68,13 +83,15 @@ class HallucinatedRobotModelImpl
         name_ = getName();
       }
     
-    virtual bool testCollision(const PoseType pose)
+/*    virtual bool testCollision(const PoseType pose)
     {
       return testCollision(pose);
     }
+  */  
     
+    virtual bool testCollision(const S pose)=0;
     
-    template<typename T, typename S>
+    template<typename T>
     bool testCollision(const T pose)
     {
       S convertedPose;
@@ -83,7 +100,7 @@ class HallucinatedRobotModelImpl
     }
      
     
-    virtual cv::Mat generateHallucinatedRobot(const PoseType pose)
+    virtual cv::Mat generateHallucinatedRobot(const S pose)
     {
       return image_ref_.clone();
     }
@@ -136,27 +153,28 @@ class HallucinatedRobotModelImpl
 };
 
 
-class RectangularModel : public HallucinatedRobotModelImpl
+class RectangularModel : public HallucinatedRobotModelImpl<cv::Point3d>
 {
     private:
     std::vector<cv::Point3d> co_offsets_;
     
     public:
-
+/*
     virtual bool testCollision(const PoseType pose)
     {
       return testCollision(cv::Point3d(pose.position.x, pose.position.y, pose.position.z));
     }
+  */  
+    virtual bool testCollision(const cv::Point3d pt);
     
-    bool testCollision(const cv::Point3d pt);
-    
-    
+    /*
     virtual cv::Mat generateHallucinatedRobot(const PoseType pose)
     {
       return generateHallucinatedRobot(cv::Point3d(pose.position.x, pose.position.y, pose.position.z));
     }
+    */
     
-    cv::Mat generateHallucinatedRobot(const cv::Point3d pt);
+    virtual cv::Mat generateHallucinatedRobot(const cv::Point3d pt);
     
     std::string getName() { return "RectangularModel"; }
     virtual void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
@@ -166,7 +184,7 @@ class RectangularModel : public HallucinatedRobotModelImpl
 };
 
 
-class CylindricalModel : public HallucinatedRobotModelImpl
+class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
 {
     private:
     cv::Rect getColumn(const cv::Mat& image, const cv::Point2d& top, const cv::Point2d& bottom);
@@ -179,7 +197,7 @@ class CylindricalModel : public HallucinatedRobotModelImpl
     }
     */
     
-    bool testCollision(const cv::Point3d pt);
+    virtual bool testCollision(const cv::Point3d pt);
     
     /*
     virtual cv::Mat generateHallucinatedRobot(const PoseType pose)
@@ -196,11 +214,11 @@ class CylindricalModel : public HallucinatedRobotModelImpl
 
 };
 
-class DenseModel : public HallucinatedRobotModelImpl
+class DenseModel : public HallucinatedRobotModelImpl<geometry_msgs::Pose>
 {
     public:
-    bool testCollision(const cv::Point3d pt);
-    cv::Mat generateHallucinatedRobot(const cv::Point3d pt);
+    bool testCollision(const geometry_msgs::Pose pose);
+    cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose);
     std::string getName() { return "DenseModel"; }
     virtual void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
     
