@@ -35,7 +35,7 @@
 /* Author: Suat Gedikli */
 
 #include "hallucinated_robot_model.h"
-#include "mesh_filter/depth_model_tester.h"
+#include <mesh_filter/depth_model.h>
 
 #include <ros/ros.h>
 #include <sensor_msgs/image_encodings.h>
@@ -52,48 +52,16 @@ DenseModel::DenseModel(ros::NodeHandle& nh, ros::NodeHandle& pnh) :
 {
   tfBuffer_ = std::make_shared<tf2_ros::Buffer>();
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tfBuffer_, nh_);
-  depth_model_ = std::make_shared<DepthModel>(tfBuffer_);
-
-}
-
-DenseModel::~DenseModel()
-{
-}
-
-bool DenseModel::init()
-{
+  depth_model_ = std::make_shared<depth_projection::DepthModel>(tfBuffer_);
   depth_model_->init("robot_description");
-  
-
-    
-  input_depth_transport_ = std::make_shared<image_transport::ImageTransport>(nh_); //Note: really just need the camera info
-  model_depth_transport_ = std::make_shared<image_transport::ImageTransport>(nh_);
-  
-  pub_model_depth_image_ = model_depth_transport_->advertiseCamera("model_depth", 1);
-  sub_depth_image_ = input_depth_transport_->subscribeCamera("/camera/depth/image_raw", 5,
-                                                            &DenseModel::depthCb, this); //hints
- 
-  pose_sub_ = nh_.subscribe("/pose", 1, &DenseModel::poseCB, this);
-
-
-
 }
 
 
-
-
-void DenseModel::depthCb(const sensor_msgs::ImageConstPtr& depth_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
-{
-  ROS_DEBUG("depth callback");
-  
-  currentCameraInfo_ = std::make_shared<CameraSpecs>(depth_msg, info_msg);
-  
-}
 
 bool DenseModel::isReady()
 {
     
-  if(!currentCameraInfo_)
+  if(!cam_model_)
   {
     ROS_WARN("Cannot render depth image until camera info is received!");
     return false;
@@ -103,69 +71,39 @@ bool DenseModel::isReady()
   {
     return false;
   }
-}
-
-void DenseModel::poseCB(const geometry_msgs::PoseConstPtr& pose_msg)
-{
-  ROS_INFO("pose callback!");
   
-  if(isReady())
-  {
-    std::shared_ptr<CameraSpecs> info = currentCameraInfo_;  //to prevent changes mid function
-
-    const sensor_msgs::ImageConstPtr& depth_msg = info->depth_msg;
-    const sensor_msgs::CameraInfoConstPtr& info_msg = info->info_msg;
-    
-    const sensor_msgs::ImageConstPtr debug_msg = depth_model_->generateDepthModel(pose_msg, depth_msg, info_msg);
-    
-    if(debug_msg)
-    {
-      pub_model_depth_image_.publish(*debug_msg, *info_msg);
-    }
-    
-  }
-    
+  return true;
 }
 
-bool DenseModel::testCollision(const geometry_msgs::Pose& pose)
+
+bool DenseModel::testCollisionImpl(const geometry_msgs::Pose pose)
 {
   cv::Mat model_depth = generateHallucinatedRobot(pose);
   
+  if(cv::countNonZero(model_depth < cv_image_ref_->image) > 0)
+  {
+    return true;
+  }
+  return false;
 }
 
-cv::Mat DenseModel::generateHallucinatedRobot(float [] pt)
+cv::Mat DenseModel::generateHallucinatedRobotImpl(const geometry_msgs::Pose pose)
 {
   if(isReady())
   {
-    geometry_msgs::Pose pose;
-    pose.position.x = pt[0];
-    pose.position.y = pt[1];
-    pose.position.z = pt[2];
+    const geometry_msgs::Pose::ConstPtr pose_ptr(new geometry_msgs::Pose(pose));  // Note: if depth_model_ took in normal pointers to pose, etc, I could just pass in the address rather than creating a new object. Is there any reason not to do that?
+    const sensor_msgs::Image::ConstPtr img_msg = depth_model_->generateDepthModel(pose_ptr, cv_image_ref_, cam_model_->cameraInfo());
     
-    if(sizeof(pt) / sizeof(float) == 4)
+    if(img_msg)
     {
-      pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, pt[3]);
+      cv_bridge::CvImage::ConstPtr img_cv = cv_bridge::toCvShare(img_msg);
+      return img_cv->image;
     }
+  }
     
-
-  
-  
+  return cv::Mat();
 }
 
-cv::Mat DenseModel::generateHallucinatedRobot(const geometry_msgs::Pose& pose)
-{
-
-  
-  
-    
-
-    const sensor_msgs::CameraInfoConstPtr info_msg(cam_model_->cameraInfo());
-    
-    const sensor_msgs::ImageConstPtr debug_msg = depth_model_->generateDepthModel(pose_msg, image_bridge_, info_msg);
-    
-
-
-}
 
 
 

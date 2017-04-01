@@ -32,7 +32,7 @@
   
   // Question: is it better to use the camera model's methods for clarity, or to use pure Eigen matrices for speed?
   // Initially, will use the model, but will likely switch over in the future.
-  bool CylindricalModel::testCollision(const cv::Point3d pt)
+  bool CylindricalModel::testCollisionImpl(const cv::Point3d pt)
   {
     
     cv::Mat viz;
@@ -240,7 +240,7 @@
 
   /* This is basically a duplicate of the above function with some extra code added. I feel like
   a lot of this could be cleaned up into separate functions, but this will work for now */
-  cv::Mat CylindricalModel::generateHallucinatedRobot(const cv::Point3d pt)
+  cv::Mat CylindricalModel::generateHallucinatedRobotImpl(const cv::Point3d pt)
   {
     
     cv::Mat viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type()); //image_ref_.clone();

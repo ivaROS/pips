@@ -54,7 +54,7 @@
      based on the presence of subscribers
   */
   CollisionChecker::CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) :
-    nh_(nh, name_), pnh_(pnh, name_), it_(nh_), robot_model_(nh_)
+    nh_(nh, name_), pnh_(pnh, name_), it_(nh_), robot_model_(nh_, pnh_)
   {
   
     publish_image_ = false;

@@ -35,7 +35,7 @@ void RectangularModel::setParameters(double radius, double height, double safety
 }
 
 /* Takes in the position of robot base in camera coordinate frame */
-bool RectangularModel::testCollision(const cv::Point3d pt)
+bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
 {
 
 
@@ -146,7 +146,7 @@ bool RectangularModel::isLessThan(const cv::Mat& image, float depth)
 }
 
 
-cv::Mat RectangularModel::generateHallucinatedRobot(const cv::Point3d pt)
+cv::Mat RectangularModel::generateHallucinatedRobotImpl(const cv::Point3d pt)
 {
     cv::Mat viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type());
     

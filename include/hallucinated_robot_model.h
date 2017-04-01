@@ -21,12 +21,18 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
+
+// Only needed for dense model. Really, each class should have its own header
+#include <tf2_ros/transform_listener.h>
+#include <mesh_filter/depth_model.h>
+
+
 typedef geometry_msgs::Pose PoseType;
 
 // should really put these in some sort of namespace... and probably into a separate header
 
   template<typename T>
-  void convertPose(const T& A, const T& B)
+  void convertPose(const T& A, T& B)
   {
     B = A;
   }
@@ -72,45 +78,19 @@ typedef geometry_msgs::Pose PoseType;
   }
 
 
-
-template<typename S> class HallucinatedRobotModelImpl
+class HallucinatedRobotModelBase
 {
+  public:
+    
+    HallucinatedRobotModelBase()
+    {
+      name_ = getName();
+    }
+    
 
-    public: 
-    
-    HallucinatedRobotModelImpl()
-      {
-        name_ = getName();
-      }
-    
-/*    virtual bool testCollision(const PoseType pose)
-    {
-      return testCollision(pose);
-    }
-  */  
-    
-    virtual bool testCollision(const S pose)=0;
-    
-    template<typename T>
-    bool testCollision(const T pose)
-    {
-      S convertedPose;
-      convertPose(pose, convertedPose);
-      return testCollision(convertedPose);
-    }
-     
-    
-    virtual cv::Mat generateHallucinatedRobot(const S pose)
-    {
-      return image_ref_.clone();
-    }
-    
+    virtual bool testCollision(geometry_msgs::Pose pose)=0;
+    virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)=0;
     virtual void setParameters(double robot_radius, double robot_height, double floor_tolerance, double safety_expansion, bool show_im)=0;
-
-    virtual void init(std::shared_ptr<image_geometry::PinholeCameraModel>& cam_model)
-    {
-      cam_model_ = cam_model;
-    }
     
     void updateModel(cv_bridge::CvImage::ConstPtr& cv_image_ref, double scale)
     {
@@ -131,16 +111,23 @@ template<typename S> class HallucinatedRobotModelImpl
       }
     }
     
+    
+    void init(std::shared_ptr<image_geometry::PinholeCameraModel>& cam_model)
+    {
+      cam_model_ = cam_model;
+    }
+    
+
+  
+  protected:
+    virtual std::string getName(){ return "undefined"; }
+    
     virtual cv::Mat getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
     {
       return cv_image_ref->image;
     }
-    
-    virtual std::string getName(){ return "undefined"; }
-
-    
-    protected:
-
+   
+  protected:
     std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_;
     cv::Mat image_ref_; //Allows method to make local changes if needed
     cv_bridge::CvImage::ConstPtr cv_image_ref_; //Allows access to original data and msg info
@@ -148,24 +135,64 @@ template<typename S> class HallucinatedRobotModelImpl
     double scale_;
     bool show_im_=false;
     std::string name_;
+    
 
+};
+
+template<typename S> class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
+{
+
+    public: 
+    
+    HallucinatedRobotModelImpl() : HallucinatedRobotModelBase()
+    {
+
+    }
+    
+    bool testCollision(const geometry_msgs::Pose pose)
+    {
+      S convertedPose;
+      convertPose(pose, convertedPose);
+      return testCollisionImpl(convertedPose);
+    }
+         
+    cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)
+    {
+      S convertedPose;
+      convertPose(pose, convertedPose);
+      return generateHallucinatedRobotImpl(convertedPose);
+    }
+
+
+    
+protected:
+    virtual bool testCollisionImpl(const S pose)=0;
+    
+    virtual cv::Mat generateHallucinatedRobotImpl(const S pose)
+    {
+      return image_ref_.clone();
+    }
 
 };
 
 
 class RectangularModel : public HallucinatedRobotModelImpl<cv::Point3d>
 {
-    private:
+  private:
     std::vector<cv::Point3d> co_offsets_;
     
-    public:
+  public:
+    void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
+
+
+  protected:
 /*
     virtual bool testCollision(const PoseType pose)
     {
       return testCollision(cv::Point3d(pose.position.x, pose.position.y, pose.position.z));
     }
   */  
-    virtual bool testCollision(const cv::Point3d pt);
+    bool testCollisionImpl(const cv::Point3d pt);
     
     /*
     virtual cv::Mat generateHallucinatedRobot(const PoseType pose)
@@ -174,30 +201,33 @@ class RectangularModel : public HallucinatedRobotModelImpl<cv::Point3d>
     }
     */
     
-    virtual cv::Mat generateHallucinatedRobot(const cv::Point3d pt);
+    cv::Mat generateHallucinatedRobotImpl(const cv::Point3d pt);
     
     std::string getName() { return "RectangularModel"; }
-    virtual void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
+
     
-    private:
+  private:
     bool isLessThan(const cv::Mat& image, float depth);
 };
 
 
 class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
 {
-    private:
+  private:
     cv::Rect getColumn(const cv::Mat& image, const cv::Point2d& top, const cv::Point2d& bottom);
     
-    public:
+  public:
+    void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
     /*
     virtual bool testCollision(const PoseType pose)
     {
       return testCollision(cv::Point3d(pose.position.x, pose.position.y, pose.position.z));
     }
     */
-    
-    virtual bool testCollision(const cv::Point3d pt);
+   
+  protected:
+  
+    bool testCollisionImpl(const cv::Point3d pt);
     
     /*
     virtual cv::Mat generateHallucinatedRobot(const PoseType pose)
@@ -206,45 +236,60 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
     }
     */
     
-    cv::Mat generateHallucinatedRobot(const cv::Point3d pt);
+    cv::Mat generateHallucinatedRobotImpl(const cv::Point3d pt);
     
     std::string getName() { return "CylindricalModel"; }
-    virtual void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
-    virtual cv::Mat getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref);
+
+    cv::Mat getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref);
 
 };
 
 class DenseModel : public HallucinatedRobotModelImpl<geometry_msgs::Pose>
 {
-    public:
-    bool testCollision(const geometry_msgs::Pose pose);
-    cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose);
-    std::string getName() { return "DenseModel"; }
-    virtual void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
+  public:
+    DenseModel(ros::NodeHandle& nh, ros::NodeHandle& pnh);
+    ~DenseModel() {}
+
+    void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
     
+  protected:
+    bool testCollisionImpl(const geometry_msgs::Pose pose);
+    cv::Mat generateHallucinatedRobotImpl(const geometry_msgs::Pose pose);
+    std::string getName() { return "DenseModel"; }
+    
+  private:
+    bool isReady();
+    
+  private:
+    std::shared_ptr<depth_projection::DepthModel> depth_model_;
+    
+    std::shared_ptr<tf2_ros::Buffer> tfBuffer_;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+    
+    ros::NodeHandle nh_, pnh_;
     
 };
 
 
 
-class HallucinatedRobotModel
+class HallucinatedRobotModelInterface
 {
   public:
   
-  HallucinatedRobotModel(ros::NodeHandle nh) :
-    nh_(nh)
+  HallucinatedRobotModelInterface(ros::NodeHandle nh, ros::NodeHandle pnh) :
+    nh_(nh), pnh_(pnh, name_)
   {
     cam_model_ = std::make_shared<image_geometry::PinholeCameraModel>();
-    pnh_ = ros::NodeHandle(nh_, name_);
+    //pnh_ = ros::NodeHandle(nh_, name_);
     
     reconfigure_server_ = std::make_shared<ReconfigureServer>(pnh_);
-    reconfigure_server_->setCallback(boost::bind(&HallucinatedRobotModel::configCB, this, _1, _2));
+    reconfigure_server_->setCallback(boost::bind(&HallucinatedRobotModelInterface::configCB, this, _1, _2));
     
   }
   
   void configCB(pips::HallucinatedRobotModelConfig &config, uint32_t level)
   {
-    ROS_INFO_STREAM_NAMED(name_, "Reconfigure Request:");
+    ROS_INFO_STREAM_NAMED(name_, "Reconfigure Request: "); // TODO: print out the model type and other parameter values
     
     boost::mutex::scoped_lock lock(model_mutex_); /* Mutex prevents dynamic reconfigure from changing anything while model in use */
     
@@ -309,7 +354,7 @@ class HallucinatedRobotModel
   private:
   
   std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_; // Note: I could get rid of the pointer and pass a reference to the implementation constructor. That would require making sure that cam_model_ was not destructed before model_. I think I've already arranged things properly for that to work, but not worth worrying about
-  std::shared_ptr<HallucinatedRobotModelImpl> model_;
+  std::shared_ptr<HallucinatedRobotModelBase> model_;
 
   double scale_;
   bool show_im_=false;
@@ -317,7 +362,7 @@ class HallucinatedRobotModel
   int model_type_ = -1;
   
   boost::mutex model_mutex_;  //This class manages all calls to the implementation, so the mutex is also stored here
-  std::string name_ = "HallucinatedRobotModel";
+  std::string name_ = "HallucinatedRobotModelInterface";
   
   cv_bridge::CvImage::ConstPtr cv_image_ref_;
   

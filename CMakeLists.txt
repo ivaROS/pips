@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   geometry_msgs
   dynamic_reconfigure
+  dense_depth_projection
 )
 
 #tf2_eigen must be at least version 0.5.15
@@ -45,7 +46,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIR}
   LIBRARIES collision_checker robot_models
-  CATKIN_DEPENDS image_geometry cv_bridge message_runtime
+  CATKIN_DEPENDS image_geometry cv_bridge message_runtime dense_depth_projection
   DEPENDS Eigen3 
 )
 
@@ -67,11 +68,15 @@ add_library(collision_checker src/collision_checker.cpp)
 add_library(robot_models 
   src/rectangular_model.cpp
   src/cylindrical_model.cpp
-  )
+  src/dense_model.cpp)
 
 add_dependencies(robot_models
    ${PROJECT_NAME}_gencfg
    )
+   
+target_link_libraries(robot_models
+  ${catkin_LIBRARIES}
+  )
 
 ## Declare a cpp executable
 #add_executable(trajectory_tester src/test_trajectory.cpp )
@@ -81,11 +86,5 @@ target_link_libraries(collision_checker
   robot_models
   ${catkin_LIBRARIES}
 
-
  )
 
- 
-#target_link_libraries(trajectory_tester
-#  ${catkin_LIBRARIES}
-#  collision_checker
-# )

@@ -99,7 +99,7 @@ private :
     
     ros::ServiceServer depth_generation_service_;
     
-    HallucinatedRobotModel robot_model_;
+    HallucinatedRobotModelInterface robot_model_;
     
     bool publish_image_;
     unsigned int scale_;
