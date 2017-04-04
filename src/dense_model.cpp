@@ -76,10 +76,6 @@ bool DenseModel::isReady()
   return true;
 }
 
-bool DenseModel::testCollision(const geometry_msgs::Pose pose)
-{
-  return testCollisionImpl(pose);
-}
 
 bool DenseModel::testCollisionImpl(const geometry_msgs::Pose pose)
 {

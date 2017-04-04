@@ -155,7 +155,7 @@ template<typename S> class HallucinatedRobotModelImpl : public HallucinatedRobot
 
     }
     
-    virtual bool testCollision(const geometry_msgs::Pose pose)
+    bool testCollision(const geometry_msgs::Pose pose)
     {
       S convertedPose;
       convertPose(pose, convertedPose);
@@ -256,7 +256,6 @@ class DenseModel : public HallucinatedRobotModelImpl<geometry_msgs::Pose>
     DenseModel(ros::NodeHandle& nh, ros::NodeHandle& pnh);
     ~DenseModel();
     
-    bool testCollision(const geometry_msgs::Pose pose);
 
     void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
     
