@@ -47,6 +47,7 @@
 
 
 DenseModel::DenseModel(ros::NodeHandle& nh, ros::NodeHandle& pnh) :
+    HallucinatedRobotModelImpl(),
     nh_(nh), 
     pnh_(pnh)
 {
@@ -56,7 +57,7 @@ DenseModel::DenseModel(ros::NodeHandle& nh, ros::NodeHandle& pnh) :
   depth_model_->init("robot_description");
 }
 
-
+DenseModel::~DenseModel() {}
 
 bool DenseModel::isReady()
 {
@@ -75,6 +76,10 @@ bool DenseModel::isReady()
   return true;
 }
 
+bool DenseModel::testCollision(const geometry_msgs::Pose pose)
+{
+  return testCollisionImpl(pose);
+}
 
 bool DenseModel::testCollisionImpl(const geometry_msgs::Pose pose)
 {
@@ -104,7 +109,10 @@ cv::Mat DenseModel::generateHallucinatedRobotImpl(const geometry_msgs::Pose pose
   return cv::Mat();
 }
 
+void DenseModel::setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im)
+{
 
+}
 
 
 
