@@ -307,7 +307,8 @@ class DenseModel : public HallucinatedRobotModelImpl<geometry_msgs::Pose>
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
     
     ros::NodeHandle nh_, pnh_;
-    
+    std::shared_ptr<image_transport::ImageTransport> model_depth_transport_;
+    image_transport::CameraPublisher pub_model_depth_image_;
 };
 
 

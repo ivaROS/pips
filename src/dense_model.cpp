@@ -43,7 +43,7 @@
 
 #include <memory>
 
-
+#include "opencv2/highgui/highgui.hpp"
 
 
 DenseModel::DenseModel(ros::NodeHandle& nh, ros::NodeHandle& pnh) :
@@ -55,6 +55,10 @@ DenseModel::DenseModel(ros::NodeHandle& nh, ros::NodeHandle& pnh) :
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tfBuffer_, nh_);
   depth_model_ = std::make_shared<depth_projection::DepthModel>(tfBuffer_);
   depth_model_->init("robot_description");//, "camera_depth_optical_frame", "base_footprint");
+  
+  model_depth_transport_ = std::make_shared<image_transport::ImageTransport>(nh_);
+  
+  pub_model_depth_image_ = model_depth_transport_->advertiseCamera("model_depth", 1);
 }
 
 DenseModel::~DenseModel() {}
@@ -81,7 +85,9 @@ bool DenseModel::testCollisionImpl(const geometry_msgs::Pose pose)
 {
   cv::Mat model_depth = generateHallucinatedRobotImpl(pose);
   
-  if(cv::countNonZero(model_depth < cv_image_ref_->image) > 0)  // This will be replaced by a call to my custom 'isLessThan' function
+
+  
+  if(cv::countNonZero(model_depth > cv_image_ref_->image) > 0)  // This will be replaced by a call to my custom 'isLessThan' function
   {
     return true;
   }
@@ -95,10 +101,19 @@ cv::Mat DenseModel::generateHallucinatedRobotImpl(const geometry_msgs::Pose pose
     const geometry_msgs::Pose::ConstPtr pose_ptr(new geometry_msgs::Pose(pose));  // Note: if depth_model_ took in normal pointers to pose, etc, I could just pass in the address rather than creating a new object. Is there any reason not to do that?
     const sensor_msgs::Image::ConstPtr img_msg = depth_model_->generateDepthModel(pose_ptr, cv_image_ref_, cam_model_->cameraInfo());
     
+    pub_model_depth_image_.publish(*img_msg, cam_model_->cameraInfo());  // Should be able to publish ConstPtr messages!
+    
     if(img_msg)
     {
       cv_bridge::CvImage::ConstPtr img_cv = cv_bridge::toCvShare(img_msg);
+      cv::imshow("depth_model", img_cv->image);
+      cv::waitKey(0);
+      
       return img_cv->image;
+    }
+    else
+    {
+      ROS_WARN_NAMED(name_, "Warning: no depth image generated");
     }
   }
     
