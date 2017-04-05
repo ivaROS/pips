@@ -118,9 +118,10 @@ class HallucinatedRobotModelBase
     }
     
     
-    void init(std::shared_ptr<image_geometry::PinholeCameraModel>& cam_model)
+    void init(std::shared_ptr<image_geometry::PinholeCameraModel>& cam_model, const geometry_msgs::TransformStamped& base_optical_transform)
     {
       cam_model_ = cam_model;
+      base_optical_transform_ = base_optical_transform;
     }
     
 
@@ -141,6 +142,7 @@ class HallucinatedRobotModelBase
     double scale_;
     bool show_im_=false;
     std::string name_;
+    geometry_msgs::TransformStamped base_optical_transform_;
     
 
 };
@@ -157,17 +159,21 @@ template<typename S> class HallucinatedRobotModelImpl : public HallucinatedRobot
     
     bool testCollision(const geometry_msgs::Pose pose)
     {
+      geometry_msgs::Pose pose_t = transformPose(pose);
       S convertedPose;
-      convertPose(pose, convertedPose);
+      convertPose(pose_t, convertedPose);
       return testCollisionImpl(convertedPose);
     }
          
     cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)
     {
+      geometry_msgs::Pose pose_t = transformPose(pose);
       S convertedPose;
-      convertPose(pose, convertedPose);
+      convertPose(pose_t, convertedPose);
       return generateHallucinatedRobotImpl(convertedPose);
     }
+    
+
 
 
     
@@ -178,7 +184,33 @@ protected:
     {
       return image_ref_.clone();
     }
+    
+    virtual geometry_msgs::Pose transformPose(const geometry_msgs::Pose& pose)
+    {
+    // It would probably be better not to convert from whatever to geometry_msgs::Pose to Eigen::Affine3d back to geometry and then to whatever... But this seems the cleanest
+      Eigen::Affine3d pose_eig;
+      tf2::fromMsg(pose, pose_eig);
 
+      //Transform coordinates of robot base into camera's optical frame
+      Eigen::Affine3d pose_eig_t;
+      
+      tf2::doTransform(pose_eig, pose_eig_t, base_optical_transform_);
+      
+      geometry_msgs::Pose pose_t;
+      convertPose(pose_eig_t, pose_t);
+      
+      ROS_DEBUG_STREAM_NAMED(name_, "Pose [" << 
+        pose.position.x << "," << pose.position.y << "," << pose.position.z << "] (" <<
+        pose.orientation.w << "," << pose.orientation.x << "," << pose.orientation.y << "," << pose.orientation.z << 
+        ") transformed to [" << 
+        pose_t.position.x << "," << pose_t.position.y << "," << pose_t.position.z << "] (" << 
+        pose_t.orientation.w << "," << pose_t.orientation.x << "," << pose_t.orientation.y << "," << pose_t.orientation.z 
+        << ")"
+        );
+      
+      return pose_t;
+      
+    }
 };
 
 
@@ -263,6 +295,7 @@ class DenseModel : public HallucinatedRobotModelImpl<geometry_msgs::Pose>
     bool testCollisionImpl(const geometry_msgs::Pose pose);
     cv::Mat generateHallucinatedRobotImpl(const geometry_msgs::Pose pose);
     std::string getName() { return "DenseModel"; }
+    geometry_msgs::Pose transformPose(const geometry_msgs::Pose& pose);
     
   private:
     bool isReady();
@@ -302,6 +335,7 @@ public:
   }
   
   void updateModel(const cv_bridge::CvImage::ConstPtr& cv_image_ref, const sensor_msgs::CameraInfoConstPtr& info_msg, double scale);
+  void setTransform(const geometry_msgs::TransformStamped& base_optical_transform);
   
 private:
   
@@ -319,6 +353,7 @@ private:
   cv_bridge::CvImage::ConstPtr cv_image_ref_;
   
   ros::NodeHandle nh_, pnh_;
+  geometry_msgs::TransformStamped base_optical_transform_;
   
   typedef dynamic_reconfigure::Server<pips::HallucinatedRobotModelConfig> ReconfigureServer;
   std::shared_ptr<ReconfigureServer> reconfigure_server_;

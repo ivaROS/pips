@@ -35,7 +35,7 @@
         model_ = std::make_shared<DenseModel>(nh_, pnh_);
       }
       
-      model_->init(cam_model_);
+      model_->init(cam_model_, base_optical_transform_);
       
       if(cv_image_ref_)
       {
@@ -66,6 +66,11 @@
       boost::mutex::scoped_lock lock(model_mutex_);
       model_->updateModel(cv_image_ref_, scale);
     }
+  }
+  
+  void HallucinatedRobotModelInterface::setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
+  {
+    base_optical_transform_ = base_optical_transform;
   }
   
 

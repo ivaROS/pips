@@ -74,11 +74,12 @@
   
   }
   
-    void CollisionChecker::setTransform(geometry_msgs::TransformStamped& base_optical_transform)
+    void CollisionChecker::setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
     {
       //Convert transform to Eigen
       optical_transform_ = tf2::transformToEigen(base_optical_transform);
       base_optical_transform_ = base_optical_transform;
+      robot_model_.setTransform(base_optical_transform);
     }
   
   /*
@@ -154,10 +155,8 @@
       image = input_bridge_->image;
       image_.copyTo(image);
     }
-
-    geometry_msgs::Pose pose_t = transformPose(pose);
     
-    bool collided = robot_model_.testCollision(pose_t);
+    bool collided = robot_model_.testCollision(pose);
     
     //Calculate elapsed time for this computation
     auto t2 = std::chrono::high_resolution_clock::now();
@@ -182,27 +181,10 @@
     return collided;
   }
   
-  geometry_msgs::Pose CollisionChecker::transformPose(const geometry_msgs::Pose& pose)
-  {
-  // It would probably be better not to convert from whatever to geometry_msgs::Pose to Eigen::Affine3d back to geometry and then to whatever... But this seems the cleanest
-    Eigen::Affine3d pose_eig;
-    tf2::fromMsg(pose, pose_eig);
-
-    //Transform coordinates of robot base into camera's optical frame
-    Eigen::Affine3d pose_eig_t;
-    
-    tf2::doTransform(pose_eig, pose_eig_t, base_optical_transform_);
-    
-    geometry_msgs::Pose pose_t;
-    convertPose(pose_eig_t, pose_t);
-    
-    return pose_t;
-    
-  }
   
   cv::Mat CollisionChecker::generateDepthImage(PoseType pose)
   {
-    return robot_model_.generateHallucinatedRobot(transformPose(pose));
+    return robot_model_.generateHallucinatedRobot(pose);
     
   }
   

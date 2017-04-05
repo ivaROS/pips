@@ -65,7 +65,7 @@ public :
     bool testCollision(PoseType pose);
     cv::Mat generateDepthImage(PoseType pose);
     
-    void setTransform(geometry_msgs::TransformStamped& base_optical_transform);
+    void setTransform(const geometry_msgs::TransformStamped& base_optical_transform);
     
     void generateImageCoord(const double xyz[], double * uv);
     
@@ -112,7 +112,7 @@ private :
     std::chrono::duration<double, std::milli> total_duration;
     
     bool getDepthImage(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res);
-    geometry_msgs::Pose transformPose(const geometry_msgs::Pose& pose);
+
     
 } ;
 /*

@@ -355,8 +355,10 @@
       cv::Mat(viz,column) = depth; 
 
     }
-
-    return viz;
+  
+    cv::Mat viz_t = viz.t();
+  
+    return viz_t;
   }
 
 

@@ -54,7 +54,7 @@ DenseModel::DenseModel(ros::NodeHandle& nh, ros::NodeHandle& pnh) :
   tfBuffer_ = std::make_shared<tf2_ros::Buffer>();
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tfBuffer_, nh_);
   depth_model_ = std::make_shared<depth_projection::DepthModel>(tfBuffer_);
-  depth_model_->init("robot_description");
+  depth_model_->init("robot_description");//, "camera_depth_optical_frame", "base_footprint");
 }
 
 DenseModel::~DenseModel() {}
@@ -64,7 +64,7 @@ bool DenseModel::isReady()
     
   if(!cam_model_)
   {
-    ROS_WARN("Cannot render depth image until camera info is received!");
+    ROS_WARN_NAMED(name_, "Cannot render depth image until camera info is received!");
     return false;
   }
   
@@ -79,9 +79,9 @@ bool DenseModel::isReady()
 
 bool DenseModel::testCollisionImpl(const geometry_msgs::Pose pose)
 {
-  cv::Mat model_depth = generateHallucinatedRobot(pose);
+  cv::Mat model_depth = generateHallucinatedRobotImpl(pose);
   
-  if(cv::countNonZero(model_depth < cv_image_ref_->image) > 0)
+  if(cv::countNonZero(model_depth < cv_image_ref_->image) > 0)  // This will be replaced by a call to my custom 'isLessThan' function
   {
     return true;
   }
@@ -110,5 +110,9 @@ void DenseModel::setParameters(double radius, double height, double safety_expan
 
 }
 
+geometry_msgs::Pose DenseModel::transformPose(const geometry_msgs::Pose& pose)
+{
+  return pose;
+}
 
 
