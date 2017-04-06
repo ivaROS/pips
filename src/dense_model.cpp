@@ -85,10 +85,13 @@ bool DenseModel::testCollisionImpl(const geometry_msgs::Pose pose)
 {
   cv::Mat model_depth = generateHallucinatedRobotImpl(pose);
   
-
+  cv::Mat diff = model_depth > cv_image_ref_->image;
   
-  if(cv::countNonZero(model_depth > cv_image_ref_->image) > 0)  // This will be replaced by a call to my custom 'isLessThan' function
+  if(cv::countNonZero(diff) > 0)  // This will be replaced by a call to my custom 'isLessThan' function
   {
+    cv::imshow("model_depth", model_depth);
+    cv::imshow("depth_diff", diff);
+    cv::waitKey(1);
     return true;
   }
   return false;
@@ -101,13 +104,14 @@ cv::Mat DenseModel::generateHallucinatedRobotImpl(const geometry_msgs::Pose pose
     const geometry_msgs::Pose::ConstPtr pose_ptr(new geometry_msgs::Pose(pose));  // Note: if depth_model_ took in normal pointers to pose, etc, I could just pass in the address rather than creating a new object. Is there any reason not to do that?
     const sensor_msgs::Image::ConstPtr img_msg = depth_model_->generateDepthModel(pose_ptr, cv_image_ref_, cam_model_->cameraInfo());
     
+    //Should add subscription checks
     pub_model_depth_image_.publish(*img_msg, cam_model_->cameraInfo());  // Should be able to publish ConstPtr messages!
     
     if(img_msg)
     {
       cv_bridge::CvImage::ConstPtr img_cv = cv_bridge::toCvShare(img_msg);
-      cv::imshow("depth_model", img_cv->image);
-      cv::waitKey(0);
+      //cv::imshow("depth_model", img_cv->image);
+      //cv::waitKey(0);
       
       return img_cv->image;
     }
