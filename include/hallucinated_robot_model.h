@@ -309,6 +309,8 @@ class DenseModel : public HallucinatedRobotModelImpl<geometry_msgs::Pose>
     ros::NodeHandle nh_, pnh_;
     std::shared_ptr<image_transport::ImageTransport> model_depth_transport_;
     image_transport::CameraPublisher pub_model_depth_image_;
+    
+    bool isLessThan(const cv::Mat& depth_im, const cv::Mat& generated_im);
 };
 
 
