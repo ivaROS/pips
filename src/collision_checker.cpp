@@ -103,6 +103,9 @@
       //Make a copy of depth image and set all 0's (unknowns) in image to some large value
       image_ref_ = input_bridge_ref_->image;
       image_ref_.setTo(MAX_RANGE * scale_, image_ref_==0);
+      
+      
+      //image_ref_.setTo(MAX_RANGE * scale_, image_ref_!=image_ref_);
 
       //A gazebo difference: unknown values are given as 'nan' rather than 0. However, comparison of a Nan with a number will always return false, so it won't trigger a collision
       //That also means that a simulation-only version could skip the data copy and 0 replacement. Futhermore, the driver could be customized to use Nans too
@@ -199,6 +202,8 @@
     out_msg.image = generateDepthImage(req.pose);
     
     res.image = *out_msg.toImageMsg();
+    
+    testCollision(req.pose);
 
     
     return true;

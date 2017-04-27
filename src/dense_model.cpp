@@ -100,6 +100,7 @@ bool DenseModel::isLessThan(const cv::Mat& depth_im, const cv::Mat& generated_im
     int nRows = depth_im.rows;
     int nCols = depth_im.cols;
 
+    bool retVal = false;
     
     //Could use templates to remove the duplication of this code
     if(depth_im.depth() == CV_32FC1)
@@ -115,7 +116,8 @@ bool DenseModel::isLessThan(const cv::Mat& depth_im, const cv::Mat& generated_im
           {
               if(p_d[j] < p_g[j])
               {
-                return true;
+                retVal = true;
+                std::cout << "depth["<< j << "," << i << "] = " << p_d[j] << " < " << p_g[j] << "\n";
               }
                 
           }
@@ -141,7 +143,7 @@ bool DenseModel::isLessThan(const cv::Mat& depth_im, const cv::Mat& generated_im
       }
     }
     
-    return false;
+    return retVal;
 }
 
 bool DenseModel::testCollisionImpl(const geometry_msgs::Pose pose)
@@ -156,39 +158,54 @@ bool DenseModel::testCollisionImpl(const geometry_msgs::Pose pose)
   if(num_nans > 0)
     std::cout << "# nans in model image: " << num_nans << "\n";
     
-  nans = cv::Mat(cv_image_ref_->image != cv_image_ref_->image);
+  //nans = cv::Mat(cv_image_ref_->image != cv_image_ref_->image);
   
-  num_nans = cv::countNonZero(nans);
+  //num_nans = cv::countNonZero(nans);
   
-  if(num_nans > 0)
-    std::cout << "# nans in depth image: " << num_nans << "\n";
+  //if(num_nans > 0)
+  //  std::cout << "# nans in depth image: " << num_nans << "\n";
     
-  if(isLessThan(cv_image_ref_->image, model_depth))
-    std::cout << "Collision detected in custom value check";
-    
+  bool collision = false;
   
-  if(cv::countNonZero(diff) > 0)  // This will be replaced by a call to my custom 'isLessThan' function
+  bool cvRes = (cv::countNonZero(diff) > 0);
+  bool myRes = isLessThan(cv_image_ref_->image, model_depth);
+  
+  if(cvRes || myRes)
+  {
+      std::cout << "Collision detected\n";
+      collision = true;
+  }
+  if(cvRes && !myRes)
+  {
+    std::cout << "Collision detected in cv check but not mine\n";
+  }
+  else if (myRes && !cvRes)
+  {
+    std::cout << "Collision detected in my check but not cv\n";
+  }
+  
+  if(collision)  // This will be replaced by a call to my custom 'isLessThan' function
   {
     double min, max;
     cv::Mat mask =  model_depth > 0;
     cv::minMaxIdx(model_depth, &min, &max, 0, 0, mask);
     std::cout << "Min: " << min << ", max: " << max << "\n";
-    cv::Mat viz;
+
     
     double alpha = 30;
     double scale = (255 - alpha) / (max - min);
     double delta = alpha - min *(255- alpha)/(max - min);
     
-    cv::convertScaleAbs(model_depth, viz, scale, delta);// 255 / (max-min), -min);
+    cv::Mat viz;
+    cv::convertScaleAbs(model_depth, viz, 255 / (max-min), -min);
     
-    //viz = model_depth;
-    //viz(mask) = (model_depth - min) * (255 - alpha)/(max - min) + alpha;
+    //viz = (model_depth - min) * (255 - alpha)/(max - min) + alpha;
     
     //cv::normalize(model_depth, model_depth, 0, 255, cv::NORM_MINMAX); //I thought this would do the same thing as the above, but I got a memory corruption error
     
     cv::imshow("model_depth", viz);
     cv::imshow("depth_diff", diff);
-    cv::waitKey(1);
+    cv::waitKey(200);
     return true;
   }
   return false;
@@ -199,7 +216,7 @@ cv::Mat DenseModel::generateHallucinatedRobotImpl(const geometry_msgs::Pose pose
   if(isReady())
   {
     geometry_msgs::Pose adj_pose = pose;
-    adj_pose.position.z = adj_pose.position.z + .05;  //raising model a little
+    adj_pose.position.z = adj_pose.position.z + .15;  //raising model a little
     
     const geometry_msgs::Pose::ConstPtr pose_ptr(new geometry_msgs::Pose(pose));  // Note: if depth_model_ took in normal pointers to pose, etc, I could just pass in the address rather than creating a new object. Is there any reason not to do that?
     const sensor_msgs::Image::ConstPtr img_msg = depth_model_->generateDepthModel(pose_ptr, cv_image_ref_, cam_model_->cameraInfo());

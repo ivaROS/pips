@@ -243,7 +243,7 @@
   cv::Mat CylindricalModel::generateHallucinatedRobotImpl(const cv::Point3d pt)
   {
     
-    cv::Mat viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type()); //image_ref_.clone();
+    cv::Mat viz = image_ref_.clone(); //cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type()); //image_ref_.clone();
     
     unsigned int left = 0;
     unsigned int right = image_ref_.cols;
@@ -356,7 +356,8 @@
 
     }
   
-    cv::Mat viz_t = viz.t();
+    cv::Mat viz_t;
+    cv::transpose(viz,viz_t);// = viz.t();
   
     return viz_t;
   }
