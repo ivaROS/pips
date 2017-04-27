@@ -23,8 +23,8 @@
 
 
 // Only needed for dense model. Really, each class should have its own header
-#include <tf2_ros/transform_listener.h>
-#include <mesh_filter/depth_model.h>
+//#include <tf2_ros/transform_listener.h>
+//#include <mesh_filter/depth_model.h>
 
 
 typedef geometry_msgs::Pose PoseType;
@@ -98,11 +98,14 @@ class HallucinatedRobotModelBase
     virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)=0;
     virtual void setParameters(double robot_radius, double robot_height, double floor_tolerance, double safety_expansion, bool show_im)=0;
     
+    
     void updateModel(cv_bridge::CvImage::ConstPtr& cv_image_ref, double scale)
     {
       cv_image_ref_ = cv_image_ref;
       image_ref_ = getImage(cv_image_ref);
       scale_ = scale;
+      
+      doPrecomputation();
       
       if(show_im_)
       {
@@ -133,6 +136,8 @@ class HallucinatedRobotModelBase
     {
       return cv_image_ref->image;
     }
+    
+    virtual void doPrecomputation() {}
    
   protected:
     std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_;
@@ -230,7 +235,7 @@ class RectangularModel : public HallucinatedRobotModelImpl<cv::Point3d>
       return testCollision(cv::Point3d(pose.position.x, pose.position.y, pose.position.z));
     }
   */  
-    bool testCollisionImpl(const cv::Point3d pt);
+    virtual bool testCollisionImpl(const cv::Point3d pt);
     
     /*
     virtual cv::Mat generateHallucinatedRobot(const PoseType pose)
@@ -239,13 +244,44 @@ class RectangularModel : public HallucinatedRobotModelImpl<cv::Point3d>
     }
     */
     
-    cv::Mat generateHallucinatedRobotImpl(const cv::Point3d pt);
     
-    std::string getName() { return "RectangularModel"; }
+    virtual cv::Mat generateHallucinatedRobotImpl(const cv::Point3d pt);
+    
+    virtual std::string getName() { return "RectangularModel"; }
 
     
   private:
     bool isLessThan(const cv::Mat& image, float depth);
+};
+
+class RectangularModelMinV : public RectangularModel
+{
+  protected:  
+    double min_dist_ = -1;
+    
+  protected:
+    void doPrecomputation()
+    {
+      cv::minMaxLoc(image_ref_, &min_dist_);  // This isn't enough: the floor is detected. Has to be the minimum value above plane.
+      ROS_INFO_STREAM_NAMED(name_, "New minimum = " << min_dist_);
+    }
+  
+    bool testCollisionImpl(const cv::Point3d pt)
+    {
+      if(pt.x + robot_radius_ < min_dist_ * scale_)
+      {
+        ROS_DEBUG_NAMED(name_, "Point in known free space");
+        return false;
+      }
+      else
+      {
+        return RectangularModel::testCollisionImpl(pt);
+      }
+
+    }
+    
+    std::string getName() { return "RectangularModelMinV"; }
+    
 };
 
 
@@ -282,6 +318,7 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
 
 };
 
+/*
 class DenseModel : public HallucinatedRobotModelImpl<geometry_msgs::Pose>
 {
   public:
@@ -312,7 +349,7 @@ class DenseModel : public HallucinatedRobotModelImpl<geometry_msgs::Pose>
     
     bool isLessThan(const cv::Mat& depth_im, const cv::Mat& generated_im);
 };
-
+*/
 
 
 class HallucinatedRobotModelInterface

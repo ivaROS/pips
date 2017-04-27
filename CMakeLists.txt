@@ -20,7 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   geometry_msgs
   dynamic_reconfigure
-  dense_depth_projection
+#  dense_depth_projection
 )
 
 #tf2_eigen must be at least version 0.5.15
@@ -46,7 +46,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIR}
   LIBRARIES collision_checker robot_models
-  CATKIN_DEPENDS image_geometry cv_bridge message_runtime dense_depth_projection
+  CATKIN_DEPENDS image_geometry cv_bridge message_runtime #dense_depth_projection
   DEPENDS Eigen3 
 )
 
@@ -71,11 +71,13 @@ add_dependencies(robot_model_interface
    ${PROJECT_NAME}_gencfg
    )
 
-add_library (dense_model 
-  src/dense_model.cpp
-  )
 
-SET(ROBOT_MODEL_LIBS dense_model)
+#add_library (dense_model 
+#  src/dense_model.cpp
+#  )
+
+#SET(ROBOT_MODEL_LIBS dense_model)
+
   
 add_library(rectangular_model
   src/rectangular_model.cpp

@@ -30,11 +30,17 @@
       {
         model_ = std::make_shared<CylindricalModel>();
       }
-      else if (config.model_type == pips::HallucinatedRobotModel_dense)
+      else if (config.model_type == pips::HallucinatedRobotModel_rectangular_min)
       {
-        model_ = std::make_shared<DenseModel>(nh_, pnh_);
+        model_ = std::make_shared<RectangularModelMinV>();
       }
-      
+/*      else if (config.model_type == pips::HallucinatedRobotModel_dense)
+      {
+        ROS_WARN_NAMED(name_, "Sorry, this model is currently disabled. No changes have been made.");
+        return;
+        //model_ = std::make_shared<DenseModel>(nh_, pnh_);
+      }
+*/      
       model_->init(cam_model_, base_optical_transform_);
       
       if(cv_image_ref_)
