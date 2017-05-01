@@ -3,7 +3,7 @@
 
 
 #include <pips/HallucinatedRobotModelConfig.h>
-#include <dynamic_reconfigure/server.h>
+//#include <dynamic_reconfigure/server.h>
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/Pose.h>
