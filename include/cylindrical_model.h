@@ -1,7 +1,7 @@
 
 struct COLUMN_TYPE
 {
-  cv::Mat column;
+  cv::Mat image;
   float depth;
 };
 
