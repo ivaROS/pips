@@ -41,7 +41,7 @@
       cv::Mat col = cols[i].image;
       float depth = cols[i].depth;
       
-      if(cv::countNonZero(cv::Mat(image_ref_,col) < depth) > 0)
+      if(cv::countNonZero(col < depth) > 0)
       {
         return true; 
       }
