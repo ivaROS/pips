@@ -4,6 +4,7 @@
 
 #include "hallucinated_robot_model.h"
 #include <pips/GenerateDepthImage.h>
+#include <pips/TestCollision.h>
 
 #include "ros/ros.h"
 #include <sensor_msgs/Image.h>
@@ -84,8 +85,11 @@ public :
       convertPose(pose_in, pose_out);
       return generateDepthImage(pose_out);
     }
-    
 
+private:
+    bool testCollisionSrv(pips::TestCollision::Request &req, pips::TestCollision::Response &res);
+    bool getDepthImageSrv(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res);
+    
 private :
     std::string name_ = "CollisionChecker";
     ros::NodeHandle nh_, pnh_;
@@ -97,7 +101,7 @@ private :
     Eigen::Affine3d optical_transform_;
     geometry_msgs::TransformStamped base_optical_transform_;
     
-    ros::ServiceServer depth_generation_service_;
+    ros::ServiceServer depth_generation_service_, collision_testing_service_;
     
     HallucinatedRobotModelInterface robot_model_;
     
@@ -111,7 +115,7 @@ private :
     cv_bridge::CvImagePtr input_bridge_, output_bridge_;
     std::chrono::duration<double, std::milli> total_duration;
     
-    bool getDepthImage(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res);
+
 
     
 } ;

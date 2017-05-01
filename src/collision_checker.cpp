@@ -2,6 +2,9 @@
 
 #include "hallucinated_robot_model.h"
 
+#include <pips/GenerateDepthImage.h>
+#include <pips/TestCollision.h>
+
 #include <cv_bridge/cv_bridge.h>
 
 #include <ros/ros.h>
@@ -66,7 +69,8 @@
       }
 
 
-      depth_generation_service_ = nh_.advertiseService("generate_depth_image", &CollisionChecker::getDepthImage, this);
+      depth_generation_service_ = nh_.advertiseService("generate_depth_image", &CollisionChecker::getDepthImageSrv, this);
+      collision_testing_service_ = nh_.advertiseService("test_collision", &CollisionChecker::testCollisionSrv, this);
 
       ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
 
@@ -191,7 +195,15 @@
     
   }
   
-  bool CollisionChecker::getDepthImage(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res)
+  bool CollisionChecker::testCollisionSrv(pips::TestCollision::Request &req, pips::TestCollision::Response &res)
+  {
+    ROS_INFO_STREAM_NAMED(name_, "Collision test request received.");
+    res.collision.data = robot_model_.testCollision(req.pose);
+    
+    return true;
+  }
+  
+  bool CollisionChecker::getDepthImageSrv(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res)
   {
     ROS_INFO_STREAM_NAMED(name_, "Depth image generation request received.");
 

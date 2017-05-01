@@ -285,38 +285,6 @@ class RectangularModelMinV : public RectangularModel
 };
 
 
-class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
-{
-  private:
-    cv::Rect getColumn(const cv::Mat& image, const cv::Point2d& top, const cv::Point2d& bottom);
-    
-  public:
-    void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
-    /*
-    virtual bool testCollision(const PoseType pose)
-    {
-      return testCollision(cv::Point3d(pose.position.x, pose.position.y, pose.position.z));
-    }
-    */
-   
-  protected:
-  
-    bool testCollisionImpl(const cv::Point3d pt);
-    
-    /*
-    virtual cv::Mat generateHallucinatedRobot(const PoseType pose)
-    {
-      return generateHallucinatedRobot(cv::Point3d(pose.position.x, pose.position.y, pose.position.z));
-    }
-    */
-    
-    cv::Mat generateHallucinatedRobotImpl(const cv::Point3d pt);
-    
-    std::string getName() { return "CylindricalModel"; }
-
-    cv::Mat getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref);
-
-};
 
 /*
 class DenseModel : public HallucinatedRobotModelImpl<geometry_msgs::Pose>

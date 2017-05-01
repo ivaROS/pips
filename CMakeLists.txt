@@ -34,12 +34,14 @@ generate_dynamic_reconfigure_options(
 add_service_files(
   FILES
   GenerateDepthImage.srv
+  TestCollision.srv
 )
 
 generate_messages(
   DEPENDENCIES
   geometry_msgs
   sensor_msgs
+  std_msgs
 )
 
 
@@ -92,7 +94,7 @@ add_library(cylindrical_model
 SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model)
 
 
-
+MESSAGE(STATUS "ROBOT MODELS " ${ROBOT_MODEL_LIBS})
    
 target_link_libraries(robot_model_interface
   ${ROBOT_MODEL_LIBS}
