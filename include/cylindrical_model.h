@@ -1,7 +1,7 @@
 
 struct COLUMN_TYPE
 {
-  int x,y,height;
+  cv::Mat column;
   float depth;
 };
 
@@ -70,6 +70,7 @@ bool CylindricalModel::checkCollisions(const cv::Mat& image, const std::vector<C
 */
 
 //transposed version
+/*
 template<typename T>
 bool CylindricalModel::checkCollisions(const cv::Mat& image, const std::vector<COLUMN_TYPE>& rows)
 {
@@ -78,7 +79,7 @@ bool CylindricalModel::checkCollisions(const cv::Mat& image, const std::vector<C
     int row_num = rows[0].x;
     for(int i = 0; i < rows.size(); ++i, ++row_num)
     {
-      const float* p = image.ptr<T>(row_num);
+      const T* p = image.ptr<T>(row_num);
       int width = cols[i].height;
       float depth = cols[i].depth;
       
@@ -94,6 +95,8 @@ bool CylindricalModel::checkCollisions(const cv::Mat& image, const std::vector<C
     return false;
   }
 }
+*/      
+/*
 
 //Could use templates to remove the duplication of this code
     if(image.depth() == CV_32FC1)
@@ -130,3 +133,5 @@ bool CylindricalModel::checkCollisions(const cv::Mat& image, const std::vector<C
           }
       }
     }
+          
+    */
