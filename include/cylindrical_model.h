@@ -1,3 +1,6 @@
+#ifndef CYLINDRICAL_MODEL_H
+#define CYLINDRICAL_MODEL_H
+
 #include <hallucinated_robot_model.h>
 
 struct COLUMN_TYPE
@@ -136,3 +139,5 @@ bool CylindricalModel::checkCollisions(const cv::Mat& image, const std::vector<C
     }
           
     */
+
+#endif /*  CYLINDRICAL_MODEL_H */
