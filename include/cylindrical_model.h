@@ -1,3 +1,4 @@
+#include <hallucinated_robot_model.h>
 
 struct COLUMN_TYPE
 {
