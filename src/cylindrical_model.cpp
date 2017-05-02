@@ -122,6 +122,7 @@ cv::Mat CylindricalModel::getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
 
   std::vector<COLUMN_TYPE> CylindricalModel::getColumns(const cv::Point3d pt)
   {
+    ROS_DEBUG_STREAM_NAMED(name_, "Get columns for " << pt);
     std::vector<COLUMN_TYPE> cols;
     
     int img_width = cv_image_ref_->image.cols;

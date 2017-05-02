@@ -29,7 +29,7 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
    
   protected:
   
-    bool testCollisionImpl(const cv::Point3d pt);
+    virtual bool testCollisionImpl(const cv::Point3d pt);
     
     virtual COLUMN_TYPE getColumn(const cv::Point2d top, const cv::Point2d bottom, const float depth);
     std::vector<COLUMN_TYPE> getColumns(const cv::Point3d pt);

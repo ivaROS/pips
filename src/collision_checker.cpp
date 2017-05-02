@@ -215,7 +215,7 @@
     
     res.image = *out_msg.toImageMsg();
     
-    testCollision(req.pose);
+    //testCollision(req.pose);
 
     
     return true;
