@@ -101,9 +101,8 @@ class HallucinatedRobotModelBase
     
     HallucinatedRobotModelBase()
     {
-      name_ = getName();
     }
-    
+ 
 
     virtual bool testCollision(geometry_msgs::Pose pose)=0;
     virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)=0;
@@ -141,7 +140,7 @@ class HallucinatedRobotModelBase
 
   
   protected:
-    virtual std::string getName(){ return "undefined"; }
+    //virtual std::string getName(){ return "undefined"; }
     
     virtual cv::Mat getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
     {

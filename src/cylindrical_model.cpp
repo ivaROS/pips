@@ -18,7 +18,10 @@
 
 #include <iomanip>      // std::setprecision
 
-  CylindricalModel::CylindricalModel() : HallucinatedRobotModelImpl() {}
+  CylindricalModel::CylindricalModel() : HallucinatedRobotModelImpl() 
+  {
+    name_ = "CylindricalModel";
+  }
   
   void CylindricalModel::setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im)
   {   
