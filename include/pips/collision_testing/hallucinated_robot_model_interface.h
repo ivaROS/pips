@@ -1,7 +1,7 @@
 #ifndef HALLUCINATED_ROBOT_MODEL_INTERFACE_H
 #define HALLUCINATED_ROBOT_MODEL_INTERFACE_H
 
-#include <hallucinated_robot_model.h>
+#include <pips/collision_testing/robot_models/hallucinated_robot_model.h>
 #include <dynamic_reconfigure/server.h>
 #include <pips/HallucinatedRobotModelConfig.h>
 

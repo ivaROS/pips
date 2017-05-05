@@ -1,7 +1,7 @@
 #ifndef CYLINDRICAL_MODEL_H
 #define CYLINDRICAL_MODEL_H
 
-#include <hallucinated_robot_model.h>
+#include <pips/collision_testing/robot_models/hallucinated_robot_model.h>
 
 // May be able to template this for 32F or 16U and have the other functions templated based on the type of this that is passed in
 struct COLUMN_TYPE

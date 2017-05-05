@@ -1,5 +1,5 @@
 
-#include "cylindrical_model.h"
+#include "pips/collision_testing/robot_models/cylindrical_model.h"
 
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>

@@ -2,7 +2,7 @@
 #define COLLISION_CHECKER_H
 
 
-#include "hallucinated_robot_model_interface.h"
+#include "pips/collision_testing/hallucinated_robot_model_interface.h"
 #include <pips/GenerateDepthImage.h>
 #include <pips/TestCollision.h>
 

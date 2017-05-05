@@ -1,6 +1,6 @@
-#include "hallucinated_robot_model_interface.h"
-#include <cylindrical_model.h>
-#include <cylindrical_model_t.h>
+#include "pips/collision_testing/hallucinated_robot_model_interface.h"
+#include <pips/collision_testing/robot_models/cylindrical_model.h>
+#include <pips/collision_testing/robot_models/cylindrical_model_t.h>
 
 #include <pips/HallucinatedRobotModelConfig.h>
 

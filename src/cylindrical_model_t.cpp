@@ -1,5 +1,5 @@
 
-#include <cylindrical_model_t.h>
+#include <pips/collision_testing/robot_models/cylindrical_model_t.h>
 
   /* Transposes are only needed when:
       1. Setting the reference depth image

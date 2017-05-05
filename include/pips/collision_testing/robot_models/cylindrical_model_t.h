@@ -1,7 +1,7 @@
 #ifndef CYLINDRICAL_MODEL_T_H
 #define CYLINDRICAL_MODEL_T_H
 
-#include <cylindrical_model.h>
+#include <pips/collision_testing/robot_models/cylindrical_model.h>
 
 
 class CylindricalModelT : public CylindricalModel

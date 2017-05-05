@@ -1,6 +1,6 @@
-#include "collision_checker.h"
+#include "pips/collision_testing/collision_checker.h"
 
-#include "hallucinated_robot_model.h"
+#include "pips/collision_testing/robot_models/hallucinated_robot_model.h"
 
 #include <pips/GenerateDepthImage.h>
 #include <pips/TestCollision.h>

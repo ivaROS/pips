@@ -21,7 +21,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
-#include<sstream>
+#include <sstream>
 
 // Only needed for dense model. Really, each class should have its own header
 //#include <tf2_ros/transform_listener.h>
