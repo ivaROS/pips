@@ -66,6 +66,8 @@ public :
     bool testCollision(PoseType pose);
     cv::Mat generateDepthImage(PoseType pose);
     
+    void init();
+    
     void setTransform(const geometry_msgs::TransformStamped& base_optical_transform);
     
     void generateImageCoord(const double xyz[], double * uv);

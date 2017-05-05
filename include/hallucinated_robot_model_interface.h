@@ -13,6 +13,7 @@ public:
   HallucinatedRobotModelInterface(ros::NodeHandle nh, ros::NodeHandle pnh);
   
   void configCB(pips::HallucinatedRobotModelConfig &config, uint32_t level);
+  void init();
   
   template <typename T>
   bool testCollision(const T pose)

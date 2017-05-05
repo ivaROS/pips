@@ -94,6 +94,15 @@ typedef geometry_msgs::Pose PoseType;
         ")";
     return ss.str();
   }
+  
+  std::string toString(const geometry_msgs::TransformStamped& transform)
+  {
+    std::stringstream ss;
+    ss << "[" << transform.transform.translation.x << "," << transform.transform.translation.y << "," << transform.transform.translation.z << "] (" <<
+        transform.transform.rotation.w << "," << transform.transform.rotation.x << "," << transform.transform.rotation.y << "," << transform.transform.rotation.z << 
+        ")";
+    return ss.str();
+  }
 
 class HallucinatedRobotModelBase
 {
