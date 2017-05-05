@@ -32,7 +32,7 @@
       show_im_ = show_im;
   }
   
-  // Should use my custom comparison code from RectangularModel, make it more general and move it somewhere (maybe a header?), then use it from both of these
+  // Should use my custom comparison code from RectangularModel, make it more general and move it somewhere (maybe a header?), then use it from both of these. Except, that built-in vectorized/parallel versions should use this...
   
   // Question: is it better to use the camera model's methods for clarity, or to use pure Eigen matrices for speed?
   // Initially, will use the model, but will likely switch over in the future.
@@ -42,7 +42,7 @@
   
     for(unsigned int i = 0; i < cols.size(); ++i)
     {
-      cv::Mat col = cols[i].image;
+      cv::Mat col = cv::Mat(image_ref_,cols[i].rect); //cols[i].image;
       float depth = cols[i].depth;
       
       if(cv::countNonZero(col < depth) > 0)
@@ -65,11 +65,12 @@
     
     for(unsigned int i = 0; i < cols.size(); ++i)
     {
-      cv::Mat col = cols[i].image;
+      cv::Mat col = cv::Mat(viz, cols[i].rect); //cols[i].image;
       float depth = cols[i].depth;
       
       col.setTo(depth);
     }
+    
 
     //cv::Mat viz_t = viz.t();
     //cv::transpose(viz,viz_t);
@@ -109,7 +110,8 @@ cv::Mat CylindricalModel::getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
 
     COLUMN_TYPE col;
     
-    col.image = cv::Mat(image_ref_,bounded);
+    col.rect = bounded;
+    //col.image = cv::Mat(image_ref_,bounded);
     col.depth = depth;
 
      ROS_DEBUG_STREAM_NAMED(name_, "Input rect: " << r << ", bounded: " << bounded << ", depth: " << depth);

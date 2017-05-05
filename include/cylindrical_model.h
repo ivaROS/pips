@@ -6,7 +6,8 @@
 // May be able to template this for 32F or 16U and have the other functions templated based on the type of this that is passed in
 struct COLUMN_TYPE
 {
-  cv::Mat image;
+  cv::Rect rect;
+  //cv::Mat image;
   float depth;
 };
 
