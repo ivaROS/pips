@@ -59,8 +59,10 @@
   {
     cv::Mat viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type()); // What about filling with Nans?
     
-   std::vector<COLUMN_TYPE> cols = getColumns(pt);
-  
+    std::vector<COLUMN_TYPE> cols = getColumns(pt);
+    
+    
+    
     for(unsigned int i = 0; i < cols.size(); ++i)
     {
       cv::Mat col = cols[i].image;
