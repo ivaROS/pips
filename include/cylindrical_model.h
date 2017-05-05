@@ -1,4 +1,9 @@
+#ifndef CYLINDRICAL_MODEL_H
+#define CYLINDRICAL_MODEL_H
 
+#include <hallucinated_robot_model.h>
+
+// May be able to template this for 32F or 16U and have the other functions templated based on the type of this that is passed in
 struct COLUMN_TYPE
 {
   cv::Mat image;
@@ -11,6 +16,9 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
 
     
   public:
+  
+    CylindricalModel();
+  
     void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
     /*
     virtual bool testCollision(const PoseType pose)
@@ -21,9 +29,9 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
    
   protected:
   
-    bool testCollisionImpl(const cv::Point3d pt);
+    virtual bool testCollisionImpl(const cv::Point3d pt);
     
-    virtual COLUMN_TYPE getColumn(const cv::Point2d top, const cv::Point2d bottom, double depth);
+    virtual COLUMN_TYPE getColumn(const cv::Point2d top, const cv::Point2d bottom, const float depth);
     std::vector<COLUMN_TYPE> getColumns(const cv::Point3d pt);
 
 /*
@@ -36,6 +44,8 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
     virtual cv::Mat generateHallucinatedRobotImpl(const cv::Point3d pt);
     
     virtual std::string getName() { return "CylindricalModel"; }
+    
+    virtual cv::Rect getROIImpl(int x, int y, int width, int height);
 
     //cv::Mat getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref);
 
@@ -135,3 +145,5 @@ bool CylindricalModel::checkCollisions(const cv::Mat& image, const std::vector<C
     }
           
     */
+
+#endif /*  CYLINDRICAL_MODEL_H */

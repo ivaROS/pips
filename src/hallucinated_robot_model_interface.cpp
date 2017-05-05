@@ -1,4 +1,4 @@
-#include "hallucinated_robot_model.h"
+#include "hallucinated_robot_model_interface.h"
 
 
   
@@ -6,11 +6,14 @@
     nh_(nh), pnh_(pnh, name_)
   {
     cam_model_ = std::make_shared<image_geometry::PinholeCameraModel>();
+    reconfigure_server_ = std::make_shared<ReconfigureServer>(pnh_);
     //pnh_ = ros::NodeHandle(nh_, name_);
     
-    reconfigure_server_ = std::make_shared<ReconfigureServer>(pnh_);
+  }
+  
+  void HallucinatedRobotModelInterface::init()
+  {
     reconfigure_server_->setCallback(boost::bind(&HallucinatedRobotModelInterface::configCB, this, _1, _2));
-    
   }
   
   void HallucinatedRobotModelInterface::configCB(pips::HallucinatedRobotModelConfig &config, uint32_t level)
@@ -43,6 +46,8 @@
 */      
       model_->init(cam_model_, base_optical_transform_);
       
+      ROS_WARN_STREAM_NAMED(name_, "transform: " << toString(base_optical_transform_));
+      
       if(cv_image_ref_)
       {
         model_->updateModel(cv_image_ref_, scale_);  // catches initial condition where image_ref_ is empty
@@ -65,12 +70,12 @@
   {
     cv_image_ref_ = cv_image_ref;
     scale_ = scale;
-    cam_model_->fromCameraInfo(info_msg); //We are only updating the contents of cam_model_, rather than the object it points to, so no need to pass it to the model again
-
     
     {
       boost::mutex::scoped_lock lock(model_mutex_);
       model_->updateModel(cv_image_ref_, scale);
+      cam_model_->fromCameraInfo(info_msg); //We are only updating the contents of cam_model_, rather than the object it points to, so no need to pass it to the model again
+
     }
   }
   

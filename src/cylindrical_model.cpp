@@ -1,5 +1,5 @@
 
-#include "hallucinated_robot_model.h"
+#include "cylindrical_model.h"
 
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -18,6 +18,10 @@
 
 #include <iomanip>      // std::setprecision
 
+  CylindricalModel::CylindricalModel() : HallucinatedRobotModelImpl() 
+  {
+    name_ = "CylindricalModel";
+  }
   
   void CylindricalModel::setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im)
   {   
@@ -36,29 +40,30 @@
   {
     std::vector<COLUMN_TYPE> cols = getColumns(pt);
   
-    for(int i = 0; i < cols.size(); ++i)
+    for(unsigned int i = 0; i < cols.size(); ++i)
     {
       cv::Mat col = cols[i].image;
       float depth = cols[i].depth;
       
-      if(cv::countNonZero(cv::Mat(image_ref_,col) < depth) > 0)
+      if(cv::countNonZero(col < depth) > 0)
       {
         return true; 
       }
     }
  
     return false;
-}
+  }
 
-  /* This is basically a duplicate of the above function with some extra code added. I feel like
-  a lot of this could be cleaned up into separate functions, but this will work for now */
+
   cv::Mat CylindricalModel::generateHallucinatedRobotImpl(const cv::Point3d pt)
   {
     cv::Mat viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type()); // What about filling with Nans?
     
-   std::vector<COLUMN_TYPE> cols = getColumns(pt);
-  
-    for(int i = 0; i < cols.size(); ++i)
+    std::vector<COLUMN_TYPE> cols = getColumns(pt);
+    
+    
+    
+    for(unsigned int i = 0; i < cols.size(); ++i)
     {
       cv::Mat col = cols[i].image;
       float depth = cols[i].depth;
@@ -87,8 +92,8 @@ cv::Mat CylindricalModel::getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
 
 
 
-COLUMN_TYPE CylindricalModel::getColumn(const cv::Point2d top, const cv::Point2d bottom, float depth)
-{
+  COLUMN_TYPE CylindricalModel::getColumn(const cv::Point2d top, const cv::Point2d bottom, const float depth)
+  {
     //By forming a Rect in this way, doesn't matter which point is the top and which is the bottom.
     cv::Rect_<double> r(top,bottom);
     
@@ -107,33 +112,26 @@ COLUMN_TYPE CylindricalModel::getColumn(const cv::Point2d top, const cv::Point2d
     col.image = cv::Mat(image_ref_,bounded);
     col.depth = depth;
 
-    
+     ROS_DEBUG_STREAM_NAMED(name_, "Input rect: " << r << ", bounded: " << bounded << ", depth: " << depth);
+     
     //std::cout << std::setprecision(16) << "top = " << top << ", bottom = " << bottom << ", Col = " << r << "tl: " << r.tl() << " br: " << r.br() << ", rect=" << column << ", bounded= " << bounded << "\n"; // Debugging printout to troubleshoot incorrect x values for columns. The 'magic number' added above resolved the problem.
     
     return col;
-}
-
-cv::Rect CylindricalModel::getROIImpl(int x, int y, int width, int height)
-{
-    return cv::Rect(x,y,width,height);
   }
 
-/*
-//Transposed version
-cv::Mat CylindricalModel::getROIImpl(int x, int y, int width, int height)
-{
-    //The only changes needed to use a transposed image are swapping the x and y as well as width and height
-    cv::Rect column(y,x,height,width);
+  cv::Rect CylindricalModel::getROIImpl(const int x, const int y, const int width, const int height)
+  {
+      return cv::Rect(x,y,width,height);
   }
-  */
 
 
   std::vector<COLUMN_TYPE> CylindricalModel::getColumns(const cv::Point3d pt)
   {
+    ROS_DEBUG_STREAM_NAMED(name_, "Get columns for " << pt);
     std::vector<COLUMN_TYPE> cols;
     
-    int img_width = cv_image_ref_->width;
-    int img_height = cv_image_ref_->height;
+    int img_width = cv_image_ref_->image.cols;
+    int img_height = cv_image_ref_->image.rows;
     
     unsigned int left = 0;
     unsigned int right = img_width;
@@ -264,7 +262,7 @@ cv::Mat CylindricalModel::getROIImpl(int x, int y, int width, int height)
     }
     
     
-    
+    return cols;
   }
     
 

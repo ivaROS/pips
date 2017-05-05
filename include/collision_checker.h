@@ -2,7 +2,7 @@
 #define COLLISION_CHECKER_H
 
 
-#include "hallucinated_robot_model.h"
+#include "hallucinated_robot_model_interface.h"
 #include <pips/GenerateDepthImage.h>
 #include <pips/TestCollision.h>
 
@@ -65,6 +65,8 @@ public :
     void setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
     bool testCollision(PoseType pose);
     cv::Mat generateDepthImage(PoseType pose);
+    
+    void init();
     
     void setTransform(const geometry_msgs::TransformStamped& base_optical_transform);
     

@@ -62,20 +62,24 @@
   
     publish_image_ = false;
     //This should either be completely removed or made configurable. Probably just removed since I added the depth generation service
-    if(publish_image_)
+
+      ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
+
+  }
+
+  void CollisionChecker::init()
+  {
+      if(publish_image_)
       {
         //Create publisher with large queue due to sheer number of images produced
         depthpub_ = it_.advertise("depth_image_out",2000);
       }
 
+      robot_model_.init();
 
       depth_generation_service_ = nh_.advertiseService("generate_depth_image", &CollisionChecker::getDepthImageSrv, this);
       collision_testing_service_ = nh_.advertiseService("test_collision", &CollisionChecker::testCollisionSrv, this);
 
-      ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
-
-   
-  
   }
   
     void CollisionChecker::setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
@@ -215,7 +219,7 @@
     
     res.image = *out_msg.toImageMsg();
     
-    testCollision(req.pose);
+    //testCollision(req.pose);
 
     
     return true;
