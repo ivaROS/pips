@@ -2,6 +2,8 @@
 #include <cylindrical_model.h>
 #include <cylindrical_model_t.h>
 
+#include <pips/HallucinatedRobotModelConfig.h>
+
   
   HallucinatedRobotModelInterface::HallucinatedRobotModelInterface(ros::NodeHandle nh, ros::NodeHandle pnh) :
     nh_(nh), pnh_(pnh, name_)

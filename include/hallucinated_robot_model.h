@@ -2,7 +2,7 @@
 #define HALLUCINATED_ROBOT_MODEL_H
 
 
-#include <pips/HallucinatedRobotModelConfig.h>
+
 //#include <dynamic_reconfigure/server.h>
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>

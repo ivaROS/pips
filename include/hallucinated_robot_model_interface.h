@@ -3,7 +3,7 @@
 
 #include <hallucinated_robot_model.h>
 #include <dynamic_reconfigure/server.h>
-
+#include <pips/HallucinatedRobotModelConfig.h>
 
 class HallucinatedRobotModelInterface
 {
