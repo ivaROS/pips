@@ -47,7 +47,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIR}
-  LIBRARIES collision_checker robot_models
+  LIBRARIES collision_checker
   CATKIN_DEPENDS image_geometry cv_bridge message_runtime #dense_depth_projection
   DEPENDS Eigen3 
 )
@@ -93,6 +93,12 @@ add_library(cylindrical_model
 
 SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model)
 
+ 
+add_library(cylindrical_model_t 
+  src/cylindrical_model_t.cpp
+  )
+
+SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model_t)
 
 MESSAGE(STATUS "ROBOT MODELS " ${ROBOT_MODEL_LIBS})
    

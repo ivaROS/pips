@@ -239,6 +239,8 @@ class RectangularModel : public HallucinatedRobotModelImpl<cv::Point3d>
     std::vector<cv::Point3d> co_offsets_;
     
   public:
+    RectangularModel();
+    
     void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
 
 
@@ -261,7 +263,7 @@ class RectangularModel : public HallucinatedRobotModelImpl<cv::Point3d>
     
     virtual cv::Mat generateHallucinatedRobotImpl(const cv::Point3d pt);
     
-    virtual std::string getName() { return "RectangularModel"; }
+    //virtual std::string getName() { return "RectangularModel"; }
 
     
   private:

@@ -1,5 +1,6 @@
 #include "hallucinated_robot_model_interface.h"
-
+#include <cylindrical_model.h>
+#include <cylindrical_model_t.h>
 
   
   HallucinatedRobotModelInterface::HallucinatedRobotModelInterface(ros::NodeHandle nh, ros::NodeHandle pnh) :
@@ -32,6 +33,10 @@
       else if (config.model_type == pips::HallucinatedRobotModel_cylindrical)
       {
         model_ = std::make_shared<CylindricalModel>();
+      }
+      else if (config.model_type == pips::HallucinatedRobotModel_cylindrical_t)
+      {
+        model_ = std::make_shared<CylindricalModelT>();
       }
       else if (config.model_type == pips::HallucinatedRobotModel_rectangular_min)
       {

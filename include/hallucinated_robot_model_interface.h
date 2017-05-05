@@ -2,7 +2,6 @@
 #define HALLUCINATED_ROBOT_MODEL_INTERFACE_H
 
 #include <hallucinated_robot_model.h>
-#include <cylindrical_model.h>
 #include <dynamic_reconfigure/server.h>
 
 

@@ -19,6 +19,11 @@
 #include <iomanip>      // std::setprecision
 
 
+RectangularModel::RectangularModel()
+{
+  name_ = "RectangularModel";
+}
+
 void RectangularModel::setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im)
 {
     cv::Point3d topr(radius+safety_expansion,-height,radius+safety_expansion);

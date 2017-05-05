@@ -30,7 +30,7 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
    
   protected:
   
-    virtual bool testCollisionImpl(const cv::Point3d pt);
+    bool testCollisionImpl(const cv::Point3d pt);
     
     virtual COLUMN_TYPE getColumn(const cv::Point2d top, const cv::Point2d bottom, const float depth);
     std::vector<COLUMN_TYPE> getColumns(const cv::Point3d pt);
@@ -44,7 +44,7 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
     
     virtual cv::Mat generateHallucinatedRobotImpl(const cv::Point3d pt);
     
-    virtual std::string getName() { return "CylindricalModel"; }
+    //virtual std::string getName() { return "CylindricalModel"; }
     
     virtual cv::Rect getROIImpl(int x, int y, int width, int height);
 
