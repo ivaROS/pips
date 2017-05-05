@@ -19,7 +19,7 @@
 
     cv::Mat viz_t = viz.t();
   
-    return viz;
+    return viz_t;
   }
 
   
