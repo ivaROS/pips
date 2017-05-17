@@ -22,6 +22,7 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include <sstream>
+#include <limits> //for getting 'NAN'
 
 // Only needed for dense model. Really, each class should have its own header
 //#include <tf2_ros/transform_listener.h>
@@ -207,7 +208,17 @@ protected:
     
     virtual cv::Mat generateHallucinatedRobotImpl(const S pose)
     {
-      return image_ref_.clone();
+      cv::Mat viz;
+      if(std::numeric_limits<float>::has_quiet_NaN)
+      {
+        double dNaN = std::numeric_limits<float>::quiet_NaN();
+        viz = cv::Mat(image_ref_.rows, image_ref_.cols, image_ref_.type(), cv::Scalar(dNaN));
+      }
+      else
+      {
+        viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type());
+      }
+      return viz;
     }
     
     virtual geometry_msgs::Pose transformPose(const geometry_msgs::Pose& pose)

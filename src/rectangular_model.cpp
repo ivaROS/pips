@@ -7,8 +7,9 @@
 //#include <opencv/cv.h>
 
 #include <opencv2/core/core.hpp>
+#include <opencv2/core/ocl.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/highgui/highgui.hpp"  //If not using imshow, should remove this
 
 
 #include <Eigen/Eigen>
@@ -21,7 +22,59 @@
 
 RectangularModel::RectangularModel()
 {
-  name_ = "RectangularModel";
+  //INFO ABOUT OpenCV BUILD
+  std::cout << cv::getBuildInformation();
+  // INFO ABOUT OpenCL
+  std::cout << "OpenCL: " << std::endl;
+  
+  if(cv::ocl::haveOpenCL())
+        {
+            cv::ocl::setUseOpenCL(true);
+
+            cv::ocl::Context mainContext;
+
+            
+            if (!mainContext.create(cv::ocl::Device::TYPE_ALL))
+            {
+               std::cout << "Unable to create OpenCL Context" << std::endl;
+            }
+            
+
+            for (unsigned int i = 0; i < mainContext.ndevices(); i++)
+            {
+                cv::ocl::Device device = mainContext.device(i);
+                std::cout << "Device Name: " << device.name().c_str() << std::endl
+                << "Available: "<< device.available() << std::endl
+                << "imageSupport: " << device.imageSupport() << std::endl
+                << "OpenCL_C_Version: " << device.OpenCL_C_Version().c_str() << std::endl;
+            }
+
+            //cv::ocl::Device(mainContext->device(0)); //Here is where you change which GPU to use (e.g. 0 or 1)
+        }
+  
+  
+  
+  
+  
+  /*
+  
+  std::vector<ocl::PlatformInfo> platform_info;
+  cv::ocl::getPlatfomsInfo(platform_info);
+  for (size_t i = 0; i < platform_info.size(); i++)
+  {
+      std::cout
+          << "\tName: " << platform_info[i].name() << endl
+          << "\tVendor: " << platform_info[i].vendor() << endl
+          << "\tVersion: " << platform_info[i].version() << endl
+          << "\tDevice Number: " << platform_info[i].deviceNumber() << endl
+          << std::endl;
+  }
+  */
+  
+    name_ = "RectangularModel";
+    
+ //   std::vector<ocl::Info> param;
+ // ocl::getDevice(param, ocl::CVCL_DEVICE_TYPE_GPU);
 }
 
 void RectangularModel::setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im)
@@ -85,8 +138,18 @@ bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
     //The collision object rectangle is our ROI in the original image
     cv::Mat roi(image_ref_,co_rect);
 
+    cv::UMat roi_cl = roi.getUMat(cv::ACCESS_READ);
 
-    bool collided = isLessThan(roi, co_depth*scale_);
+    double depth = co_depth*scale_;
+    cv::UMat res_cl;
+    cv::compare(roi_cl, depth, res_cl, cv::CMP_LT);
+
+    int num_collisions = cv::countNonZero(res_cl);
+    bool collided = (num_collisions > 0);
+
+    //bool collided = isLessThan(roi, co_depth*scale_);
+    
+    
     
     return collided;
 }
@@ -153,7 +216,7 @@ bool RectangularModel::isLessThan(const cv::Mat& image, float depth)
 
 cv::Mat RectangularModel::generateHallucinatedRobotImpl(const cv::Point3d pt)
 {
-    cv::Mat viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type());
+    cv::Mat viz = HallucinatedRobotModelImpl::generateHallucinatedRobotImpl(pt);
     
     cv::Point2d co_uv[4];
     double co_depth;

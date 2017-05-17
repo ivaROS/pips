@@ -69,10 +69,19 @@ add_library(collision_checker src/collision_checker.cpp)
 
 add_library(robot_model_interface src/hallucinated_robot_model_interface.cpp)
 
+
+#message([WARN] "project Exported: ${${PROJECT_NAME}_EXPORTED_TARGETS}\n catkin exported: ${catkin_EXPORTED_TARGETS} \n gencfg: ${PROJECT_NAME}_gencfg")
+
+##${${PROJECT_NAME}_EXPORTED_TARGETS} is necessary to ensure that project messages get built before library
+##${catkin_EXPORTED_TARGETS} ensures that all messages for all packages on which this package depends (via find_package(catkin...)
+###${PROJECT_NAME}_gencfg used to be used to ensure reconfiguration generation happened first, but that is actually included in ${${PROJECT_NAME}_EXPORTED_TARGETS}
 add_dependencies(robot_model_interface
-   ${PROJECT_NAME}_gencfg
+   ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} #${PROJECT_NAME}_gencfg 
    )
 
+#add_dependencies(collision_checker
+#   ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+#   )
 
 #add_library (dense_model 
 #  src/dense_model.cpp
