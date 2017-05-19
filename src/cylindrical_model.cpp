@@ -18,11 +18,7 @@
 
 #include <iomanip>      // std::setprecision
 
-  CylindricalModel::CylindricalModel() : HallucinatedRobotModelImpl() 
-  {
-    name_ = "CylindricalModel";
-  }
-  
+
   void CylindricalModel::setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im)
   {   
       robot_radius_ = radius + safety_expansion;
@@ -32,27 +28,7 @@
       show_im_ = show_im;
   }
   
-  // Should use my custom comparison code from RectangularModel, make it more general and move it somewhere (maybe a header?), then use it from both of these. Except, that built-in vectorized/parallel versions should use this...
-  
-  // Question: is it better to use the camera model's methods for clarity, or to use pure Eigen matrices for speed?
-  // Initially, will use the model, but will likely switch over in the future.
-  bool CylindricalModel::testCollisionImpl(const cv::Point3d pt)
-  {
-    std::vector<COLUMN_TYPE> cols = getColumns(pt);
-  
-    for(unsigned int i = 0; i < cols.size(); ++i)
-    {
-      cv::Mat col = cv::Mat(image_ref_,cols[i].rect); //cols[i].image;
-      float depth = cols[i].depth;
-      
-      if(cv::countNonZero(col < depth) > 0)
-      {
-        return true; 
-      }
-    }
- 
-    return false;
-  }
+
 
 
   cv::Mat CylindricalModel::generateHallucinatedRobotImpl(const cv::Point3d pt)
@@ -69,25 +45,8 @@
       col.setTo(depth);
     }
     
-
-    //cv::Mat viz_t = viz.t();
-    //cv::transpose(viz,viz_t);
-  
     return viz;
   }
-
-
-
-/*
-// This is for transposed version
-cv::Mat CylindricalModel::getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
-{
-   cv::Mat transposed = cv_image_ref->image.t();
-   return transposed;
-}
-*/
-
-
 
 
 

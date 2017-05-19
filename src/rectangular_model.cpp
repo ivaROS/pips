@@ -1,13 +1,10 @@
 
-#include "pips/collision_testing/robot_models/hallucinated_robot_model.h"
+#include "pips/collision_testing/robot_models/rectangular_model.h"
 
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
 
-//#include <opencv/cv.h>
-
 #include <opencv2/core/core.hpp>
-#include <opencv2/core/ocl.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"  //If not using imshow, should remove this
 
@@ -20,63 +17,6 @@
 #include <iomanip>      // std::setprecision
 
 
-RectangularModel::RectangularModel()
-{
-  //INFO ABOUT OpenCV BUILD
-  std::cout << cv::getBuildInformation();
-  // INFO ABOUT OpenCL
-  std::cout << "OpenCL: " << std::endl;
-  
-  if(cv::ocl::haveOpenCL())
-        {
-            cv::ocl::setUseOpenCL(true);
-
-            cv::ocl::Context mainContext;
-
-            
-            if (!mainContext.create(cv::ocl::Device::TYPE_ALL))
-            {
-               std::cout << "Unable to create OpenCL Context" << std::endl;
-            }
-            
-
-            for (unsigned int i = 0; i < mainContext.ndevices(); i++)
-            {
-                cv::ocl::Device device = mainContext.device(i);
-                std::cout << "Device Name: " << device.name().c_str() << std::endl
-                << "Available: "<< device.available() << std::endl
-                << "imageSupport: " << device.imageSupport() << std::endl
-                << "OpenCL_C_Version: " << device.OpenCL_C_Version().c_str() << std::endl;
-            }
-
-            //cv::ocl::Device(mainContext->device(0)); //Here is where you change which GPU to use (e.g. 0 or 1)
-        }
-  
-  
-  
-  
-  
-  /*
-  
-  std::vector<ocl::PlatformInfo> platform_info;
-  cv::ocl::getPlatfomsInfo(platform_info);
-  for (size_t i = 0; i < platform_info.size(); i++)
-  {
-      std::cout
-          << "\tName: " << platform_info[i].name() << endl
-          << "\tVendor: " << platform_info[i].vendor() << endl
-          << "\tVersion: " << platform_info[i].version() << endl
-          << "\tDevice Number: " << platform_info[i].deviceNumber() << endl
-          << std::endl;
-  }
-  */
-  
-    name_ = "RectangularModel";
-    
- //   std::vector<ocl::Info> param;
- // ocl::getDevice(param, ocl::CVCL_DEVICE_TYPE_GPU);
-}
-
 void RectangularModel::setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im)
 {
     cv::Point3d topr(radius+safety_expansion,-height,radius+safety_expansion);
@@ -88,23 +28,21 @@ void RectangularModel::setParameters(double radius, double height, double safety
     cv::Point3d offsets[] = {topr,topl,bottoml,bottomr};
     std::vector<cv::Point3d> co_offsets(offsets, offsets + sizeof(offsets) / sizeof(cv::Point3d) );
     
-    co_offsets_ = co_offsets;
-    show_im_ = show_im;
+    this->co_offsets_ = co_offsets;
+    this->show_im_ = show_im;
 }
 
-/* Takes in the position of robot base in camera coordinate frame */
-bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
+
+void RectangularModel::getCollisionRect(const cv::Point3d pt, cv::Rect& co_rect, float& depth)
 {
-
-
     cv::Point2d co_uv[4];
-    double co_depth;
 
+    float co_depth;
 
     for (int it = 0; it <4; ++it) 
     {
       //Add specified offsets to robot's base position
-      cv::Point3d addedpnt = pt + co_offsets_[it];
+      cv::Point3d addedpnt = pt + this->co_offsets_[it];
       
       //Store the depth of the collision object
       co_depth = addedpnt.z;
@@ -115,115 +53,44 @@ bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
       co_uv[it] = uv;
 
     }
+    
+    depth = co_depth;
 
 
     //Using the 4 points, construct a rectangle
     double minXVal, maxXVal, minYVal,maxYVal;
-    minYVal = std::min(image_ref_.rows-1.0,std::max(0.0,std::min(co_uv[0].y,co_uv[1].y)));
-    minXVal = std::min(image_ref_.cols-1.0,std::max(0.0, std::min(co_uv[1].x,co_uv[2].x)));
-    maxYVal = std::max(0.0, std::min(image_ref_.rows-1.0, std::max(co_uv[2].y,co_uv[3].y)));
-    maxXVal = std::max(0.0, std::min(image_ref_.cols-1.0, std::max(co_uv[3].x,co_uv[0].x)));
+    minYVal = std::min(this->image_ref_.rows-1.0,std::max(0.0,std::min(co_uv[0].y,co_uv[1].y)));
+    minXVal = std::min(this->image_ref_.cols-1.0,std::max(0.0, std::min(co_uv[1].x,co_uv[2].x)));
+    maxYVal = std::max(0.0, std::min(this->image_ref_.rows-1.0, std::max(co_uv[2].y,co_uv[3].y)));
+    maxXVal = std::max(0.0, std::min(this->image_ref_.cols-1.0, std::max(co_uv[3].x,co_uv[0].x)));
 
     cv::Point2d topL(minXVal, minYVal);
     cv::Point2d bottomR(maxXVal, maxYVal);
 
-    cv::Rect co_rect(topL, bottomR);
-
+    co_rect = cv::Rect(topL, bottomR);
+    
+    
     //The following should be a more elegant way to take the collision outline and crop it to fit in the image
     //However, I would have to know which point was which. Rather than force an arbitrary order, a single-time call could create 2 points, one for topl, and one for bottomr r, that would be used in place of co_offsets_; that would also only require projecting 2 points, so no need for the loop.
     //cv::Rect co_rect1 = cv::Rect(cv::Point2d(co_uv[0].x, co_uv.y), cv::Point2d(co_uv[, bottomR) &= cv::Rect(Point(0, 0), image_ref_->size());
-
-    //ROS_DEBUG_STREAM_THROTTLED(2, "[collision_checker] co_rect(current): " << co_rect << ", proposed: " << co_rect1);
-
-    //The collision object rectangle is our ROI in the original image
-    cv::Mat roi(image_ref_,co_rect);
-
-    cv::UMat roi_cl = roi.getUMat(cv::ACCESS_READ);
-
-    double depth = co_depth*scale_;
-    cv::UMat res_cl;
-    cv::compare(roi_cl, depth, res_cl, cv::CMP_LT);
-
-    int num_collisions = cv::countNonZero(res_cl);
-    bool collided = (num_collisions > 0);
-
-    //bool collided = isLessThan(roi, co_depth*scale_);
-    
-    
-    
-    return collided;
 }
 
-bool RectangularModel::isLessThan(const cv::Mat& image, float depth)
-{
-/*
-    double min_depth;
-    cv::minMaxLoc(image, &min_depth, NULL, NULL, NULL);
 
-    return min_depth < depth;
-    */
-    
-    //Built in approach:
-/*
-    cv::Mat collisions = (roi <= co_depth*scale_);
-    int num_collisions = cv::countNonZero(collisions);
-    bool collided = (num_collisions>0);
-  */
-    
-    int nRows = image.rows;
-    int nCols = image.cols;
 
-    
-    //Could use templates to remove the duplication of this code
-    if(image.depth() == CV_32FC1)
-    {
-      int i,j;
-      const float* p;
-      for( i = 0; i < nRows; ++i)
-      {
-          p = image.ptr<float>(i);
-          for ( j = 0; j < nCols; ++j)
-          {
-              if(p[j] < depth)
-              {
-                return true;
-              }
-                
-          }
-      }
-    }
-    else if (image.depth() == CV_16UC1)
-    {
-      int i,j;
-      const unsigned short int* p;
-      for( i = 0; i < nRows; ++i)
-      {
-          p = image.ptr<unsigned short int>(i);
-          for ( j = 0; j < nCols; ++j)
-          {
-              if(p[j] < depth)
-              {
-                return true;
-              }
-                
-          }
-      }
-    }
-    
-    return false;
-}
 
 
 cv::Mat RectangularModel::generateHallucinatedRobotImpl(const cv::Point3d pt)
 {
     cv::Mat viz = HallucinatedRobotModelImpl::generateHallucinatedRobotImpl(pt);
     
+    
+    // TODO: replace below with call to above
     cv::Point2d co_uv[4];
     double co_depth;
 
     for (int it = 0; it <4; ++it) {
       //Add specified offsets to robot's base position
-      cv::Point3d addedpnt = pt + co_offsets_[it];
+      cv::Point3d addedpnt = pt + this->co_offsets_[it];
       
       //Store the depth of the collision object
       co_depth = addedpnt.z;

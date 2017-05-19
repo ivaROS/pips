@@ -8,19 +8,8 @@
       
   */
   
-  CylindricalModelT::CylindricalModelT()
-  {
-   name_ = "CylindricalModelT";
-  }
-  
-  cv::Mat CylindricalModelT::generateHallucinatedRobotImpl(const cv::Point3d pt)
-  {
-    cv::Mat viz = CylindricalModel::generateHallucinatedRobotImpl(pt);
 
-    cv::Mat viz_t = viz.t();
   
-    return viz_t;
-  }
 
   
   //Transposed version
@@ -30,11 +19,6 @@
     return column;
   }
   
-  cv::Mat CylindricalModelT::getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
-  {
-     cv::Mat transposed = cv_image_ref->image.t();
-     return transposed;
-  }
 
 
 
