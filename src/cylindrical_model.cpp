@@ -19,6 +19,12 @@
 #include <iomanip>      // std::setprecision
 
 
+    CylindricalModel::CylindricalModel() : HallucinatedRobotModelImpl<cv::Point3d>() 
+    {
+      this->name_ = "CylindricalModel";
+    }
+    
+    
   void CylindricalModel::setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im)
   {   
       robot_radius_ = radius + safety_expansion;
@@ -222,6 +228,29 @@
     
     
     return cols;
+  }
+  
+  bool CylindricalModel::testCollisionImpl(const cv::Point3d pt)
+  {
+    std::vector<COLUMN_TYPE> cols = getColumns(pt);
+  
+    for(unsigned int i = 0; i < cols.size(); ++i)
+    {
+      cv::Mat col = cv::Mat(this->image_ref_,cols[i].rect); //cols[i].image;
+      float depth = cols[i].depth;
+      
+      if(isLessThan(col, depth))
+      {
+        return true; 
+      }
+    }
+ 
+    return false;
+  }
+  
+  bool CylindricalModel::isLessThan(const cv::Mat& col, float depth)
+  {
+    return cv::countNonZero(col < depth) > 0;
   }
     
 

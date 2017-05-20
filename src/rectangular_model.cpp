@@ -17,6 +17,12 @@
 #include <iomanip>      // std::setprecision
 
 
+RectangularModel::RectangularModel() : HallucinatedRobotModelImpl<cv::Point3d>()
+{
+  name_ = "RectangularModel";
+}
+
+
 void RectangularModel::setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im)
 {
     cv::Point3d topr(radius+safety_expansion,-height,radius+safety_expansion);
@@ -28,10 +34,24 @@ void RectangularModel::setParameters(double radius, double height, double safety
     cv::Point3d offsets[] = {topr,topl,bottoml,bottomr};
     std::vector<cv::Point3d> co_offsets(offsets, offsets + sizeof(offsets) / sizeof(cv::Point3d) );
     
-    this->co_offsets_ = co_offsets;
-    this->show_im_ = show_im;
+    co_offsets_ = co_offsets;
+    show_im_ = show_im;
 }
 
+bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
+{
+  float co_depth;
+  cv::Rect co_rect;
+  getCollisionRect(pt,co_rect,co_depth);
+
+  //The collision object rectangle is our ROI in the original image
+  cv::Mat roi(image_ref_, co_rect);
+
+  float depth = co_depth*scale_;
+  bool collided = isLessThan(roi, depth);
+
+  return collided;
+}
 
 void RectangularModel::getCollisionRect(const cv::Point3d pt, cv::Rect& co_rect, float& depth)
 {
@@ -42,7 +62,7 @@ void RectangularModel::getCollisionRect(const cv::Point3d pt, cv::Rect& co_rect,
     for (int it = 0; it <4; ++it) 
     {
       //Add specified offsets to robot's base position
-      cv::Point3d addedpnt = pt + this->co_offsets_[it];
+      cv::Point3d addedpnt = pt + co_offsets_[it];
       
       //Store the depth of the collision object
       co_depth = addedpnt.z;
@@ -59,10 +79,10 @@ void RectangularModel::getCollisionRect(const cv::Point3d pt, cv::Rect& co_rect,
 
     //Using the 4 points, construct a rectangle
     double minXVal, maxXVal, minYVal,maxYVal;
-    minYVal = std::min(this->image_ref_.rows-1.0,std::max(0.0,std::min(co_uv[0].y,co_uv[1].y)));
-    minXVal = std::min(this->image_ref_.cols-1.0,std::max(0.0, std::min(co_uv[1].x,co_uv[2].x)));
-    maxYVal = std::max(0.0, std::min(this->image_ref_.rows-1.0, std::max(co_uv[2].y,co_uv[3].y)));
-    maxXVal = std::max(0.0, std::min(this->image_ref_.cols-1.0, std::max(co_uv[3].x,co_uv[0].x)));
+    minYVal = std::min(image_ref_.rows-1.0,std::max(0.0,std::min(co_uv[0].y,co_uv[1].y)));
+    minXVal = std::min(image_ref_.cols-1.0,std::max(0.0, std::min(co_uv[1].x,co_uv[2].x)));
+    maxYVal = std::max(0.0, std::min(image_ref_.rows-1.0, std::max(co_uv[2].y,co_uv[3].y)));
+    maxXVal = std::max(0.0, std::min(image_ref_.cols-1.0, std::max(co_uv[3].x,co_uv[0].x)));
 
     cv::Point2d topL(minXVal, minYVal);
     cv::Point2d bottomR(maxXVal, maxYVal);
@@ -76,7 +96,15 @@ void RectangularModel::getCollisionRect(const cv::Point3d pt, cv::Rect& co_rect,
 }
 
 
+    bool RectangularModel::isLessThan(const cv::Mat& image, const float depth)
+    {
+      cv::Mat res;
+      cv::compare(image, depth, res, cv::CMP_LT);
 
+      int num_collisions = cv::countNonZero(res);
+      bool collided = (num_collisions > 0);
+      return collided;
+    }
 
 
 cv::Mat RectangularModel::generateHallucinatedRobotImpl(const cv::Point3d pt)
@@ -84,36 +112,10 @@ cv::Mat RectangularModel::generateHallucinatedRobotImpl(const cv::Point3d pt)
     cv::Mat viz = HallucinatedRobotModelImpl::generateHallucinatedRobotImpl(pt);
     
     
-    // TODO: replace below with call to above
-    cv::Point2d co_uv[4];
-    double co_depth;
+  float co_depth;
+  cv::Rect co_rect;
+  getCollisionRect(pt,co_rect,co_depth);
 
-    for (int it = 0; it <4; ++it) {
-      //Add specified offsets to robot's base position
-      cv::Point3d addedpnt = pt + this->co_offsets_[it];
-      
-      //Store the depth of the collision object
-      co_depth = addedpnt.z;
-      
-      //Project point to pixel coordinates
-      cv::Point2d uv = cam_model_->project3dToPixel(addedpnt);
-      //ROS_DEBUG("Coords: %f, %f", uv.x, uv.y);
-      co_uv[it] = uv;
-
-    }
-    
-
-    //Using the 4 points, construct a rectangle
-    double minXVal, maxXVal, minYVal,maxYVal;
-    minYVal = std::min(image_ref_.rows-1.0,std::max(0.0,std::min(co_uv[0].y,co_uv[1].y)));
-    minXVal = std::min(image_ref_.cols-1.0,std::max(0.0, std::min(co_uv[1].x,co_uv[2].x)));
-    maxYVal = std::max(0.0, std::min(image_ref_.rows-1.0, std::max(co_uv[2].y,co_uv[3].y)));
-    maxXVal = std::max(0.0, std::min(image_ref_.cols-1.0, std::max(co_uv[3].x,co_uv[0].x)));
-
-    cv::Point2d topL(minXVal, minYVal);
-    cv::Point2d bottomR(maxXVal, maxYVal);
-
-    cv::Rect co_rect(topL, bottomR);
 
     cv::Mat roi(viz,co_rect);
     roi = co_depth*scale_;

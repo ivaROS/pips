@@ -94,17 +94,24 @@ void RectangularModelOCL::doPrecomputation()
 /* Takes in the position of robot base in camera coordinate frame */
 bool RectangularModelOCL::testCollisionImpl(const cv::Point3d pt)
 {
-    cv::Rect co_rect = getCollisionRect(pt);
+    float co_depth;
+    cv::Rect co_rect;
+    getCollisionRect(pt,co_rect,co_depth);
+    
     
     //The collision object rectangle is our ROI in the original image
     cv::UMat roi_cl(image_cl_,co_rect);
 
-    double depth = co_depth*scale_;
+    float depth = co_depth*scale_;
     cv::UMat res_cl;
     cv::compare(roi_cl, depth, res_cl, cv::CMP_LT);
 
     int num_collisions = cv::countNonZero(res_cl);
     bool collided = (num_collisions > 0);
+    
+    
+    //bool colllided = (cv::countNonZero(res_cl)>0);
+    
     
     return collided;
 }

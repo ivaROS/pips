@@ -93,20 +93,41 @@ add_dependencies(robot_model_interface
 add_library(rectangular_model
   src/rectangular_model.cpp
   )
-  
+target_link_libraries(rectangular_model
+  ${catkin_LIBRARIES}
+  )
 SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model)
+
+add_library(rectangular_model_ss
+  src/rectangular_model_ss.cpp
+  )
+target_link_libraries(rectangular_model_ss
+  ${catkin_LIBRARIES}
+  )
+SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ss)
+
+add_library(rectangular_model_ocl
+  src/rectangular_model_ocl.cpp
+  )
+target_link_libraries(rectangular_model_ocl
+  ${catkin_LIBRARIES}
+  )
+SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ocl)
   
 add_library(cylindrical_model 
   src/cylindrical_model.cpp
   )
-
+target_link_libraries(cylindrical_model
+  ${catkin_LIBRARIES}
+  )
 SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model)
 
- 
 add_library(cylindrical_model_t 
   src/cylindrical_model_t.cpp
   )
-
+target_link_libraries(cylindrical_model_t
+  ${catkin_LIBRARIES}
+  )
 SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model_t)
 
 MESSAGE(STATUS "ROBOT MODELS " ${ROBOT_MODEL_LIBS})

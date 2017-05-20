@@ -107,7 +107,7 @@ typedef geometry_msgs::Pose PoseType;
   }
   
   inline
-  void getImage(const cv_bridge::CvImage::ConstPtr& cv_image_ref, cv::Mat& image)
+  void getImage1(const cv_bridge::CvImage::ConstPtr& cv_image_ref, cv::Mat& image)
   {
     image = cv_image_ref->image;
   }
@@ -118,7 +118,11 @@ typedef geometry_msgs::Pose PoseType;
     image = cv_image_ref->image.getUMat(cv::ACCESS_READ);
   }
 
-template <typename T>
+
+
+
+
+
 class HallucinatedRobotModelBase
 {
   public:
@@ -135,9 +139,9 @@ class HallucinatedRobotModelBase
     
     void updateModel(cv_bridge::CvImage::ConstPtr& cv_image_ref, double scale)
     {
-      cv_image_ref_ = cv_image_ref;
-      image_ref_ = getImage(cv_image_ref);
       scale_ = scale;
+      
+      image_ref_ = getImage(cv_image_ref);
       
       doPrecomputation();
       
@@ -154,7 +158,7 @@ class HallucinatedRobotModelBase
       }
     }
     
-    
+
     void init(std::shared_ptr<image_geometry::PinholeCameraModel>& cam_model, const geometry_msgs::TransformStamped& base_optical_transform)
     {
       cam_model_ = cam_model;
@@ -163,14 +167,14 @@ class HallucinatedRobotModelBase
     
   protected:
     
-    T getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
+    cv::Mat getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
     {
-      T image;
-      getImage(cv_image_ref, image);  // converts image type- to umat if needed. In the future, my other classes will likely also be templated and the conversion will happen sooner
+      cv::Mat image;
+      getImage1(cv_image_ref, image);  // This was intended to be use din a templated class so that either UMat or Mat could be generated. In the future, my other classes will likely also be templated and the conversion will happen sooner
       return getImageImpl(image);
     }
     
-    virtual T getImageImpl(const T& image)
+    virtual cv::Mat getImageImpl(const cv::Mat& image)
     {
       return image;
     }
@@ -180,33 +184,33 @@ class HallucinatedRobotModelBase
    
   protected:
     std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_;
-    T image_ref_; //Allows method to make local changes if needed
     cv_bridge::CvImage::ConstPtr cv_image_ref_; //Allows access to original data and msg info
     double robot_radius_, robot_height_, floor_tolerance_;
     double scale_;
     bool show_im_=false;
     std::string name_ = "Undefined";
     geometry_msgs::TransformStamped base_optical_transform_;
-    
+    cv::Mat image_ref_; //Allows method to make local changes if needed
+
 
 };
 
 
 
-template<typename S, typename T> 
-class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase<T>
+template<typename S> 
+class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
 {
 
   public: 
     
-    HallucinatedRobotModelImpl() : HallucinatedRobotModelBase<T>(T())
+    HallucinatedRobotModelImpl() : HallucinatedRobotModelBase()
     {
 
     }
     
     bool testCollision(const geometry_msgs::Pose pose)
     {
-      ROS_DEBUG_STREAM_NAMED(this->name, "Collision request for model " << this->name << ": " << toString(pose));
+      ROS_DEBUG_STREAM_NAMED(name_, "Collision request for model " << name_ << ": " << toString(pose));
       geometry_msgs::Pose pose_t = transformPose(pose);
       S convertedPose;
       convertPose(pose_t, convertedPose);
@@ -233,11 +237,11 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase<T>
       if(std::numeric_limits<float>::has_quiet_NaN)
       {
         double dNaN = std::numeric_limits<float>::quiet_NaN();
-        viz = cv::Mat(this->image_ref_.rows, this->image_ref_.cols, this->image_ref_.type(), cv::Scalar(dNaN));
+        viz = cv::Mat(image_ref_.rows, image_ref_.cols, image_ref_.type(), cv::Scalar(dNaN));
       }
       else
       {
-        viz = cv::Mat::zeros(this->image_ref_.rows, this->image_ref_.cols, this->image_ref_.type());
+        viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type());
       }
       return viz;
     }
@@ -251,12 +255,12 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase<T>
       //Transform coordinates of robot base into camera's optical frame
       Eigen::Affine3d pose_eig_t;
       
-      tf2::doTransform(pose_eig, pose_eig_t, this->base_optical_transform_);
+      tf2::doTransform(pose_eig, pose_eig_t, base_optical_transform_);
       
       geometry_msgs::Pose pose_t;
       convertPose(pose_eig_t, pose_t);
       
-      ROS_DEBUG_STREAM_NAMED(this->name, "Pose " << toString(pose) << " transformed to " << toString(pose_t) );
+      ROS_DEBUG_STREAM_NAMED(name_, "Pose " << toString(pose) << " transformed to " << toString(pose_t) );
       
       return pose_t;
     }

@@ -8,8 +8,19 @@
       
   */
   
-
+  CylindricalModelT::CylindricalModelT()
+  {
+   name_ = "CylindricalModelT";
+  }
   
+  cv::Mat CylindricalModelT::generateHallucinatedRobotImpl(const cv::Point3d pt)
+  {
+    cv::Mat viz = CylindricalModel::generateHallucinatedRobotImpl(pt);
+
+    cv::Mat viz_t = viz.t();
+  
+    return viz_t;
+  }
 
   
   //Transposed version
@@ -21,6 +32,11 @@
   
 
 
+  cv::Mat CylindricalModelT::getImageImpl(const cv::Mat& image)
+  { 
+    cv::Mat transposed = image.t();
+    return transposed;
+  }
 
 
 

@@ -1,6 +1,7 @@
 #include "pips/collision_testing/hallucinated_robot_model_interface.h"
 #include <pips/collision_testing/robot_models/rectangular_model.h>
 #include <pips/collision_testing/robot_models/rectangular_model_ss.h>
+#include <pips/collision_testing/robot_models/rectangular_model_ocl.h>
 #include <pips/collision_testing/robot_models/cylindrical_model.h>
 #include <pips/collision_testing/robot_models/cylindrical_model_t.h>
 
@@ -32,24 +33,25 @@
     {
       if(config.model_type == pips::HallucinatedRobotModel_rectangular)
       {
-        model_ = std::make_shared<RectangularModel<cv::Mat> >();
+        model_ = std::make_shared<RectangularModel>();
       }
-      if(config.model_type == pips::HallucinatedRobotModel_rectangular_ocl)
+      else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ocl)
       {
-        model_ = std::make_shared<RectangularModel<cv::UMat> >();
+        model_ = std::make_shared<RectangularModelOCL>();
       }
-      if(config.model_type == pips::HallucinatedRobotModel_rectangular_ss)
+      else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ss)
       {
         model_ = std::make_shared<RectangularModelSS>();
       }
       else if (config.model_type == pips::HallucinatedRobotModel_cylindrical)
       {
-        model_ = std::make_shared<CylindricalModel<cv::Mat> >();
+        model_ = std::make_shared<CylindricalModel>();
       }
       else if (config.model_type == pips::HallucinatedRobotModel_cylindrical_t)
       {
-        model_ = std::make_shared<CylindricalModelT<cv::Mat> >();
+        model_ = std::make_shared<CylindricalModelT>();
       }
+      
       /*
       else if (config.model_type == pips::HallucinatedRobotModel_rectangular_min)
       {
