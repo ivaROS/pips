@@ -89,6 +89,13 @@
       return cv::Rect(x,y,width,height);
   }
 
+  /*
+  void doPrecomputation(cv_bridge::CvImage::ConstPtr& cv_image_ref) 
+  {
+    img_width_ = cv_image_ref->image.cols;
+    img_height_ = cv_image_ref->image.rows;
+  }
+  */
 
   std::vector<COLUMN_TYPE> CylindricalModel::getColumns(const cv::Point3d pt)
   {

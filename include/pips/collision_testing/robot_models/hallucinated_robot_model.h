@@ -107,13 +107,13 @@ typedef geometry_msgs::Pose PoseType;
   }
   
   inline
-  void getImage1(const cv_bridge::CvImage::ConstPtr& cv_image_ref, cv::Mat& image)
+  void convertImage(const cv_bridge::CvImage::ConstPtr& cv_image_ref, cv::Mat& image)
   {
     image = cv_image_ref->image;
   }
 
   inline
-  void getImage(const cv_bridge::CvImage::ConstPtr& cv_image_ref, cv::UMat& image)
+  void convertImage(const cv_bridge::CvImage::ConstPtr& cv_image_ref, cv::UMat& image)
   {
     image = cv_image_ref->image.getUMat(cv::ACCESS_READ);
   }
@@ -132,18 +132,20 @@ class HallucinatedRobotModelBase
     }
  
 
-    virtual bool testCollision(geometry_msgs::Pose pose)=0;
+    virtual bool testCollision(const geometry_msgs::Pose pose)=0;
     virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)=0;
     virtual void setParameters(double robot_radius, double robot_height, double floor_tolerance, double safety_expansion, bool show_im)=0;
     
     
-    void updateModel(cv_bridge::CvImage::ConstPtr& cv_image_ref, double scale)
+    void updateModel(const cv_bridge::CvImage::ConstPtr& cv_image_ref, double scale)
     {
       scale_ = scale;
       
+      cv_image_ref_ = cv_image_ref;
+      
       image_ref_ = getImage(cv_image_ref);
       
-      doPrecomputation();
+      doPrecomputation(cv_image_ref);
       
       if(show_im_)
       {
@@ -167,10 +169,10 @@ class HallucinatedRobotModelBase
     
   protected:
     
-    cv::Mat getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
+    cv::Mat getImage(const cv_bridge::CvImage::ConstPtr& cv_image_ref)
     {
       cv::Mat image;
-      getImage1(cv_image_ref, image);  // This was intended to be use din a templated class so that either UMat or Mat could be generated. In the future, my other classes will likely also be templated and the conversion will happen sooner
+      convertImage(cv_image_ref, image);  // This was intended to be used in a templated class so that either UMat or Mat could be generated. In the future, my other classes will likely also be templated and the conversion will happen sooner
       return getImageImpl(image);
     }
     
@@ -179,7 +181,7 @@ class HallucinatedRobotModelBase
       return image;
     }
 
-    virtual void doPrecomputation() {}
+    virtual void doPrecomputation(const cv_bridge::CvImage::ConstPtr& cv_image_ref) {}
     
    
   protected:
