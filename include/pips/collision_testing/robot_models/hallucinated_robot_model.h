@@ -24,6 +24,8 @@
 
 #include <sstream>
 #include <limits> //for getting 'NAN'
+#include <map>
+#include <unordered_map>
 
 // Only needed for dense model. Really, each class should have its own header
 //#include <tf2_ros/transform_listener.h>
@@ -210,7 +212,7 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
 
     }
     
-    bool testCollision(const geometry_msgs::Pose pose)
+    virtual bool testCollision(const geometry_msgs::Pose pose)
     {
       ROS_DEBUG_STREAM_NAMED(name_, "Collision request for model " << name_ << ": " << toString(pose));
       geometry_msgs::Pose pose_t = transformPose(pose);
@@ -219,7 +221,7 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
       return testCollisionImpl(convertedPose);
     }
          
-    cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)
+    virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)
     {
       geometry_msgs::Pose pose_t = transformPose(pose);
       S convertedPose;
@@ -265,6 +267,252 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
       ROS_DEBUG_STREAM_NAMED(name_, "Pose " << toString(pose) << " transformed to " << toString(pose_t) );
       
       return pose_t;
+    }
+};
+
+/*
+
+template<typename S> 
+class HallucinatedRobotModelCacheLayer : public HallucinatedRobotModelImpl<S>
+{
+
+  public: 
+    
+    HallucinatedRobotModelCacheLayer() : HallucinatedRobotModelImpl<S>()
+    {
+
+    }
+    
+    virtual bool testCollision(const geometry_msgs::Pose pose)
+    {
+      //ROS_DEBUG_STREAM_NAMED(name_, "Collision request for model " << name_ << ": " << toString(pose));
+      
+      cv::Mat gen = generateHallucinatedRobot(pose);
+      
+      return isLessThan(HallucinatedRobotModelImpl<S>::cv_image_ref_->image,gen);
+    }
+    
+    // Should add ability to use only relevant ROI to avoid checking more than necessary
+    // Models should implement a getROI method
+    virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)
+    {
+      auto search = cache.find(pose);
+      if(search != cache.end())
+      {
+        return search->second.image;
+      }
+      else
+      {
+        cv::Mat image = HallucinatedRobotModelImpl<S>::generateHallucinatedRobotImpl(pose);
+        CacheEntry entry;
+        entry.image = image;
+        cache.insert(std::make_pair(pose,entry));
+      }
+    }
+  
+    
+      
+    private:
+    
+      struct CacheEntry
+      {
+        cv::Rect roi;
+        cv::Mat image;
+      };
+    
+      std::map<S, CacheEntry> cache;
+
+      
+    bool isLessThan(const cv::Mat& image1, const cv::Mat& image2)
+    {
+      cv::Mat res;
+      cv::compare(image1, image2, res, cv::CMP_LT);
+
+      int num_collisions = cv::countNonZero(res);
+      bool collided = (num_collisions > 0);
+      return collided;
+    }
+};
+
+
+
+template<typename S> 
+class HallucinatedRobotModelCacheRedirect : public HallucinatedRobotModelBase
+{
+
+  public: 
+    
+    HallucinatedRobotModelCacheRedirect() : HallucinatedRobotModelBase(), model()
+    {
+      //Could probably prepend/append something to the name here?
+    }
+    
+    virtual bool testCollision(const geometry_msgs::Pose pose)
+    {
+      //ROS_DEBUG_STREAM_NAMED(name_, "Collision request for model " << name_ << ": " << toString(pose));
+      
+      cv::Mat gen = generateHallucinatedRobot(pose);
+      
+      return isLessThan(HallucinatedRobotModelImpl<S>::cv_image_ref_->image,gen);
+    }
+    
+    // Should add ability to use only relevant ROI to avoid checking more than necessary
+    // Models should implement a getROI method
+    virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)
+    {
+      auto search = cache.find(pose);
+      if(search != cache.end())
+      {
+        return search->second.image;
+      }
+      else
+      {
+        cv::Mat image = model.generateHallucinatedRobotImpl(pose);
+        CacheEntry entry;
+        entry.image = image;
+        cache.insert(std::make_pair(pose,entry));
+      }
+    }
+    
+      
+    virtual void init(std::shared_ptr<image_geometry::PinholeCameraModel>& cam_model, const geometry_msgs::TransformStamped& base_optical_transform)
+    {
+      model.init(cam_model, base_optical_transform);
+    }
+    
+    virtual void updateModel(const cv_bridge::CvImage::ConstPtr& cv_image_ref, double scale)
+    {
+      model.updateModel(cv_image_ref, scale);
+    }
+    
+    virtual void setParameters(double robot_radius, double robot_height, double floor_tolerance, double safety_expansion, bool show_im)
+    {
+      model.setParameters(robot_radius, robot_height, floor_tolerance, safety_expansion, show_im);
+    }
+      
+  private:
+    
+      struct CacheEntry
+      {
+        cv::Rect roi;
+        cv::Mat image;
+      };
+    
+      std::map<geometry_msgs::Pose, CacheEntry> cache;
+      
+      S model;
+
+      
+    bool isLessThan(const cv::Mat& image1, const cv::Mat& image2)
+    {
+      cv::Mat res;
+      cv::compare(image1, image2, res, cv::CMP_LT);
+
+      int num_collisions = cv::countNonZero(res);
+      bool collided = (num_collisions > 0);
+      return collided;
+    }
+};
+*/
+
+namespace std
+{
+    template<> struct less<geometry_msgs::Pose>
+    {
+      double EPSILON = .01;
+      bool is_equal(const double a, const double b) const
+      {
+        return fabs(a-b) < EPSILON;
+      }
+      
+      bool is_less(const double a, const double b) const
+      {
+        return b-a > EPSILON;
+      }
+      
+      bool operator() (const geometry_msgs::Pose& lhs, const geometry_msgs::Pose& rhs) const
+       {
+          return (
+            (is_less(lhs.position.x,rhs.position.x)) ||
+            ( is_equal(lhs.position.x,rhs.position.x) && is_less(lhs.position.y, rhs.position.y) ) ||
+            ( is_equal(lhs.position.x,rhs.position.x) && is_equal(lhs.position.y, rhs.position.y) && is_less(lhs.position.z, rhs.position.z) ) 
+          );
+       }
+      
+      /*
+       bool operator() (const geometry_msgs::Pose& lhs, const geometry_msgs::Pose& rhs) const
+       {
+          return (
+            (lhs.position.x < rhs.position.x) ||
+            ( (lhs.position.x == rhs.position.x) && (lhs.position.y < rhs.position.y) ) ||
+            ( (lhs.position.x == rhs.position.x) && (lhs.position.y == rhs.position.y) && (lhs.position.z < rhs.position.z) ) 
+          );
+       }
+       */
+    };
+}
+
+template<typename T> 
+class HallucinatedRobotModelCacheWrapper : public T
+{
+
+  public: 
+    
+    HallucinatedRobotModelCacheWrapper() : T()
+    {
+      //Could probably prepend/append something to the name here?
+    }
+    
+    virtual bool testCollision(const geometry_msgs::Pose pose)
+    {
+      //ROS_DEBUG_STREAM_NAMED(name_, "Collision request for model " << name_ << ": " << toString(pose));
+      
+      cv::Mat gen = generateHallucinatedRobot(pose);
+      
+      return isLessThan(T::cv_image_ref_->image,gen);
+    }
+    
+    // Should add ability to use only relevant ROI to avoid checking more than necessary
+    // Models should implement a getROI method
+    virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)
+    {
+      cv::Mat image;
+      auto search = cache.find(pose);
+      if(search != cache.end())
+      {
+        image = search->second.image;
+      }
+      else
+      {
+        image = T::generateHallucinatedRobot(pose);
+        CacheEntry entry;
+        entry.image = image;
+        cache.insert(std::make_pair(pose,entry));
+      }
+      ROS_INFO_STREAM_THROTTLE(1,"#entries in cache: " << cache.size());
+      return image;
+    }
+    
+      
+  private:
+    
+      struct CacheEntry
+      {
+        cv::Rect roi;
+        cv::Mat image;
+      };
+    
+      std::map<geometry_msgs::Pose, CacheEntry> cache;
+
+      
+    bool isLessThan(const cv::Mat& image1, const cv::Mat& image2)
+    {
+      cv::Mat res;
+      cv::compare(image1, image2, res, cv::CMP_LT);
+
+      int num_collisions = cv::countNonZero(res);
+      bool collided = (num_collisions > 0);
+      return collided;
     }
 };
 

@@ -51,6 +51,10 @@
       {
         model_ = std::make_shared<CylindricalModelT>();
       }
+      else if (config.model_type == pips::HallucinatedRobotModel_cylindrical_c)
+      {
+        model_ = std::make_shared<HallucinatedRobotModelCacheWrapper<CylindricalModel> >();
+      }
       
       /*
       else if (config.model_type == pips::HallucinatedRobotModel_rectangular_min)
