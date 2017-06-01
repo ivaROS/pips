@@ -24,7 +24,7 @@
 
   
   //Transposed version
-  cv::Rect CylindricalModelT::getROIImpl(int x, int y, int width, int height)
+  cv::Rect CylindricalModelT::getColumnRect(int x, int y, int width, int height)
   {
     cv::Rect column(y,x,height,width);
     return column;

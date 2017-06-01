@@ -53,6 +53,14 @@ bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
   return collided;
 }
 
+cv::Rect RectangularModel::getROIImpl(const cv::Point3d pt)
+{
+  float co_depth;
+  cv::Rect co_rect;
+  getCollisionRect(pt,co_rect,co_depth);
+  return co_rect;
+}
+
 void RectangularModel::getCollisionRect(const cv::Point3d pt, cv::Rect& co_rect, float& depth)
 {
     cv::Point2d co_uv[4];

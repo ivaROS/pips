@@ -25,6 +25,8 @@ class RectangularModel : public HallucinatedRobotModelImpl<cv::Point3d>
     
     virtual bool isLessThan(const cv::Mat& image, const float depth);
     
+    virtual cv::Rect getROIImpl(const cv::Point3d pt);
+    
   protected:
     std::vector<cv::Point3d> co_offsets_;
     

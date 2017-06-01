@@ -38,7 +38,9 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
     
     virtual cv::Mat generateHallucinatedRobotImpl(const cv::Point3d pt);
     
-    virtual cv::Rect getROIImpl(int x, int y, int width, int height);
+    virtual cv::Rect getColumnRect(int x, int y, int width, int height);
+
+    virtual cv::Rect getROIImpl(const cv::Point3d pt);
 
 };
 

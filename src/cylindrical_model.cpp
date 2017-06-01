@@ -67,7 +67,7 @@
     int height = std::ceil(r.br().y)-y + 1; //ROI's from rectangles are noninclusive on the right/bottom sides, so need to add 1 to include the bottom row
     
   //The only changes needed to use a transposed image are swapping the x and y as well as width and height
-    cv::Rect column = getROIImpl(x,y,width,height);
+    cv::Rect column = getColumnRect(x,y,width,height);
     cv::Rect imageBounds(0,0,image_ref_.cols,image_ref_.rows);
     cv::Rect bounded = column & imageBounds;
 
@@ -84,7 +84,7 @@
     return col;
   }
 
-  cv::Rect CylindricalModel::getROIImpl(const int x, const int y, const int width, const int height)
+  cv::Rect CylindricalModel::getColumnRect(const int x, const int y, const int width, const int height)
   {
       return cv::Rect(x,y,width,height);
   }
@@ -96,6 +96,23 @@
     img_height_ = cv_image_ref->image.rows;
   }
   */
+  
+  cv::Rect CylindricalModel::getROIImpl(const cv::Point3d pt)
+  {
+    cv::Rect rect;
+    
+    //It would probably be more efficient to just grab the code that computes the corners, but this should work
+    std::vector<COLUMN_TYPE> cols = getColumns(pt);
+    
+    for(unsigned int i = 0; i < cols.size(); ++i)
+    {
+      rect |= cols[i].rect;
+    }
+    
+    ROS_INFO_STREAM_THROTTLE(1,"Pt = " << pt << ", rect = " << rect);
+    
+    return rect;
+  }
 
   std::vector<COLUMN_TYPE> CylindricalModel::getColumns(const cv::Point3d pt)
   {

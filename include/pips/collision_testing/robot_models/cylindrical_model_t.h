@@ -13,7 +13,7 @@ class CylindricalModelT : public CylindricalModel
     
     virtual cv::Mat generateHallucinatedRobotImpl(const cv::Point3d pt);
     
-    virtual cv::Rect getROIImpl(int x, int y, int width, int height);
+    virtual cv::Rect getColumnRect(int x, int y, int width, int height);
 
     virtual cv::Mat getImageImpl(const cv::Mat& image);
 

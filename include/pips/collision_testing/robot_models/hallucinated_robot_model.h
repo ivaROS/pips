@@ -229,7 +229,14 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
       return generateHallucinatedRobotImpl(convertedPose);
     }
     
-
+    virtual cv::Rect getROI(const geometry_msgs::Pose pose)
+    {
+      geometry_msgs::Pose pose_t = transformPose(pose);
+      S convertedPose;
+      convertPose(pose_t, convertedPose);
+      return getROIImpl(convertedPose);
+    }
+    
     
   protected:
   
@@ -248,6 +255,12 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
         viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type());
       }
       return viz;
+    }
+    
+    virtual cv::Rect getROIImpl(const S pose)
+    {
+      cv::Rect imageBounds(0,0,cv_image_ref_->image.cols,cv_image_ref_->image.rows);
+      return imageBounds;
     }
     
     virtual geometry_msgs::Pose transformPose(const geometry_msgs::Pose& pose)
@@ -455,6 +468,14 @@ namespace std
 template<typename T> 
 class HallucinatedRobotModelCacheWrapper : public T
 {
+ 
+  private:
+    
+      struct CacheEntry
+      {
+        cv::Rect roi;
+        cv::Mat image;
+      };
 
   public: 
     
@@ -467,40 +488,49 @@ class HallucinatedRobotModelCacheWrapper : public T
     {
       //ROS_DEBUG_STREAM_NAMED(name_, "Collision request for model " << name_ << ": " << toString(pose));
       
-      cv::Mat gen = generateHallucinatedRobot(pose);
+      CacheEntry results = generateCacheResults(pose);
+
+      cv::Mat senseROI = cv::Mat(T::cv_image_ref_->image, results.roi);
       
-      return isLessThan(T::cv_image_ref_->image,gen);
+      return isLessThan(senseROI,results.image);
     }
     
-    // Should add ability to use only relevant ROI to avoid checking more than necessary
-    // Models should implement a getROI method
+    
     virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)
     {
-      cv::Mat image;
+      CacheEntry results = generateCacheResults(pose);
+      //cv::Mat image = HallucinatedRobotModelImpl<S>::generateHallucinatedRobotImpl(pose);
+      //image(results.roi) = results.image;
+      return results.image;
+    }
+    
+
+    virtual CacheEntry generateCacheResults(const geometry_msgs::Pose pose)
+    {
+      CacheEntry result;
       auto search = cache.find(pose);
       if(search != cache.end())
       {
-        image = search->second.image;
+        result = search->second;
       }
       else
       {
-        image = T::generateHallucinatedRobot(pose);
+        cv::Mat fullImage = T::generateHallucinatedRobot(pose);
+        cv::Rect roiRect = T::getROI(pose);
+        cv::Mat image = cv::Mat(fullImage, roiRect);
         CacheEntry entry;
         entry.image = image;
+        entry.roi = roiRect;
         cache.insert(std::make_pair(pose,entry));
+        result = entry;
       }
       ROS_INFO_STREAM_THROTTLE(1,"#entries in cache: " << cache.size());
-      return image;
+
+      return result;
     }
     
       
   private:
-    
-      struct CacheEntry
-      {
-        cv::Rect roi;
-        cv::Mat image;
-      };
     
       std::map<geometry_msgs::Pose, CacheEntry> cache;
 
