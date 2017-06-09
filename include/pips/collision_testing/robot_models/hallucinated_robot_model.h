@@ -476,6 +476,9 @@ class HallucinatedRobotModelCacheWrapper : public T
         cv::Rect roi;
         cv::Mat image;
       };
+      
+      size_t cache_hits_=0;
+      size_t cache_misses_=0;
 
   public: 
     
@@ -511,20 +514,22 @@ class HallucinatedRobotModelCacheWrapper : public T
       auto search = cache.find(pose);
       if(search != cache.end())
       {
+        ++cache_hits_;
         result = search->second;
       }
       else
       {
+        ++cache_misses_;
         cv::Mat fullImage = T::generateHallucinatedRobot(pose);
         cv::Rect roiRect = T::getROI(pose);
         cv::Mat image = cv::Mat(fullImage, roiRect);
         CacheEntry entry;
-        entry.image = image;
+        entry.image = image.clone();
         entry.roi = roiRect;
         cache.insert(std::make_pair(pose,entry));
         result = entry;
       }
-      ROS_INFO_STREAM_THROTTLE(1,"#entries in cache: " << cache.size());
+      ROS_INFO_STREAM_THROTTLE(1,"cache hits: " << cache_hits_ << ", cache misses: " << cache_misses_);
 
       return result;
     }
