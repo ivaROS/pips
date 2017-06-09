@@ -1,4 +1,4 @@
-#include "pips/collision_testing/collision_checker.h"
+#include "pips/collision_testing/pips_collision_checker.h"
 
 #include "pips/collision_testing/robot_models/hallucinated_robot_model.h"
 
@@ -36,7 +36,7 @@
 
 
   /*
-  Description: The CollisionChecker class is responsible for determining whether a future robot pose will collide with any obstacles. Intended usage: 
+  Description: The PipsCollisionChecker class is responsible for determining whether a future robot pose will collide with any obstacles. Intended usage: 
     Construct a single instance
     Whenever new image arrives, call setImage()
     For each point in a trajectory, call testCollision()
@@ -46,7 +46,7 @@
   
   /*
   Description: The constructor takes in only arguments that are unlikely to change, therefore it only needs to be called once.
-  Name: CollisionChecker::CollisionChecker
+  Name: PipsCollisionChecker::PipsCollisionChecker
   Inputs:
     base_optical_transform: The transform from the base coordinate frame to the depth sensor's optical frame.
     robot_model: The object that defines how the hallucinated robot is represented and that performs the actual collision comparison.
@@ -56,7 +56,7 @@
   /* The publish_image_ parameter will either be moved to dyanmic reconfigure or will be automatically toggled 
      based on the presence of subscribers
   */
-  CollisionChecker::CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) :
+  PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : CollisionChecker(nh,pnh),
     nh_(nh, name_), pnh_(pnh, name_), it_(nh_), robot_model_(nh_, pnh_)
   {
   
@@ -67,7 +67,7 @@
 
   }
 
-  void CollisionChecker::init()
+  void PipsCollisionChecker::initImpl()
   {
       if(publish_image_)
       {
@@ -77,12 +77,10 @@
 
       robot_model_.init();
 
-      depth_generation_service_ = nh_.advertiseService("generate_depth_image", &CollisionChecker::getDepthImageSrv, this);
-      collision_testing_service_ = nh_.advertiseService("test_collision", &CollisionChecker::testCollisionSrv, this);
-
+      depth_generation_service_ = nh_.advertiseService("generate_depth_image", &PipsCollisionChecker::getDepthImageSrv, this);
   }
   
-    void CollisionChecker::setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
+    void PipsCollisionChecker::setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
     {
       //Convert transform to Eigen
       optical_transform_ = tf2::transformToEigen(base_optical_transform);
@@ -91,13 +89,13 @@
     }
   
   /*
-  Description: Sets the CollisionChecker's depth image and camera model. Called whenever there is a new image.
-  Name: CollisionChecker::setImage
+  Description: Sets the PipsCollisionChecker's depth image and camera model. Called whenever there is a new image.
+  Name: PipsCollisionChecker::setImage
   Inputs:
     image_msg: The depth image. Either the image_raw (16bit unsigned) or image (32 bit float) topics may be used, but the raw topic is preferred (the reason being that the conversion nodelet is not needed and in theory we save some computation. However, the overhead is quite minimal, and it appears that some SIMD optimizations can only work with floats, so whatever).
     info_msgs: The CameraInfo msg accompanying the image msg. It is necessary to update the camera model each time in order to permit changing the camera's resolution during operation.
   */ 
-  void CollisionChecker::setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
+  void PipsCollisionChecker::setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
   {
     ROS_DEBUG_STREAM_NAMED(name_, "Setting new image" << std::endl);
     
@@ -144,13 +142,13 @@
       
   /*
   Description: Tests if the specified base coordinates would result in a collision. Global variables are not modified, allowing this method to be called from multiple threads simultaneously
-  Name: CollisionChecker::testCollision
+  Name: PipsCollisionChecker::testCollision
   Inputs:
     xyz: test coordinates [x,y,z] in the robot base's coordinate frame. Need to add \theta
   Output:
     bool: coordinates cause collision
   */ 
-  bool CollisionChecker::testCollision(geometry_msgs::Pose pose)
+  bool PipsCollisionChecker::testCollision(geometry_msgs::Pose pose)
   {
     //Convert coordinates to Eigen Vector
    // Eigen::Map<const Eigen::Vector3d> origin_r(xyz);
@@ -193,25 +191,16 @@
   }
   
   
-  cv::Mat CollisionChecker::generateDepthImage(PoseType pose)
+  cv::Mat PipsCollisionChecker::generateDepthImage(PoseType pose)
   {
     return robot_model_.generateHallucinatedRobot(pose);
     
   }
   
-  bool CollisionChecker::testCollisionSrv(pips::TestCollision::Request &req, pips::TestCollision::Response &res)
-  {
-    ROS_INFO_STREAM_NAMED(name_, "Collision test request received.");
-    res.collision.data = robot_model_.testCollision(req.pose);
-    
-    return true;
-  }
-  
-  bool CollisionChecker::getDepthImageSrv(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res)
+  bool PipsCollisionChecker::getDepthImageSrv(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res)
   {
     ROS_INFO_STREAM_NAMED(name_, "Depth image generation request received.");
-
-    
+ 
     cv_bridge::CvImage out_msg;
     //out_msg.header   = ; // Same timestamp and tf frame as input image
     out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;// (scale_ == SCALE_METERS) ? sensor_msgs::image_encodings::TYPE_32FC1 : sensor_msgs::image_encodings::TYPE_16UC1;
@@ -219,14 +208,11 @@
     
     res.image = *out_msg.toImageMsg();
     
-    //testCollision(req.pose);
-
-    
     return true;
   }
 
   // Incomplete and Not currently used
-  void CollisionChecker::generateImageCoord(const double xyz[], double * uv)
+  void PipsCollisionChecker::generateImageCoord(const double xyz[], double * uv)
   {
     //Convert coordinates to Eigen Vector
     Eigen::Map<const Eigen::Vector3d> origin_r(xyz);
