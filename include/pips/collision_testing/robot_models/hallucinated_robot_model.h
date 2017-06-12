@@ -1,21 +1,17 @@
 #ifndef HALLUCINATED_ROBOT_MODEL_H
 #define HALLUCINATED_ROBOT_MODEL_H
 
-
+#include <pips/utils/pose_conversions.h>
 
 //#include <dynamic_reconfigure/server.h>
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
-#include <geometry_msgs/Pose.h>
-//#include <opencv/cv.h>
-#include <Eigen/Eigen>
 #include <image_transport/image_transport.h>
 #include <image_geometry/pinhole_camera_model.h>
 #include <cv_bridge/cv_bridge.h>
 
 #include <tf2_eigen/tf2_eigen.h>
 
-#include <tf/transform_datatypes.h> //For creating quaternion easily
 
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/core/core.hpp>
@@ -32,82 +28,6 @@
 //#include <mesh_filter/depth_model.h>
 
 
-typedef geometry_msgs::Pose PoseType;
-
-// should really put these in some sort of namespace... and probably into a separate header
-
-  template<typename T>
-  void convertPose(const T& A, T& B)
-  {
-    B = A;
-  }
-  
-  inline
-  void convertPose(const PoseType pose_in, cv::Point3d& pose_out)
-  {
-      pose_out = cv::Point3d(pose_in.position.x, pose_in.position.y, pose_in.position.z);
-  }
-  
-  inline
-  void convertPose(double pose_in[], PoseType& pose_out)
-  {
-    pose_out.position.x = pose_in[0];
-    pose_out.position.y = pose_in[1];
-    pose_out.position.z = pose_in[2];
-    
-    if(sizeof(pose_in) / sizeof(double) == 4)
-    {
-      pose_out.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, pose_in[3]);
-    }
-  }
-
-
-  inline
-  void convertPose(const Eigen::Affine3d& in, geometry_msgs::Pose& msg) {
-    msg = tf2::toMsg(in);
-    // Older versions of tf2_eigen didn't include the above function, requiring the below code:
-    /*  
-     msg.position.x = in.translation().x();
-     msg.position.y = in.translation().y();
-     msg.position.z = in.translation().z();
-     msg.orientation.x = Eigen::Quaterniond(in.rotation()).x();
-     msg.orientation.y = Eigen::Quaterniond(in.rotation()).y();
-     msg.orientation.z = Eigen::Quaterniond(in.rotation()).z();
-     msg.orientation.w = Eigen::Quaterniond(in.rotation()).w(); 
-     */
-  }
-  
-  /* Note: not sure whether this one actually works */
-  inline
-  void convertPose(const geometry_msgs::Pose& msg, Eigen::Affine3d& out)
-  {
-    tf2::fromMsg(msg, out);
-  }
-  
-  inline
-  void convertPose(const geometry_msgs::Pose& msg, geometry_msgs::Pose& out)
-  {
-    out = msg;
-  }
-  
-  std::string toString(const geometry_msgs::Pose& pose)
-  {
-    std::stringstream ss;
-    ss << "[" << pose.position.x << "," << pose.position.y << "," << pose.position.z << "] (" <<
-        pose.orientation.w << "," << pose.orientation.x << "," << pose.orientation.y << "," << pose.orientation.z << 
-        ")";
-    return ss.str();
-  }
-  
-  std::string toString(const geometry_msgs::TransformStamped& transform)
-  {
-    std::stringstream ss;
-    ss << "[" << transform.transform.translation.x << "," << transform.transform.translation.y << "," << transform.transform.translation.z << "] (" <<
-        transform.transform.rotation.w << "," << transform.transform.rotation.x << "," << transform.transform.rotation.y << "," << transform.transform.rotation.z << 
-        ")";
-    return ss.str();
-  }
-  
   inline
   void convertImage(const cv_bridge::CvImage::ConstPtr& cv_image_ref, cv::Mat& image)
   {

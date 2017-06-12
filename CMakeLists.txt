@@ -47,7 +47,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIR}
-  LIBRARIES collision_checker
+  LIBRARIES collision_checker pips_collision_checker
   CATKIN_DEPENDS image_geometry cv_bridge message_runtime #dense_depth_projection
   DEPENDS Eigen3 
 )
@@ -67,6 +67,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 ## Declare the collision_checker library
 add_library(collision_checker src/collision_checker.cpp)
 
+add_library(pips_collision_checker src/pips_collision_checker.cpp)
+
 add_library(robot_model_interface src/hallucinated_robot_model_interface.cpp)
 
 
@@ -79,9 +81,13 @@ add_dependencies(robot_model_interface
    ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} #${PROJECT_NAME}_gencfg 
    )
 
-#add_dependencies(collision_checker
-#   ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
-#   )
+add_dependencies(collision_checker
+   ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+   )
+   
+add_dependencies(pips_collision_checker
+   ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+   )
 
 #add_library (dense_model 
 #  src/dense_model.cpp
@@ -137,13 +143,13 @@ target_link_libraries(robot_model_interface
   ${catkin_LIBRARIES}
   )
 
-## Declare a cpp executable
-#add_executable(trajectory_tester src/test_trajectory.cpp )
-
-
 target_link_libraries(collision_checker
+  ${catkin_LIBRARIES}
+  )
+
+target_link_libraries(pips_collision_checker
+  collision_checker
   robot_model_interface
   ${catkin_LIBRARIES}
-
- )
+  )
 
