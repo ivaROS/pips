@@ -28,6 +28,8 @@
 //#include <mesh_filter/depth_model.h>
 
 
+// TODO: Move some of the generally useful functions (conversion/transformation/toString/etc) elsewhere
+
   inline
   void convertImage(const cv_bridge::CvImage::ConstPtr& cv_image_ref, cv::Mat& image)
   {

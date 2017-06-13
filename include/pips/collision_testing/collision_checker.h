@@ -7,7 +7,6 @@
 #include <pips/utils/pose_conversions.h>
 
 #include "ros/ros.h"
-#include <image_transport/image_transport.h>
 #include <memory>
 
 
