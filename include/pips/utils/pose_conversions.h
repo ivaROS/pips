@@ -34,6 +34,10 @@
     {
       pose_out.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, pose_in[3]);
     }
+    else
+    {
+      pose_out.orientation.w = 1;
+    }
   }
 
 
