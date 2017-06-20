@@ -1,5 +1,5 @@
 
-#include "cylindrical_model.h"
+#include "pips/collision_testing/robot_models/cylindrical_model.h"
 
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -18,11 +18,13 @@
 
 #include <iomanip>      // std::setprecision
 
-  CylindricalModel::CylindricalModel() : HallucinatedRobotModelImpl() 
-  {
-    name_ = "CylindricalModel";
-  }
-  
+
+    CylindricalModel::CylindricalModel() : HallucinatedRobotModelImpl<cv::Point3d>() 
+    {
+      this->name_ = "CylindricalModel";
+    }
+    
+    
   void CylindricalModel::setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im)
   {   
       robot_radius_ = radius + safety_expansion;
@@ -32,36 +34,14 @@
       show_im_ = show_im;
   }
   
-  // Should use my custom comparison code from RectangularModel, make it more general and move it somewhere (maybe a header?), then use it from both of these. Except, that built-in vectorized/parallel versions should use this...
-  
-  // Question: is it better to use the camera model's methods for clarity, or to use pure Eigen matrices for speed?
-  // Initially, will use the model, but will likely switch over in the future.
-  bool CylindricalModel::testCollisionImpl(const cv::Point3d pt)
-  {
-    std::vector<COLUMN_TYPE> cols = getColumns(pt);
-  
-    for(unsigned int i = 0; i < cols.size(); ++i)
-    {
-      cv::Mat col = cv::Mat(image_ref_,cols[i].rect); //cols[i].image;
-      float depth = cols[i].depth;
-      
-      if(cv::countNonZero(col < depth) > 0)
-      {
-        return true; 
-      }
-    }
- 
-    return false;
-  }
+
 
 
   cv::Mat CylindricalModel::generateHallucinatedRobotImpl(const cv::Point3d pt)
   {
-    cv::Mat viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type()); // What about filling with Nans?
+    cv::Mat viz = HallucinatedRobotModelImpl::generateHallucinatedRobotImpl(pt);
     
     std::vector<COLUMN_TYPE> cols = getColumns(pt);
-    
-    
     
     for(unsigned int i = 0; i < cols.size(); ++i)
     {
@@ -71,25 +51,8 @@
       col.setTo(depth);
     }
     
-
-    //cv::Mat viz_t = viz.t();
-    //cv::transpose(viz,viz_t);
-  
     return viz;
   }
-
-
-
-/*
-// This is for transposed version
-cv::Mat CylindricalModel::getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
-{
-   cv::Mat transposed = cv_image_ref->image.t();
-   return transposed;
-}
-*/
-
-
 
 
 
@@ -104,7 +67,7 @@ cv::Mat CylindricalModel::getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
     int height = std::ceil(r.br().y)-y + 1; //ROI's from rectangles are noninclusive on the right/bottom sides, so need to add 1 to include the bottom row
     
   //The only changes needed to use a transposed image are swapping the x and y as well as width and height
-    cv::Rect column = getROIImpl(x,y,width,height);
+    cv::Rect column = getColumnRect(x,y,width,height);
     cv::Rect imageBounds(0,0,image_ref_.cols,image_ref_.rows);
     cv::Rect bounded = column & imageBounds;
 
@@ -121,11 +84,35 @@ cv::Mat CylindricalModel::getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
     return col;
   }
 
-  cv::Rect CylindricalModel::getROIImpl(const int x, const int y, const int width, const int height)
+  cv::Rect CylindricalModel::getColumnRect(const int x, const int y, const int width, const int height)
   {
       return cv::Rect(x,y,width,height);
   }
 
+  /*
+  void doPrecomputation(cv_bridge::CvImage::ConstPtr& cv_image_ref) 
+  {
+    img_width_ = cv_image_ref->image.cols;
+    img_height_ = cv_image_ref->image.rows;
+  }
+  */
+  
+  cv::Rect CylindricalModel::getROIImpl(const cv::Point3d pt)
+  {
+    cv::Rect rect;
+    
+    //It would probably be more efficient to just grab the code that computes the corners, but this should work
+    std::vector<COLUMN_TYPE> cols = getColumns(pt);
+    
+    for(unsigned int i = 0; i < cols.size(); ++i)
+    {
+      rect |= cols[i].rect;
+    }
+    
+    ROS_INFO_STREAM_THROTTLE(1,"Pt = " << pt << ", rect = " << rect);
+    
+    return rect;
+  }
 
   std::vector<COLUMN_TYPE> CylindricalModel::getColumns(const cv::Point3d pt)
   {
@@ -265,6 +252,29 @@ cv::Mat CylindricalModel::getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
     
     
     return cols;
+  }
+  
+  bool CylindricalModel::testCollisionImpl(const cv::Point3d pt)
+  {
+    std::vector<COLUMN_TYPE> cols = getColumns(pt);
+  
+    for(unsigned int i = 0; i < cols.size(); ++i)
+    {
+      cv::Mat col = cv::Mat(this->image_ref_,cols[i].rect); //cols[i].image;
+      float depth = cols[i].depth;
+      
+      if(isLessThan(col, depth))
+      {
+        return true; 
+      }
+    }
+ 
+    return false;
+  }
+  
+  bool CylindricalModel::isLessThan(const cv::Mat& col, float depth)
+  {
+    return cv::countNonZero(col < depth) > 0;
   }
     
 

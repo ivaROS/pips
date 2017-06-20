@@ -1,6 +1,9 @@
-#include "hallucinated_robot_model_interface.h"
-#include <cylindrical_model.h>
-#include <cylindrical_model_t.h>
+#include "pips/collision_testing/hallucinated_robot_model_interface.h"
+#include <pips/collision_testing/robot_models/rectangular_model.h>
+#include <pips/collision_testing/robot_models/rectangular_model_ss.h>
+#include <pips/collision_testing/robot_models/rectangular_model_ocl.h>
+#include <pips/collision_testing/robot_models/cylindrical_model.h>
+#include <pips/collision_testing/robot_models/cylindrical_model_t.h>
 
 #include <pips/HallucinatedRobotModelConfig.h>
 
@@ -32,6 +35,14 @@
       {
         model_ = std::make_shared<RectangularModel>();
       }
+      else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ocl)
+      {
+        model_ = std::make_shared<RectangularModelOCL>();
+      }
+      else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ss)
+      {
+        model_ = std::make_shared<RectangularModelSS>();
+      }
       else if (config.model_type == pips::HallucinatedRobotModel_cylindrical)
       {
         model_ = std::make_shared<CylindricalModel>();
@@ -40,10 +51,17 @@
       {
         model_ = std::make_shared<CylindricalModelT>();
       }
+      else if (config.model_type == pips::HallucinatedRobotModel_cylindrical_c)
+      {
+        model_ = std::make_shared<HallucinatedRobotModelCacheWrapper<CylindricalModel> >();
+      }
+      
+      /*
       else if (config.model_type == pips::HallucinatedRobotModel_rectangular_min)
       {
         model_ = std::make_shared<RectangularModelMinV>();
       }
+      */
 /*      else if (config.model_type == pips::HallucinatedRobotModel_dense)
       {
         ROS_WARN_NAMED(name_, "Sorry, this model is currently disabled. No changes have been made.");

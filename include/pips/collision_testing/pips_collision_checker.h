@@ -1,22 +1,21 @@
-#ifndef COLLISION_CHECKER_H
-#define COLLISION_CHECKER_H
+#ifndef PIPS_COLLISION_CHECKER_H
+#define PIPS_COLLISION_CHECKER_H
 
+#include <pips/collision_testing/collision_checker.h>
 
-#include "hallucinated_robot_model_interface.h"
+#include "pips/collision_testing/hallucinated_robot_model_interface.h"
 #include <pips/GenerateDepthImage.h>
-#include <pips/TestCollision.h>
 
-#include "ros/ros.h"
 #include <sensor_msgs/Image.h>
-#include <geometry_msgs/TransformStamped.h>
-//#include <opencv/cv.h>
-#include <Eigen/Eigen>
 #include <image_transport/image_transport.h>
 #include <image_geometry/pinhole_camera_model.h>
 #include <cv_bridge/cv_bridge.h>
+
+#include <geometry_msgs/TransformStamped.h>
+#include <Eigen/Eigen>
+#include <image_geometry/pinhole_camera_model.h>
 #include <chrono>
 #include <memory>
-
 
 //class cv::Mat;
 
@@ -54,24 +53,24 @@ typedef std::shared_ptr<DepthData> DepthDataPtr;
 
 */
 
-class CollisionChecker
+class PipsCollisionChecker : public CollisionChecker
 {
 
 
 
 public :
-    CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh);
+    PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh);
 
     void setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
-    bool testCollision(PoseType pose);
+    bool testCollisionImpl(PoseType pose);
     cv::Mat generateDepthImage(PoseType pose);
     
-    void init();
+    void initImpl();
     
     void setTransform(const geometry_msgs::TransformStamped& base_optical_transform);
     
     void generateImageCoord(const double xyz[], double * uv);
-    
+    /*
     template<typename T>
     bool testCollision(T pose_in)
     {
@@ -87,27 +86,28 @@ public :
       convertPose(pose_in, pose_out);
       return generateDepthImage(pose_out);
     }
+    */
 
 private:
-    bool testCollisionSrv(pips::TestCollision::Request &req, pips::TestCollision::Response &res);
     bool getDepthImageSrv(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res);
     
 private :
-    std::string name_ = "CollisionChecker";
-    ros::NodeHandle nh_, pnh_;
-    image_transport::ImageTransport it_;
-    image_transport::Publisher depthpub_;
-    ros::Publisher posepub_;
-    std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_;
+    std::string name_ = "PipsCollisionChecker";
 
+    image_transport::Publisher depthpub_;
+    std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_;
+    ros::NodeHandle nh_, pnh_;
+
+    image_transport::ImageTransport it_; // Needs to be after node handles to ensure they are initialized first
+
+    
     Eigen::Affine3d optical_transform_;
     geometry_msgs::TransformStamped base_optical_transform_;
     
-    ros::ServiceServer depth_generation_service_, collision_testing_service_;
+    ros::ServiceServer depth_generation_service_;
     
     HallucinatedRobotModelInterface robot_model_;
     
-    bool publish_image_;
     unsigned int scale_;
     
     cv::Mat image_,image_ref_;
@@ -115,7 +115,6 @@ private :
     cv_bridge::CvImagePtr input_bridge_ref_;
     
     cv_bridge::CvImagePtr input_bridge_, output_bridge_;
-    std::chrono::duration<double, std::milli> total_duration;
     
 
 
@@ -142,5 +141,5 @@ private :
     //PoseType getPose(geometry_msgs::Point point);        
     //eigen::Affine3d getPose(geometry_msgs::Pose pose);
 
-#endif /* COLLISION_CHECKER_H */
+#endif /* PIPS_COLLISION_CHECKER_H */
 

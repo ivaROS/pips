@@ -1,5 +1,5 @@
 
-#include <cylindrical_model_t.h>
+#include <pips/collision_testing/robot_models/cylindrical_model_t.h>
 
   /* Transposes are only needed when:
       1. Setting the reference depth image
@@ -24,19 +24,19 @@
 
   
   //Transposed version
-  cv::Rect CylindricalModelT::getROIImpl(int x, int y, int width, int height)
+  cv::Rect CylindricalModelT::getColumnRect(int x, int y, int width, int height)
   {
     cv::Rect column(y,x,height,width);
     return column;
   }
   
-  cv::Mat CylindricalModelT::getImage(cv_bridge::CvImage::ConstPtr& cv_image_ref)
-  {
-     cv::Mat transposed = cv_image_ref->image.t();
-     return transposed;
+
+
+  cv::Mat CylindricalModelT::getImageImpl(const cv::Mat& image)
+  { 
+    cv::Mat transposed = image.t();
+    return transposed;
   }
-
-
 
 
 
