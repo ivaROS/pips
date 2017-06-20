@@ -13,7 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   image_geometry
   image_transport
-  image_view
+#  image_view  #Any package intended to run on the robot should not require any gui packages
   tf
   tf2
   tf2_eigen
@@ -53,11 +53,13 @@ catkin_package(
 )
 
 include_directories(
+  include
+
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
-  ${PROJECT_SOURCE_DIR}
+#  ${PROJECT_SOURCE_DIR}
 
-  include
+#  include
 )
 
 
