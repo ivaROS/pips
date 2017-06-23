@@ -59,6 +59,9 @@ class PipsCollisionChecker : public CollisionChecker
 
 
 public :
+    //Needed to ensure that eigen objects aligned
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh);
 
     void setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
