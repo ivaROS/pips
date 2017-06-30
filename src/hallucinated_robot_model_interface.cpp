@@ -46,7 +46,7 @@
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ocl)
       {
         #if CV_MAJOR_VERSION == 2
-          ROS_ERROR_STREAM(name_, "OpenCL model not supported with OpenCV 2.x. Model not changed, please select another.");
+          ROS_ERROR_STREAM_NAMED(name_, "OpenCL model not supported with OpenCV 2.x. Model not changed, please select another.");
         #elif CV_MAJOR_VERSION == 3
           model_ = std::make_shared<RectangularModelOCL>();
         #endif
