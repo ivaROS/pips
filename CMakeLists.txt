@@ -114,13 +114,17 @@ target_link_libraries(rectangular_model_ss
   )
 SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ss)
 
-add_library(rectangular_model_ocl
-  src/rectangular_model_ocl.cpp
-  )
-target_link_libraries(rectangular_model_ocl
-  ${catkin_LIBRARIES}
-  )
-SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ocl)
+if(OpenCV_VERSION VERSION_LESS "3.0")
+  MESSAGE(STATUS "Your OpenCV version is less than 3.0, OpenCL model will not be built")
+else()
+  add_library(rectangular_model_ocl
+    src/rectangular_model_ocl.cpp
+    )
+  target_link_libraries(rectangular_model_ocl
+    ${catkin_LIBRARIES}
+    )
+  SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ocl)
+endif()
   
 add_library(cylindrical_model 
   src/cylindrical_model.cpp

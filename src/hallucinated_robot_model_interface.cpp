@@ -1,11 +1,19 @@
 #include "pips/collision_testing/hallucinated_robot_model_interface.h"
 #include <pips/collision_testing/robot_models/rectangular_model.h>
 #include <pips/collision_testing/robot_models/rectangular_model_ss.h>
-#include <pips/collision_testing/robot_models/rectangular_model_ocl.h>
 #include <pips/collision_testing/robot_models/cylindrical_model.h>
 #include <pips/collision_testing/robot_models/cylindrical_model_t.h>
 
 #include <pips/HallucinatedRobotModelConfig.h>
+
+#include "opencv2/core/version.hpp"
+#if CV_MAJOR_VERSION == 2
+// I'm not supporting OpenCL version on OpenCV 2.x
+#elif CV_MAJOR_VERSION == 3
+  #include <pips/collision_testing/robot_models/rectangular_model_ocl.h>
+#endif
+
+
 
   
   HallucinatedRobotModelInterface::HallucinatedRobotModelInterface(ros::NodeHandle nh, ros::NodeHandle pnh) :
@@ -37,7 +45,11 @@
       }
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ocl)
       {
-        model_ = std::make_shared<RectangularModelOCL>();
+        #if CV_MAJOR_VERSION == 2
+          ROS_ERROR_STREAM(name_, "OpenCL model not supported with OpenCV 2.x. Model not changed, please select another.");
+        #elif CV_MAJOR_VERSION == 3
+          model_ = std::make_shared<RectangularModelOCL>();
+        #endif
       }
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ss)
       {

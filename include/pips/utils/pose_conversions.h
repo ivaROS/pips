@@ -6,7 +6,13 @@
 #include <tf/transform_datatypes.h> //For creating quaternion easily
 #include <tf2_eigen/tf2_eigen.h> // For converting betwen Eigen and tf types
 
-#include <opencv2/core/types.hpp>
+#include "opencv2/core/version.hpp"
+#if CV_MAJOR_VERSION == 2         //No need to import the whole core.hpp on OpenCV3+
+  #include <opencv2/core/core.hpp>
+#elif CV_MAJOR_VERSION == 3
+  #include <opencv2/core/types.hpp>
+#endif
+
 
 
 // should really put these in some sort of namespace... and probably into a separate header
@@ -30,7 +36,7 @@
     pose_out.position.y = pose_in[1];
     pose_out.position.z = pose_in[2];
     
-    if(sizeof(pose_in) / sizeof(double) == 4)
+    if(sizeof(pose_in) / sizeof(double) == 4) //TODO: According to the compiler warning, this will never get called, since 'pose_in' is just a pointer, not an array, when it arrives here. That makes double[] a much riskier datatype to accept. If I don't need it, I should get rid of it
     {
       pose_out.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, pose_in[3]);
     }

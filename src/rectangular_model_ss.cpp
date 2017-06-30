@@ -7,9 +7,8 @@
 //#include <opencv/cv.h>
 
 #include <opencv2/core/core.hpp>
-//#include <opencv2/core/ocl.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui/highgui.hpp"  //If not using imshow, should remove this
+
 
 
 #include <Eigen/Eigen>
