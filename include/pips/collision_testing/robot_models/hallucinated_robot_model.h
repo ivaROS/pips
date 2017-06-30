@@ -12,11 +12,15 @@
 
 #include <tf2_eigen/tf2_eigen.h>
 
-
-#include <opencv2/core/ocl.hpp>
 #include <opencv2/core/core.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui/highgui.hpp"
+
+
+
+
+
+
+//#include "opencv2/highgui/highgui.hpp"
 
 #include <sstream>
 #include <limits> //for getting 'NAN'
@@ -36,11 +40,19 @@
     image = cv_image_ref->image;
   }
 
+#include "opencv2/core/version.hpp"
+#if CV_MAJOR_VERSION == 2
+// do opencv 2 code
+#elif CV_MAJOR_VERSION == 3
+  #include <opencv2/core/ocl.hpp>
   inline
   void convertImage(const cv_bridge::CvImage::ConstPtr& cv_image_ref, cv::UMat& image)
   {
     image = cv_image_ref->image.getUMat(cv::ACCESS_READ);
   }
+#endif
+
+
 
 
 
