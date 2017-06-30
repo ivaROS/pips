@@ -83,6 +83,7 @@ class HallucinatedRobotModelBase
       
       doPrecomputation(cv_image_ref);
       
+      /*
       if(show_im_)
       {
         double min;
@@ -94,6 +95,7 @@ class HallucinatedRobotModelBase
         cv::imshow("Original image", adjIm);
         cv::waitKey(1);
       }
+      */
     }
     
 
