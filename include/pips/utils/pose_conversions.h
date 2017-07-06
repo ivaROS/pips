@@ -75,6 +75,7 @@
     out = msg;
   }
   
+  inline
   std::string toString(const geometry_msgs::Pose& pose)
   {
     std::stringstream ss;
@@ -84,6 +85,7 @@
     return ss.str();
   }
   
+  inline
   std::string toString(const geometry_msgs::TransformStamped& transform)
   {
     std::stringstream ss;
