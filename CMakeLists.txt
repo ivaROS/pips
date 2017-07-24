@@ -27,6 +27,9 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Eigen3 REQUIRED)
 
+#Will work with either 2.4 or 3.0+
+find_package(OpenCV REQUIRED)
+
 generate_dynamic_reconfigure_options(
   cfg/HallucinatedRobotModel.cfg
   )
@@ -46,10 +49,10 @@ generate_messages(
 
 
 catkin_package(
-  INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIR}
+  INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIR} ${OpenCV_INCLUDE_DIRS}
   LIBRARIES collision_checker pips_collision_checker
   CATKIN_DEPENDS image_geometry cv_bridge message_runtime #dense_depth_projection
-  DEPENDS Eigen3 
+  DEPENDS Eigen3 OpenCV
 )
 
 include_directories(
@@ -58,6 +61,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
 #  ${PROJECT_SOURCE_DIR}
+  ${OpenCV_INCLUDE_DIRS}
 
 #  include
 )
@@ -157,5 +161,6 @@ target_link_libraries(pips_collision_checker
   collision_checker
   robot_model_interface
   ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
   )
 
