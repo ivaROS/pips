@@ -6,7 +6,6 @@
 //#include <dynamic_reconfigure/server.h>
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
-#include <image_transport/image_transport.h>
 #include <image_geometry/pinhole_camera_model.h>
 #include <cv_bridge/cv_bridge.h>
 
@@ -102,6 +101,11 @@ class HallucinatedRobotModelBase
     void init(std::shared_ptr<image_geometry::PinholeCameraModel>& cam_model, const geometry_msgs::TransformStamped& base_optical_transform)
     {
       cam_model_ = cam_model;
+      base_optical_transform_ = base_optical_transform;
+    }
+    
+    void setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
+    {
       base_optical_transform_ = base_optical_transform;
     }
     

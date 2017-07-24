@@ -19,11 +19,6 @@
 
 
 #include <sensor_msgs/image_encodings.h>
-#include <image_transport/subscriber_filter.h>
-#include <message_filters/subscriber.h>
-#include <message_filters/time_synchronizer.h>
-#include <message_filters/sync_policies/exact_time.h>
-#include <message_filters/sync_policies/approximate_time.h>
 
 #include <climits>
 
@@ -57,7 +52,7 @@
      based on the presence of subscribers
   */
   PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : CollisionChecker(nh,pnh),
-    nh_(nh, name_), pnh_(pnh, name_), it_(nh_), robot_model_(nh_, pnh_)
+    nh_(nh, name_), pnh_(pnh, name_), robot_model_(nh_, pnh_)
   {
       ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
   }
@@ -68,6 +63,9 @@
       depth_generation_service_ = nh_.advertiseService("generate_depth_image", &PipsCollisionChecker::getDepthImageSrv, this);
   }
   
+  /*Currently, I don't use the 'optical_transform' anywhere. Everything happens within the robot model 
+   * (this was to enable optimized transformations of different representations
+   */
     void PipsCollisionChecker::setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
     {
       //Convert transform to Eigen
@@ -94,7 +92,8 @@
       //If data type 32bit float, unit is m; else mm
       scale_ = (input_bridge_ref_->encoding == sensor_msgs::image_encodings::TYPE_32FC1) ? SCALE_METERS : SCALE_MM;
       
-      //Make a copy of depth image and set all 0's (unknowns) in image to some large value
+      //Make a copy of depth image and set all 0's (unknowns) in image to some large value.
+      //Better idea: set them to Nan!
       image_ref_ = input_bridge_ref_->image;
       image_ref_.setTo(MAX_RANGE * scale_, image_ref_==0);
       
@@ -113,7 +112,7 @@
     //Reinitialize camera model with each image in case resolution has changed
 
     robot_model_.updateModel(input_bridge_ref_, info_msg, scale_);
-
+    return;
   }
 
       

@@ -7,7 +7,7 @@
 #include <pips/GenerateDepthImage.h>
 
 #include <sensor_msgs/Image.h>
-#include <image_transport/image_transport.h>
+//#include <image_transport/image_transport.h>
 #include <image_geometry/pinhole_camera_model.h>
 #include <cv_bridge/cv_bridge.h>
 
@@ -97,11 +97,11 @@ private:
 private :
     std::string name_ = "PipsCollisionChecker";
 
-    image_transport::Publisher depthpub_;
+    //image_transport::Publisher depthpub_;
     std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_;
     ros::NodeHandle nh_, pnh_;
 
-    image_transport::ImageTransport it_; // Needs to be after node handles to ensure they are initialized first
+    //image_transport::ImageTransport it_; // Needs to be after node handles to ensure they are initialized first
 
     
     Eigen::Affine3d optical_transform_;
