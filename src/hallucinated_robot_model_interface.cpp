@@ -116,11 +116,14 @@
     }
   }
   
-  //TODO: Add model mutex here
   void HallucinatedRobotModelInterface::setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
   {
     base_optical_transform_ = base_optical_transform;
-    model_->setTransform(base_optical_transform_);
+    {
+      boost::mutex::scoped_lock lock(model_mutex_);
+      if(model_)
+	model_->setTransform(base_optical_transform_);
+    }
   }
   
 
