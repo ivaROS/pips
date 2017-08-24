@@ -20,6 +20,7 @@
   
   void CollisionChecker::init()
   {
+      //TODO: is it possible for the service to be advertised and an attempt made to use it before initImpl finishes?
       collision_testing_service_ = nh_.advertiseService("test_collision", &CollisionChecker::testCollisionSrv, this);
       initImpl();
   }

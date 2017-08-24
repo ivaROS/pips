@@ -48,9 +48,7 @@
     pub_image: When enabled, the collision object's projection is added to the current depth image and published. Only enable when debugging- during normal usage far too many images would be published.
   */ 
   
-  /* The publish_image_ parameter will either be moved to dyanmic reconfigure or will be automatically toggled 
-     based on the presence of subscribers
-  */
+ 
   PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : CollisionChecker(nh,pnh),
     nh_(nh, name_), pnh_(pnh, name_), robot_model_(nh_, pnh_)
   {
@@ -60,6 +58,8 @@
   void PipsCollisionChecker::initImpl()
   {
       robot_model_.init();
+      
+      //TODO: This should probably accept a CameraInfo message as an optional parameter, allowing it to be used without a camera
       depth_generation_service_ = nh_.advertiseService("generate_depth_image", &PipsCollisionChecker::getDepthImageSrv, this);
   }
   

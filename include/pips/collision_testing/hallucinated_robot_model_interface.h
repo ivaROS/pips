@@ -14,6 +14,10 @@ public:
   void configCB(pips::HallucinatedRobotModelConfig &config, uint32_t level);
   void init();
   
+  /*Note: really, the mutex should probably be moved to a higher level: it's ok for multiple threads to 
+   * generate models or test collisions, it's just not ok to modify the model while that happens
+   */
+  
   template <typename T>
   bool testCollision(const T pose)
   {
