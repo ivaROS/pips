@@ -61,6 +61,7 @@
       
       //TODO: This should probably accept a CameraInfo message as an optional parameter, allowing it to be used without a camera
       depth_generation_service_ = nh_.advertiseService("generate_depth_image", &PipsCollisionChecker::getDepthImageSrv, this);
+      //posepub_ = nh_.advertise<geometry_msgs::PoseStamped>("collision_poses",100);
   }
   
   /*Currently, I don't use the 'optical_transform' anywhere. Everything happens within the robot model 
@@ -127,6 +128,16 @@
   bool PipsCollisionChecker::testCollisionImpl(geometry_msgs::Pose pose)
   {
     bool collided = robot_model_.testCollision(pose);
+    /*
+    if(collided)
+    {
+      geometry_msgs::PoseStamped pose_stamped;
+      pose_stamped.pose = pose;
+      pose_stamped.header.stamp = input_bridge_ref_->header.stamp; //This could potentially be non-threadsafe... It might be best to switch from Pose to PoseStamped for everything...
+      pose_stamped.header.frame_id = base_optical_transform_.child_frame_id;
+      posepub_.publish(pose_stamped);
+    }
+    */
     
     return collided;
   }

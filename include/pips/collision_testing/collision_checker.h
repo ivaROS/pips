@@ -49,11 +49,14 @@ private:
    virtual bool testCollisionImpl(PoseType pose)=0;
 
    virtual void initImpl() {}
-    
+
+protected:
+    //ros::Publisher posepub_;
+
+   
 private :
     std::string name_ = "CollisionChecker";
     ros::NodeHandle nh_, pnh_;	// For now, separate node handles for base and derived
-    ros::Publisher posepub_;
     ros::ServiceServer collision_testing_service_;
 
                               
