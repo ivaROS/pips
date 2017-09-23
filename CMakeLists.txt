@@ -129,7 +129,15 @@ else()
     )
   SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ocl)
 endif()
-  
+
+add_library(rectangular_model_pf
+  src/rectangular_model_pf.cpp
+  )
+target_link_libraries(rectangular_model_pf
+  ${catkin_LIBRARIES}
+  )
+SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_pf)
+
 add_library(cylindrical_model 
   src/cylindrical_model.cpp
   )

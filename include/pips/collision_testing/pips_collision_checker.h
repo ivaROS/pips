@@ -72,7 +72,7 @@ public :
     
     void setTransform(const geometry_msgs::TransformStamped& base_optical_transform);
     
-    void generateImageCoord(const double xyz[], double * uv);
+    //void generateImageCoord(const double xyz[], double * uv);
     /*
     template<typename T>
     bool testCollision(T pose_in)

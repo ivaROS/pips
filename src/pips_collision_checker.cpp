@@ -163,7 +163,9 @@
     return true;
   }
 
+
   // Incomplete and Not currently used
+  /*
   void PipsCollisionChecker::generateImageCoord(const double xyz[], double * uv)
   {
     //Convert coordinates to Eigen Vector
@@ -177,7 +179,7 @@
 
     
   }
-  
+  */
   
   
   

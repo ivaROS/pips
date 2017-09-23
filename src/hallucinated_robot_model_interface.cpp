@@ -1,6 +1,7 @@
 #include "pips/collision_testing/hallucinated_robot_model_interface.h"
 #include <pips/collision_testing/robot_models/rectangular_model.h>
 #include <pips/collision_testing/robot_models/rectangular_model_ss.h>
+#include <pips/collision_testing/robot_models/rectangular_model_pf.h>
 #include <pips/collision_testing/robot_models/cylindrical_model.h>
 #include <pips/collision_testing/robot_models/cylindrical_model_t.h>
 
@@ -54,6 +55,11 @@
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ss)
       {
         model_ = std::make_shared<RectangularModelSS>();
+      }
+      else if(config.model_type == pips::HallucinatedRobotModel_rectangular_pf)
+      {
+	ROS_INFO_STREAM_NAMED(name_, "New model type = ParallelFor");
+	model_ = std::make_shared<RectangularModelPF>();
       }
       else if (config.model_type == pips::HallucinatedRobotModel_cylindrical)
       {
