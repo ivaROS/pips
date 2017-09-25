@@ -22,7 +22,9 @@
 
 #include <climits>
 
-
+#include <extended_local/ExtPose.h>
+#include <extended_local/ExtPoseRequest.h>
+#include <extended_local/ExtPoseResponse.h>
 
 
 #define MAX_RANGE 10    //Maximum expected range of sensor, used to fill unknowns (0's) in image
@@ -58,6 +60,9 @@
   void PipsCollisionChecker::initImpl()
   {
       robot_model_.init();
+      
+      checker_ = nh_.serviceClient<extended_local::ExtPose>("/ext_check");
+
       
       //TODO: This should probably accept a CameraInfo message as an optional parameter, allowing it to be used without a camera
       depth_generation_service_ = nh_.advertiseService("generate_depth_image", &PipsCollisionChecker::getDepthImageSrv, this);
@@ -128,6 +133,29 @@
   bool PipsCollisionChecker::testCollisionImpl(geometry_msgs::Pose pose)
   {
     bool collided = robot_model_.testCollision(pose);
+    
+    
+    
+    
+    extended_local::ExtPose srv;
+    srv.request.pose = pose;
+    srv.request.radius.data = .2;
+    
+    
+    
+    if(checker_.call(srv))
+    {
+      //Service worked
+      ROS_DEBUG_STREAM_NAMED(name_, "service call worked!");
+    
+      if (srv.response.result)
+      {
+	  collided = true;
+	      ROS_INFO_STREAM_NAMED(name_, "Out of sight pose collided!");
+
+      }
+    }
+    
     /*
     if(collided)
     {
