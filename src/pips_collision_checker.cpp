@@ -50,7 +50,7 @@
     pub_image: When enabled, the collision object's projection is added to the current depth image and published. Only enable when debugging- during normal usage far too many images would be published.
   */ 
   
- 
+
   PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : CollisionChecker(nh,pnh),
     nh_(nh, name_), pnh_(pnh, name_), robot_model_(nh_, pnh_)
   {
@@ -66,12 +66,12 @@
       
       //TODO: This should probably accept a CameraInfo message as an optional parameter, allowing it to be used without a camera
       depth_generation_service_ = nh_.advertiseService("generate_depth_image", &PipsCollisionChecker::getDepthImageSrv, this);
-      //posepub_ = nh_.advertise<geometry_msgs::PoseStamped>("collision_poses",100);
+      posepub_ = nh_.advertise<geometry_msgs::PoseStamped>("collision_poses",100);
   }
   
   /*Currently, I don't use the 'optical_transform' anywhere. Everything happens within the robot model 
-   * (this was to enable optimized transformations of different representations
-   */
+  * (this was to enable optimized transformations of different representations, which really wasn't worth implementing)
+  */
     void PipsCollisionChecker::setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
     {
       //Convert transform to Eigen
@@ -114,7 +114,7 @@
       ROS_ERROR_NAMED(name_, "Failed to convert image");
       return;
     }
- 
+
     //Reinitialize camera model with each image in case resolution has changed
 
     robot_model_.updateModel(input_bridge_ref_, info_msg, scale_);
@@ -134,38 +134,34 @@
   {
     bool collided = robot_model_.testCollision(pose);
     
-    
-    
-    
-    extended_local::ExtPose srv;
-    srv.request.pose = pose;
-    srv.request.radius.data = .2;
-    
-    
-    
-    if(checker_.call(srv))
-    {
-      //Service worked
-      ROS_DEBUG_STREAM_NAMED(name_, "service call worked!");
-    
-      if (srv.response.result)
-      {
-	  collided = true;
-	      ROS_INFO_STREAM_NAMED(name_, "Out of sight pose collided!");
-
-      }
-    }
-    
-    /*
     if(collided)
-    {
+    { 
       geometry_msgs::PoseStamped pose_stamped;
       pose_stamped.pose = pose;
       pose_stamped.header.stamp = input_bridge_ref_->header.stamp; //This could potentially be non-threadsafe... It might be best to switch from Pose to PoseStamped for everything...
       pose_stamped.header.frame_id = base_optical_transform_.child_frame_id;
       posepub_.publish(pose_stamped);
     }
-    */
+    else if(false)
+    {
+      extended_local::ExtPose srv;
+      srv.request.pose = pose;
+      srv.request.radius.data = .2;
+      
+      
+      
+      if(checker_.call(srv))
+      {
+	//Service worked
+	ROS_DEBUG_STREAM_NAMED(name_, "service call worked!");
+      
+	if (srv.response.result)
+	{
+	    collided = true;
+	    ROS_INFO_STREAM_NAMED(name_, "Out of sight pose collided!");
+	}
+      }
+    }
     
     return collided;
   }
@@ -180,7 +176,7 @@
   bool PipsCollisionChecker::getDepthImageSrv(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res)
   {
     ROS_INFO_STREAM_NAMED(name_, "Depth image generation request received.");
- 
+
     cv_bridge::CvImage out_msg;
     //out_msg.header   = ; // Same timestamp and tf frame as input image
     out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;// (scale_ == SCALE_METERS) ? sensor_msgs::image_encodings::TYPE_32FC1 : sensor_msgs::image_encodings::TYPE_16UC1;

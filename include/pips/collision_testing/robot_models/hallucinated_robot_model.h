@@ -70,7 +70,8 @@ class HallucinatedRobotModelBase
     virtual bool testCollision(const geometry_msgs::Pose pose)=0;
     virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)=0;
     virtual void setParameters(double robot_radius, double robot_height, double floor_tolerance, double safety_expansion, bool show_im)=0;
-    
+    virtual bool inFrame(const cv::Point3d& pt){ return true;}
+
     
     void updateModel(const cv_bridge::CvImage::ConstPtr& cv_image_ref, double scale)
     {
@@ -125,6 +126,10 @@ class HallucinatedRobotModelBase
 
     virtual void doPrecomputation(const cv_bridge::CvImage::ConstPtr& cv_image_ref) {}
     
+    virtual cv::Rect getImageRect()
+    {
+      return cv::Rect(cv::Point(0,0), image_ref_.size());
+    }
    
   protected:
     std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_;

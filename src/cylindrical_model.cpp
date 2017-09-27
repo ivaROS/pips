@@ -113,6 +113,41 @@
     
     return rect;
   }
+  
+  bool CylindricalModel::inFrame(const cv::Point3d& pt)
+  {
+    double h_squared = pt.x*pt.x + pt.z*pt.z;
+    double h = std::sqrt(h_squared);
+  
+    double tangentDist = std::sqrt(h_squared - robot_radius_*robot_radius_);
+    
+    double theta_c = std::atan2(pt.x,pt.z);
+    double theta_d = std::asin(robot_radius_/h);
+    
+    cv::Point3d Xc_l(tangentDist*std::sin(theta_c - theta_d), pt.y, tangentDist*std::cos(theta_c - theta_d));
+    cv::Point3d Xc_r(tangentDist*std::sin(theta_c + theta_d), pt.y, tangentDist*std::cos(theta_c + theta_d));
+
+    cv::Point3d Xt_lb = Xc_l + cv::Point3d(0,-floor_tolerance_,0);
+    cv::Point3d Xt_rb = Xc_r + cv::Point3d(0,-floor_tolerance_,0);
+
+    cv::Point3d Xt_lt = Xc_l + cv::Point3d(0,-robot_height_,0);
+    cv::Point3d Xt_rt = Xc_r + cv::Point3d(0,-robot_height_,0);
+
+    cv::Point2d p_lb = cam_model_->project3dToPixel(Xt_lb);
+    cv::Point2d p_rb = cam_model_->project3dToPixel(Xt_rb);
+    cv::Point2d p_lt = cam_model_->project3dToPixel(Xt_lt);
+    cv::Point2d p_rt = cam_model_->project3dToPixel(Xt_rt); 
+    
+    cv::Rect frame = getImageRect();
+    if(frame.contains(p_lb) && frame.contains(p_rb) && frame.contains(p_lt) && frame.contains(p_rt))
+    {
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+  }
 
   std::vector<COLUMN_TYPE> CylindricalModel::getColumns(const cv::Point3d pt)
   {

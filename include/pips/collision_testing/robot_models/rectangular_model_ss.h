@@ -21,22 +21,58 @@ class RectangularModelSS : public RectangularModel
       int nRows = image.rows;
       int nCols = image.cols;
       
-      int i,j;
+      int i;
+      
       const T* p;
       for( i = 0; i < nRows; ++i)
       {
+	int j = 0;
         p = image.ptr<T>(i);
-        for ( j = 0; j < nCols; ++j)
-        {
-            if(p[j] < depth)
-            {
-              return true;
-            }
-              
-        }
+	float sum = 0;
+	float temp[nCols];
+	for(j=0; j < nCols; ++j)
+	{
+	    temp[j] = (p[j] < depth) ? 1.0 : 0.0;
+	    sum += temp[j];
+	}
+
+	
+        if( sum > 0)
+	{
+	  return true;
+	}
       }
       return false;
     }
+    
+    /*
+     *     template<typename T>
+    inline
+    bool isLessThan(const cv::Mat& image, const float depth)
+    {
+      int nRows = image.rows;
+      int nCols = image.cols;
+      
+      int i;
+      
+      const T* p;
+      for( i = 0; i < nRows; ++i)
+      {
+	int j = 0;
+        p = image.ptr<T>(i);
+	while((p[j] < depth) && (j < nCols))
+	{
+	    ++j;
+	}
+        if( j < nCols)
+	{
+	  return true;
+	}
+      }
+      return false;
+    }
+    
+    */
 };
 
 #endif // RECTANGULAR_MODEL_SS

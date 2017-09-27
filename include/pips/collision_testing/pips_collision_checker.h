@@ -90,6 +90,9 @@ public :
       return generateDepthImage(pose_out);
     }
     */
+    
+protected:
+  ros::Publisher posepub_;
 
 private:
     bool getDepthImageSrv(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res);

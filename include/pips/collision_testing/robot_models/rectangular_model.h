@@ -11,6 +11,7 @@ class RectangularModel : public HallucinatedRobotModelImpl<cv::Point3d>
     RectangularModel();
     
     virtual void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
+    virtual bool inFrame(const cv::Point3d& pt);
 
 
   protected:
@@ -21,7 +22,11 @@ class RectangularModel : public HallucinatedRobotModelImpl<cv::Point3d>
     
     virtual cv::Mat generateHallucinatedRobotImpl(const cv::Point3d pt);
     
+    virtual void getRawCollisionRect(const cv::Point3d pt, cv::Rect& co_rect, float& depth);
+
     virtual void getCollisionRect(const cv::Point3d pt, cv::Rect& co_rect, float& co_depth);
+    
+
     
     virtual bool isLessThan(const cv::Mat& image, const float depth);
     

@@ -22,6 +22,7 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
     
   
     void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
+    virtual bool inFrame(const cv::Point3d& pt);
 
   protected:
   
