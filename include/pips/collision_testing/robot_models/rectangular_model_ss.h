@@ -28,8 +28,8 @@ class RectangularModelSS : public RectangularModel
       {
 	int j = 0;
         p = image.ptr<T>(i);
-	int sum = 0;
-	short int temp[nCols];
+	unsigned short int sum = 0;
+	short unsigned int temp[nCols];
 	for(j=0; j < nCols; ++j)
 	{
 	    temp[j] = (p[j] < depth) ? 1 : 0;
