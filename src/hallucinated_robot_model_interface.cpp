@@ -2,6 +2,8 @@
 #include <pips/collision_testing/robot_models/rectangular_model.h>
 #include <pips/collision_testing/robot_models/rectangular_model_ss.h>
 #include <pips/collision_testing/robot_models/rectangular_model_pf.h>
+#include <pips/collision_testing/robot_models/rectangular_model_vect.h>
+
 #include <pips/collision_testing/robot_models/cylindrical_model.h>
 #include <pips/collision_testing/robot_models/cylindrical_model_t.h>
 
@@ -55,6 +57,10 @@
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ss)
       {
         model_ = std::make_shared<RectangularModelSS>();
+      }
+      else if(config.model_type == pips::HallucinatedRobotModel_rectangular_vect)
+      {
+        model_ = std::make_shared<RectangularModelVect>();
       }
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_pf)
       {

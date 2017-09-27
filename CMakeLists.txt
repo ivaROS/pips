@@ -116,12 +116,22 @@ SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model)
 add_library(rectangular_model_ss
   src/rectangular_model_ss.cpp
   )
-target_compile_options(rectangular_model_ss PRIVATE -march=native -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=7)
+target_compile_options(rectangular_model_ss PRIVATE -march=native  -ftree-vectorize -ftree-vectorizer-verbose=7)
 target_compile_options(rectangular_model_ss PUBLIC  -std=c++11)
 target_link_libraries(rectangular_model_ss
   ${catkin_LIBRARIES}
   )
 SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ss)
+
+add_library(rectangular_model_vect
+  src/rectangular_model_vect.cpp
+  )
+target_compile_options(rectangular_model_vect PRIVATE -march=native -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=7)
+target_compile_options(rectangular_model_vect PUBLIC  -std=c++11)
+target_link_libraries(rectangular_model_vect
+  ${catkin_LIBRARIES}
+  )
+SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_vect)
 
 if(OpenCV_VERSION VERSION_LESS "3.0")
   MESSAGE(STATUS "Your OpenCV version is less than 3.0, OpenCL model will not be built")
