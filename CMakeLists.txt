@@ -105,6 +105,9 @@ add_dependencies(pips_collision_checker
 add_library(rectangular_model
   src/rectangular_model.cpp
   )
+target_compile_options(rectangular_model PRIVATE -march=native -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=7)
+target_compile_options(rectangular_model PUBLIC  -std=c++11)
+
 target_link_libraries(rectangular_model
   ${catkin_LIBRARIES}
   )
