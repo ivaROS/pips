@@ -33,7 +33,10 @@ class RectangularModelSS : public RectangularModel
 	for(j=0; j < nCols; ++j)
 	{
 	    temp[j] = (p[j] < depth) ? 1 : 0;
-	    sum += temp[j];
+	}
+	for(j=0; j<nCols; ++j)
+	{
+	  	    sum += temp[j];
 	}
 
 	
