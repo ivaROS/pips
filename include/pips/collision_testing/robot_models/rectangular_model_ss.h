@@ -28,11 +28,11 @@ class RectangularModelSS : public RectangularModel
       {
 	int j = 0;
         p = image.ptr<T>(i);
-	float sum = 0;
-	float temp[nCols];
+	int sum = 0;
+	short int temp[nCols];
 	for(j=0; j < nCols; ++j)
 	{
-	    temp[j] = (p[j] < depth) ? 1.0 : 0.0;
+	    temp[j] = (p[j] < depth) ? 1 : 0;
 	    sum += temp[j];
 	}
 
@@ -44,6 +44,7 @@ class RectangularModelSS : public RectangularModel
       }
       return false;
     }
+    
     
     /*
     template<typename T>
