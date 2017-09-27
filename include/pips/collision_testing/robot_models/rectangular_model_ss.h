@@ -13,7 +13,7 @@ class RectangularModelSS : public RectangularModel
 
     virtual bool isLessThan(const cv::Mat& image, const float depth);
     
-
+  
     template<typename T>
     inline
     bool isLessThan(const cv::Mat& image, const float depth)
@@ -46,7 +46,7 @@ class RectangularModelSS : public RectangularModel
     }
     
     /*
-     *     template<typename T>
+    template<typename T>
     inline
     bool isLessThan(const cv::Mat& image, const float depth)
     {
@@ -71,8 +71,8 @@ class RectangularModelSS : public RectangularModel
       }
       return false;
     }
-    
     */
+    
 };
 
 #endif // RECTANGULAR_MODEL_SS

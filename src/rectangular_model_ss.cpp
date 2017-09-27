@@ -32,10 +32,10 @@ bool RectangularModelSS::isLessThan(const cv::Mat& image, const float depth)
   {
     return isLessThan<float>(image, depth);
   }
-  else if (image.depth() == CV_16UC1)
-  {
-    return isLessThan<unsigned short int>(image, depth);
-  }
+  //else if (image.depth() == CV_16UC1)
+  //{
+  //  return isLessThan<unsigned short int>(image, depth);
+  //}
   
   return false;
 }
