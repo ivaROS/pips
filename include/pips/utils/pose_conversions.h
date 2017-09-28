@@ -24,10 +24,25 @@
   }
   
   inline
-  void convertPose(const geometry_msgs::Pose pose_in, cv::Point3d& pose_out)
+  void convertPose(const geometry_msgs::Pose& pose_in, cv::Point3d& pose_out)
   {
       pose_out = cv::Point3d(pose_in.position.x, pose_in.position.y, pose_in.position.z);
   }
+  
+  inline 
+  void convertPose(const geometry_msgs::Point& pose_in, geometry_msgs::Pose& pose_out)
+  {
+      pose_out.position = pose_in;
+      pose_out.orientation.w = 1;
+  }
+  
+  inline
+  void convertPose(const double distance, geometry_msgs::Pose& pose_out)
+  {
+    pose_out.position.x = distance;
+    pose_out.orientation.w = 1;
+  }
+  
   
   /*
   inline
