@@ -34,7 +34,7 @@ bool RectangularModelVect::isLessThan(const cv::Mat& image, const float depth)
   }
   else if (image.depth() == CV_16UC1)
   {
-    return isLessThan<unsigned short int>(image, depth);
+    return isLessThan<uint16_t>(image, depth);
   }
   
   return false;

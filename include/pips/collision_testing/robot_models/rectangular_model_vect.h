@@ -16,7 +16,7 @@ class RectangularModelVect : public RectangularModel
 
     template<typename T>
     inline
-    bool isLessThan(const cv::Mat& image, const float depth)
+    bool isLessThan(const cv::Mat& image, const T depth)
     {
       int nRows = image.rows;
       int nCols = image.cols;
@@ -28,16 +28,16 @@ class RectangularModelVect : public RectangularModel
       {
 	int j = 0;
         p = image.ptr<T>(i);
-	float sum = 0;
-	float temp[nCols];
+	bool sum = false;
+	bool temp[nCols];
 	for(j=0; j < nCols; ++j)
 	{
-	    temp[j] = (p[j] < depth) ? 1.0 : 0.0;
-	    sum += temp[j];
+	    temp[j] = (p[j] < depth) ? 1 : 0;
+	    sum |= temp[j];
 	}
 
 	
-        if( sum > 0)
+        if( sum )
 	{
 	  return true;
 	}
