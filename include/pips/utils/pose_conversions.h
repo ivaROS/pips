@@ -29,6 +29,7 @@
       pose_out = cv::Point3d(pose_in.position.x, pose_in.position.y, pose_in.position.z);
   }
   
+  /*
   inline
   void convertPose(double pose_in[], geometry_msgs::Pose& pose_out)
   {
@@ -45,6 +46,7 @@
       pose_out.orientation.w = 1;
     }
   }
+  */
 
 
   inline

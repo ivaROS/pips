@@ -16,7 +16,7 @@ class RectangularModelSS : public RectangularModel
   
     template<typename T>
     inline
-    bool isLessThan(const cv::Mat& image, const float depth)
+    bool isLessThan(const cv::Mat& image, const  T depth)
     {
       int nRows = image.rows;
       int nCols = image.cols;
