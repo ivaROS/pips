@@ -1,10 +1,10 @@
 #ifndef RECTANGULAR_MODEL_VECT
 #define RECTANGULAR_MODEL_VECT
 
-#include <pips/collision_testing/robot_models/rectangular_model.h>
+#include <pips/collision_testing/robot_models/cylindrical_model_t.h>
 
 
-class RectangularModelVect : public RectangularModel
+class RectangularModelVect : public CylindricalModelT
 {
   public:
     RectangularModelVect();

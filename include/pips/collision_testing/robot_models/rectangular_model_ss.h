@@ -20,23 +20,21 @@ class RectangularModelSS : public RectangularModel
     {
       int nRows = image.rows;
       int nCols = image.cols;
-      
-      int i;
-      
+            
       const T* p;
-      for( i = 0; i < nRows; ++i)
+      for( int i = 0; i < nRows; ++i)
       {
 	int j = 0;
         p = image.ptr<T>(i);
-	uint16_t sum = 0;
-	uint16_t temp[nCols];
+	uint8_t sum = false;
+	uint8_t temp[nCols];
 	for(j=0; j < nCols; ++j)
 	{
 	    temp[j] = (p[j] < depth) ? 1 : 0;
-	    sum += temp[j];
+	    sum |= temp[j];
 	}
 	
-        if( sum > 0)
+        if( sum )
 	{
 	  return true;
 	}
