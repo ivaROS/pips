@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   dynamic_reconfigure
 #  dense_depth_projection
+  extended_local
 )
 
 #tf2_eigen must be at least version 0.5.15
@@ -51,7 +52,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIR} ${OpenCV_INCLUDE_DIRS}
   LIBRARIES collision_checker pips_collision_checker
-  CATKIN_DEPENDS image_geometry cv_bridge message_runtime #dense_depth_projection
+  CATKIN_DEPENDS image_geometry cv_bridge message_runtime extended_local #dense_depth_projection
   DEPENDS Eigen3 OpenCV
 )
 
