@@ -28,8 +28,8 @@ class RectangularModelVect : public RectangularModel
       {
 	int j = 0;
         p = image.ptr<T>(i);
-	bool sum = false;
-	bool temp[nCols];
+	uint8_t sum = false;
+	uint8_t temp[nCols];
 	for(j=0; j < nCols; ++j)
 	{
 	    temp[j] = (p[j] < depth) ? 1 : 0;
