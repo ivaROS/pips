@@ -1,13 +1,13 @@
-#ifndef RECTANGULAR_MODEL_VECT
-#define RECTANGULAR_MODEL_VECT
+#ifndef CYLINDRICAL_MODEL_VECT
+#define CYLINDRICAL_MODEL_VECT
 
 #include <pips/collision_testing/robot_models/cylindrical_model_t.h>
 
 
-class RectangularModelVect : public CylindricalModelT
+class CylindricalModelVect : public CylindricalModelT
 {
   public:
-    RectangularModelVect();
+    CylindricalModelVect();
     
   protected:
 
@@ -75,4 +75,4 @@ class RectangularModelVect : public CylindricalModelT
     */
 };
 
-#endif // RECTANGULAR_MODEL_VECT
+#endif // CYLINDRICAL_MODEL_VECT
