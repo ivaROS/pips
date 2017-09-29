@@ -1,19 +1,19 @@
-#ifndef CYLINDRICAL_MODEL_VECT
-#define CYLINDRICAL_MODEL_VECT
+#ifndef CYLINDRICAL_MODEL_T_VECT
+#define CYLINDRICAL_MODEL_T_VECT
 
 #include <pips/collision_testing/robot_models/cylindrical_model_t.h>
 
 
-class CylindricalModelVect : public CylindricalModelT
+class CylindricalModelTVect : public CylindricalModelT
 {
   public:
-    CylindricalModelVect();
+    CylindricalModelTVect();
     
   protected:
 
     virtual bool isLessThan(const cv::Mat& image, const float depth);
     
-
+    //Note that this is currently identical to rectangular_ss; these may be consolidated elsewhere
     template<typename T>
     inline
     bool isLessThan(const cv::Mat& image, const T depth)
@@ -75,4 +75,4 @@ class CylindricalModelVect : public CylindricalModelT
     */
 };
 
-#endif // CYLINDRICAL_MODEL_VECT
+#endif // CYLINDRICAL_MODEL_T_VECT

@@ -1,5 +1,5 @@
 
-#include "pips/collision_testing/robot_models/rectangular_model_vect.h"
+#include "pips/collision_testing/robot_models/cylindrical_model_t_vect.h"
 
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -19,12 +19,12 @@
 #include <iomanip>      // std::setprecision
 
 // Should be renamed 'SC' for 'Short Circuit'
-RectangularModelVect::RectangularModelVect()
+CylindricalModelTVect::CylindricalModelTVect()
 {
-    name_ = "RectangularModelVect";
+    name_ = "CylindricalModelTVect";
 }
 
-bool RectangularModelVect::isLessThan(const cv::Mat& image, const float depth)
+bool CylindricalModelTVect::isLessThan(const cv::Mat& image, const float depth)
 {
 
 
