@@ -21,13 +21,16 @@ class RectangularModelSS : public RectangularModel
       int nRows = image.rows;
       int nCols = image.cols;
       
-      bool abort = false;
+      int abort = 0;
       
       #pragma omp parallel for
       for( int i = 0; i < nRows; ++i)
       {
-	#pragma omp flush (abort)
-	if (!abort) 
+	int tmp = 0;
+	//#pragma omp flush (abort)
+	#pragma omp atomic read
+	tmp = abort;
+	if (tmp > 0) 
 	{
 	  const T* p = image.ptr<T>(i);
 	  uint8_t sum = false;
@@ -40,8 +43,9 @@ class RectangularModelSS : public RectangularModel
 	  
 	  if( sum )
 	  {
-	    abort=true;
-	    #pragma omp flush (abort)
+	    #pragma omp atomic write
+	    abort=1; //Should this just be = 1?
+	    //#pragma omp flush (abort)
 	  }
 	}
       }
