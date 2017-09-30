@@ -24,6 +24,8 @@ find_package(catkin REQUIRED COMPONENTS
   extended_local
 )
 
+find_package(OpenMP)
+
 #tf2_eigen must be at least version 0.5.15
 
 find_package(Eigen3 REQUIRED)
@@ -69,7 +71,7 @@ include_directories(
 
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fopenmp")
 
 ## Declare the collision_checker library
 add_library(collision_checker src/collision_checker.cpp)
@@ -117,10 +119,11 @@ SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model)
 add_library(rectangular_model_ss
   src/rectangular_model_ss.cpp
   )
-target_compile_options(rectangular_model_ss PRIVATE -march=native -ftree-vectorize -fassociative-math -fno-signed-zeros -fno-trapping-math  -ffast-math) #-ftree-vectorizer-verbose=7  # -freciprocal-math #-funsafe-math-optimizations #-fno-math-errno -ffinite-math-only -fno-rounding-math -fno-signaling-nans -fcx-limited-range -fexcess-precision=fast
+target_compile_options(rectangular_model_ss PRIVATE -march=native ${OpenMP_CXX_FLAGS} -ftree-vectorize -fassociative-math -fno-signed-zeros -fno-trapping-math  -ffast-math) #-ftree-vectorizer-verbose=7  # -freciprocal-math #-funsafe-math-optimizations #-fno-math-errno -ffinite-math-only -fno-rounding-math -fno-signaling-nans -fcx-limited-range -fexcess-precision=fast
 target_compile_options(rectangular_model_ss PUBLIC  -std=c++11)
 target_link_libraries(rectangular_model_ss
   ${catkin_LIBRARIES}
+  ${OpenMP_CXX_FLAGS}
   )
 SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ss)
 

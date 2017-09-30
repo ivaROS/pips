@@ -20,26 +20,32 @@ class RectangularModelSS : public RectangularModel
     {
       int nRows = image.rows;
       int nCols = image.cols;
-            
-      const T* p;
+      
+      bool abort = false;
+      
+      #pragma omp parallel for
       for( int i = 0; i < nRows; ++i)
       {
-	int j = 0;
-        p = image.ptr<T>(i);
-	uint8_t sum = false;
-	uint8_t temp[nCols];
-	for(j=0; j < nCols; ++j)
+	#pragma omp flush (abort)
+	if (!abort) 
 	{
-	    temp[j] = (p[j] < depth) ? 1 : 0;
-	    sum |= temp[j];
-	}
-	
-        if( sum )
-	{
-	  return true;
+	  const T* p = image.ptr<T>(i);
+	  uint8_t sum = false;
+	  uint8_t temp[nCols];
+	  for(int j=0; j < nCols; ++j)
+	  {
+	      temp[j] = (p[j] < depth) ? 1 : 0;
+	      sum |= temp[j];
+	  }
+	  
+	  if( sum )
+	  {
+	    abort=true;
+	    #pragma omp flush (abort)
+	  }
 	}
       }
-      return false;
+      return abort;
     }
     
     
