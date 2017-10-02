@@ -1,7 +1,7 @@
 #ifndef POSE_CONVERSIONS_H
 #define POSE_CONVERSIONS_H
 
-#include <Eigen/Eigen>
+//#include <Eigen/Eigen>
 #include <geometry_msgs/Pose.h>
 #include <tf/transform_datatypes.h> //For creating quaternion easily
 #include <tf2_eigen/tf2_eigen.h> // For converting betwen Eigen and tf types

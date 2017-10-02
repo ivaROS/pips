@@ -15,7 +15,7 @@ class CollisionChecker
 
 
 public :
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  //EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   typedef geometry_msgs::Pose PoseType;
 
     CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh);

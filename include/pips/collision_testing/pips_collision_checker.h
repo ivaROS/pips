@@ -8,14 +8,17 @@
 
 #include <sensor_msgs/Image.h>
 //#include <image_transport/image_transport.h>
-#include <image_geometry/pinhole_camera_model.h>
 #include <cv_bridge/cv_bridge.h>
 
 #include <geometry_msgs/TransformStamped.h>
-#include <Eigen/Eigen>
+#include <Eigen/Geometry> // <Eigen/Eigen>
 #include <image_geometry/pinhole_camera_model.h>
 #include <chrono>
 #include <memory>
+
+//Things that could be forward declared:
+#include <image_geometry/pinhole_camera_model.h>
+
 
 //class cv::Mat;
 

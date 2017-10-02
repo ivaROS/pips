@@ -1,23 +1,24 @@
 
 #include "pips/collision_testing/robot_models/cylindrical_model.h"
 
-#include <sensor_msgs/Image.h>
-#include <geometry_msgs/TransformStamped.h>
+//#include <sensor_msgs/Image.h>
+//#include <geometry_msgs/TransformStamped.h>
 
 //#include <opencv/cv.h>
 
 #include <opencv2/core/core.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui/highgui.hpp"
+//#include "opencv2/highgui/highgui.hpp"
 
 
-#include <Eigen/Eigen>
-#include <image_transport/image_transport.h>
-#include <image_geometry/pinhole_camera_model.h>
-#include <cv_bridge/cv_bridge.h>
+//#include <Eigen/Eigen>
+//#include <image_transport/image_transport.h>
+//#include <image_geometry/pinhole_camera_model.h>
+//#include <cv_bridge/cv_bridge.h>
 
-#include <iomanip>      // std::setprecision
+//#include <iomanip>      // std::setprecision
 
+#include "ros/ros.h" //Needed for 'ROS_BREAK and ROS_ASSERT
 
     CylindricalModel::CylindricalModel() : HallucinatedRobotModelImpl<cv::Point3d>() 
     {
