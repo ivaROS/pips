@@ -67,7 +67,7 @@ bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
       cv::Point3d worldPoint = ray * co_depth;
       
       PointCloud::Ptr msg (new PointCloud);
-      msg->header.stamp = ros::Time::now().toNSec();
+      msg->header.stamp = ros::Time::now().toNSec()/1e3;
       msg->header.frame_id = "camera_depth_optical_frame";
       msg->height = msg->width = 1;
       msg->points.push_back (pcl::PointXYZ(worldPoint.x, worldPoint.y, worldPoint.z));
