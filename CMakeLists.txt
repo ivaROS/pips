@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   geometry_msgs
   dynamic_reconfigure
+   pcl_ros
 #  dense_depth_projection
 #  extended_local
 )

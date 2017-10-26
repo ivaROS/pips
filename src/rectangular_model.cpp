@@ -16,10 +16,19 @@
 
 //#include <iomanip>      // std::setprecision
 
+#include <ros/ros.h>
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+
+//#include <pcl/conversions.h>
+//#include <pcl_ros/transforms.h>
+typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
+
 
 RectangularModel::RectangularModel() : HallucinatedRobotModelImpl<cv::Point3d>()
 {
   name_ = "RectangularModel";
+  pub_ = nh_.advertise<PointCloud>("collisions",100);
 }
 
 
@@ -49,6 +58,22 @@ bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
 
   float depth = co_depth*scale_;
   bool collided = isLessThan(roi, depth);
+  
+  if(collided)
+  {
+      cv::Point collisionPnt;
+      isLessThan(roi,depth,collisionPnt);
+      cv::Point3d ray = cam_model_->projectPixelTo3dRay(collisionPnt);
+      cv::Point3d worldPoint = ray * co_depth;
+      
+      PointCloud::Ptr msg (new PointCloud);
+      msg->header.stamp = ros::Time::now().toNSec();
+      msg->header.frame_id = "camera_depth_optical_frame";
+      msg->height = msg->width = 1;
+      msg->points.push_back (pcl::PointXYZ(worldPoint.x, worldPoint.y, worldPoint.z));
+      
+      pub_.publish(msg);
+  }
 
   return collided;
 }
@@ -130,6 +155,18 @@ bool RectangularModel::isLessThan(const cv::Mat& image, const float depth)
   return collided;
 }
 
+bool RectangularModel::isLessThan(const cv::Mat& image, const float depth, cv::Point& pnt)
+{
+  if(image.depth() == CV_32FC1)
+  {
+    return isLessThan<float>(image, depth, pnt);
+  }
+  else if (image.depth() == CV_16UC1)
+  {
+    return isLessThan<uint16_t>(image, depth, pnt);
+  }
+  return false;
+}
 
 cv::Mat RectangularModel::generateHallucinatedRobotImpl(const cv::Point3d pt)
 {
