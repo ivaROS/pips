@@ -37,7 +37,7 @@ class RectangularModel : public HallucinatedRobotModelImpl<cv::Point3d>
     
     template<typename T>
     inline
-    bool isLessThan(const cv::Mat& image, const float depth, cv::Point& pnt)
+    bool isLessThan(const cv::Mat& image, const T depth, cv::Point& pnt)
     {
       int nRows = image.rows;
       int nCols = image.cols;
