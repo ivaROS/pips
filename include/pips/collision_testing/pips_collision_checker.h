@@ -103,7 +103,7 @@ private:
 private :
     std::string name_ = "PipsCollisionChecker";
     
-    ros::ServiceClient checker_; 
+    //ros::ServiceClient checker_; 
 
 
     //image_transport::Publisher depthpub_;

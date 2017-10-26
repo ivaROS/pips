@@ -22,9 +22,9 @@
 
 #include <climits>
 
-#include <extended_local/ExtPose.h>
-#include <extended_local/ExtPoseRequest.h>
-#include <extended_local/ExtPoseResponse.h>
+//#include <extended_local/ExtPose.h>
+//#include <extended_local/ExtPoseRequest.h>
+//#include <extended_local/ExtPoseResponse.h>
 
 
 #define MAX_RANGE 10    //Maximum expected range of sensor, used to fill unknowns (0's) in image
@@ -61,7 +61,7 @@
   {
       robot_model_.init();
       
-      checker_ = nh_.serviceClient<extended_local::ExtPose>("/ext_check");
+      //checker_ = nh_.serviceClient<extended_local::ExtPose>("/ext_check");
 
       
       //TODO: This should probably accept a CameraInfo message as an optional parameter, allowing it to be used without a camera
@@ -142,6 +142,7 @@
       pose_stamped.header.frame_id = base_optical_transform_.child_frame_id;
       posepub_.publish(pose_stamped);
     }
+    /*
     else if(false)
     {
       extended_local::ExtPose srv;
@@ -162,6 +163,7 @@
 	}
       }
     }
+    */
     
     return collided;
   }

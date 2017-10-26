@@ -23,64 +23,31 @@ class RectangularModelSS : public RectangularModel
       
       bool abort = false;
       
-      #pragma omp parallel for
+      //#pragma omp parallel for
       for( int i = 0; i < nRows; ++i)
       {
-	int tmp = 0;
-	//#pragma omp flush (abort)
-	//#pragma omp atomic read
-	if(!abort)
-	{
+	
 	  const T* p = image.ptr<T>(i);
-	  uint8_t sum = false;
+	  uint8_t sum = 0;
 	  uint8_t temp[nCols];
 	  for(int j=0; j < nCols; ++j)
 	  {
 	      temp[j] = (p[j] < depth) ? 1 : 0;
-	      sum |= temp[j];
+	      sum += temp[j];
 	  }
 	  
-	  if( sum )
+	  if( sum >0 )
 	  {
-	    #pragma omp critical
-            {
-                abort = true;
-            }
-            #pragma omp cancel for 
+            //std::cout << "sum: " << sum;
+	    return true;
 	  }
-	}
-      }
-      return abort;
-    }
-    
-    
-    /*
-    template<typename T>
-    inline
-    bool isLessThan(const cv::Mat& image, const float depth)
-    {
-      int nRows = image.rows;
-      int nCols = image.cols;
-      
-      int i;
-      
-      const T* p;
-      for( i = 0; i < nRows; ++i)
-      {
-	int j = 0;
-        p = image.ptr<T>(i);
-	while((p[j] < depth) && (j < nCols))
-	{
-	    ++j;
-	}
-        if( j < nCols)
-	{
-	  return true;
-	}
+	
       }
       return false;
     }
-    */
+    
+
+    
     
 };
 

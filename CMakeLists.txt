@@ -21,14 +21,14 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   dynamic_reconfigure
 #  dense_depth_projection
-  extended_local
+#  extended_local
 )
 
 find_package(OpenMP)
 
 #tf2_eigen must be at least version 0.5.15
 
-find_package(Eigen3 REQUIRED)
+#find_package(Eigen3 REQUIRED)
 
 #Will work with either 2.4 or 3.0+
 find_package(OpenCV REQUIRED)
@@ -52,17 +52,17 @@ generate_messages(
 
 
 catkin_package(
-  INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIR} ${OpenCV_INCLUDE_DIRS}
+  INCLUDE_DIRS include ${OpenCV_INCLUDE_DIRS} #${EIGEN3_INCLUDE_DIR} 
   LIBRARIES collision_checker pips_collision_checker
-  CATKIN_DEPENDS image_geometry cv_bridge message_runtime extended_local #dense_depth_projection
-  DEPENDS Eigen3 OpenCV
+  CATKIN_DEPENDS image_geometry cv_bridge message_runtime #extended_local dense_depth_projection
+  DEPENDS  OpenCV tf2_eigen #Eigen3
 )
 
 include_directories(
   include
 
   ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIR}
+#  ${EIGEN3_INCLUDE_DIR}
 #  ${PROJECT_SOURCE_DIR}
   ${OpenCV_INCLUDE_DIRS}
 
@@ -143,8 +143,10 @@ else()
   add_library(rectangular_model_ocl
     src/rectangular_model_ocl.cpp
     )
+  target_compile_options(rectangular_model_ocl PRIVATE -g)
   target_link_libraries(rectangular_model_ocl
     ${catkin_LIBRARIES}
+    -g
     )
   SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ocl)
 endif()

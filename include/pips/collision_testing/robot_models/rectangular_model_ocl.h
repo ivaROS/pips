@@ -13,7 +13,7 @@ class RectangularModelOCL : public RectangularModel
     cv::UMat image_cl_;
     
   protected:
-    virtual void doPrecomputation();
+    virtual void doPrecomputation(const cv_bridge::CvImage::ConstPtr& cv_image_ref);
 
     virtual bool testCollisionImpl(const cv::Point3d pt);
     
