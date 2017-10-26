@@ -63,11 +63,19 @@ bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
   {
       cv::Point collisionPnt;
       isLessThan(roi,depth,collisionPnt);
+      
+      cv::Point offset;
+      cv::Size size;
+      roi.locateROI(size, offset);
+      
+      collisionPnt += offset;
       cv::Point3d ray = cam_model_->projectPixelTo3dRay(collisionPnt);
       cv::Point3d worldPoint = ray * co_depth;
       
+      ROS_INFO_STREAM("Collision: pixel = " << collisionPnt << ", ray = " << ray << ", worldpoint = " << worldPoint );
+      
       PointCloud::Ptr msg (new PointCloud);
-      msg->header.stamp = ros::Time::now().toNSec()/1e3;
+      msg->header.stamp = ros::Time::now().toNSec()/1e3;	//https://answers.ros.org/question/172241/pcl-and-rostime/
       msg->header.frame_id = "camera_depth_optical_frame";
       msg->height = msg->width = 1;
       msg->points.push_back (pcl::PointXYZ(worldPoint.x, worldPoint.y, worldPoint.z));
