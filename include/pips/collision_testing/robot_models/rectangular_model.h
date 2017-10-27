@@ -47,17 +47,16 @@ class RectangularModel : public HallucinatedRobotModelImpl<cv::Point3d>
       const T* p;
       for( i = 0; i < nRows; ++i)
       {
-	int j = 0;
         p = image.ptr<T>(i);
-	while((p[j] < depth) && (j < nCols))
+	for(int j = 0; j < nCols; ++j)
 	{
-	    ++j;
-	}
-        if( j < nCols)
-	{
-	  pnt.x = i;
-	  pnt.y = j;
-	  return true;
+	  if(p[j] < depth)
+	  {
+	    //ROS_INFO_STREAM("p: " << p[j] << ", depth: " << depth << ", i: " << i << ", j: " << j);
+	    pnt.x = j;
+	    pnt.y = i;
+	    return true;
+	  }
 	}
       }
       return false;
