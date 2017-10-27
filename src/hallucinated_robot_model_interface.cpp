@@ -44,6 +44,7 @@
     {
       if(config.model_type == pips::HallucinatedRobotModel_rectangular)
       {
+	ROS_INFO_STREAM_NAMED(name_, "New model type = Rectangular");
         model_ = std::make_shared<RectangularModel>();
       }
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ocl)
@@ -56,6 +57,7 @@
       }
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ss)
       {
+	ROS_INFO_STREAM_NAMED(name_, "New model type = RectangularSS");
         model_ = std::make_shared<RectangularModelSS>();
       }
       else if(config.model_type == pips::HallucinatedRobotModel_cylindrical_t_vect)

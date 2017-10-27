@@ -59,9 +59,9 @@ bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
   cv::Mat roi(image_ref_, co_rect);
 
   float depth = co_depth*scale_;
-  //bool collided = isLessThan(roi, depth);
+  bool collided = isLessThan(roi, depth);
   
-
+/*
   cv::Point collisionPnt;
   bool collided = isLessThan(roi,depth,collisionPnt);
 
@@ -85,6 +85,7 @@ bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
       
       pub_.publish(msg);
   }
+  */
 
   return collided;
 }
@@ -158,7 +159,7 @@ bool RectangularModel::inFrame(const cv::Point3d& pt)
 
 bool RectangularModel::isLessThan(const cv::Mat& image, const float depth)
 {
-  bool collided = utils::isLessThan<COMPARISON_TYPE::stock>(image, depth);
+  bool collided = utils::isLessThan::stock(image, depth);
   return collided;
 }
 

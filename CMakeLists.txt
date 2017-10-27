@@ -72,7 +72,7 @@ include_directories(
 
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fopenmp")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fopenmp")	#TODO: remove these and at least switch to add_definitions, though openmp should really only be enabled on target that needs it
 
 ## Declare the collision_checker library
 add_library(collision_checker src/collision_checker.cpp)
@@ -120,7 +120,10 @@ SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model)
 add_library(rectangular_model_ss
   src/rectangular_model_ss.cpp
   )
-target_compile_options(rectangular_model_ss PRIVATE -march=native ${OpenMP_CXX_FLAGS} -ftree-vectorize -fassociative-math -fno-signed-zeros -fno-trapping-math  -ffast-math) #-ftree-vectorizer-verbose=7  # -freciprocal-math #-funsafe-math-optimizations #-fno-math-errno -ffinite-math-only -fno-rounding-math -fno-signaling-nans -fcx-limited-range -fexcess-precision=fast
+  
+#For verbose vectorizing output on gcc 4.6: -ftree-vectorizer-verbose=7
+#For verbose vectorizing output on gcc 5.4: -fopt-info-vec-all
+target_compile_options(rectangular_model_ss PRIVATE -march=native ${OpenMP_CXX_FLAGS} -ftree-vectorize -fassociative-math -fno-signed-zeros -fno-trapping-math  -ffast-math  ) # -freciprocal-math #-funsafe-math-optimizations #-fno-math-errno -ffinite-math-only -fno-rounding-math -fno-signaling-nans -fcx-limited-range -fexcess-precision=fast
 target_compile_options(rectangular_model_ss PUBLIC  -std=c++11)
 target_link_libraries(rectangular_model_ss
   ${catkin_LIBRARIES}
