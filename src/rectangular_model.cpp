@@ -20,6 +20,8 @@
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
 
+#include <pips/utils/image_comparison_implementations.h>
+
 //#include <pcl/conversions.h>
 //#include <pcl_ros/transforms.h>
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
@@ -156,11 +158,7 @@ bool RectangularModel::inFrame(const cv::Point3d& pt)
 
 bool RectangularModel::isLessThan(const cv::Mat& image, const float depth)
 {
-  cv::Mat res;
-  cv::compare(image, depth, res, cv::CMP_LT);
-
-  int num_collisions = cv::countNonZero(res);
-  bool collided = (num_collisions > 0);
+  bool collided = utils::isLessThan<COMPARISON_TYPE::stock>(image, depth);
   return collided;
 }
 
