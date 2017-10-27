@@ -1,6 +1,9 @@
 
 #include "pips/collision_testing/robot_models/cylindrical_model_t_vect.h"
 
+#include <pips/utils/image_comparison_implementations.h>
+
+
 //#include <sensor_msgs/Image.h>
 //#include <geometry_msgs/TransformStamped.h>
 
@@ -26,17 +29,7 @@ CylindricalModelTVect::CylindricalModelTVect()
 
 bool CylindricalModelTVect::isLessThan(const cv::Mat& image, const float depth)
 {
-
-
-  if(image.depth() == CV_32FC1)
-  {
-    return isLessThan<float>(image, depth);
-  }
-  else if (image.depth() == CV_16UC1)
-  {
-    return isLessThan<uint16_t>(image, depth);
-  }
-  
-  return false;
+    return utils::isLessThan::vectorized(image, depth);
+    
 }
 

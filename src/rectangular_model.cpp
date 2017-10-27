@@ -61,12 +61,13 @@ bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
   float depth = co_depth*scale_;
   bool collided = isLessThan(roi, depth);
   
-/*
-  cv::Point collisionPnt;
-  bool collided = isLessThan(roi,depth,collisionPnt);
+
 
   if(collided)
-  {      
+  {        
+      cv::Point collisionPnt;
+      isLessThan(roi,depth,collisionPnt);
+
       cv::Point offset;
       cv::Size size;
       roi.locateROI(size, offset);
@@ -85,7 +86,7 @@ bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
       
       pub_.publish(msg);
   }
-  */
+  
 
   return collided;
 }
