@@ -48,7 +48,7 @@ namespace utils
 	    for(int j=0; j < nCols; ++j)
 	    {
 		temp[j] = (p[j] < depth) ? 1 : 0;
-		sum += temp[j];
+		sum |= temp[j];
 	    }
 	    
 	    if( sum >0 )
