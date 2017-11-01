@@ -3,6 +3,7 @@
 
 #include <pips/collision_testing/robot_models/rectangular_model.h>
 #include <opencv2/core/ocl.hpp>
+#include <boost/thread/mutex.hpp>
 
 class RectangularModelOCL : public RectangularModel
 {
@@ -11,6 +12,7 @@ class RectangularModelOCL : public RectangularModel
     
   protected:  
     cv::UMat image_cl_;
+    boost::mutex model_mutex_;
     
   protected:
     virtual void doPrecomputation(const cv_bridge::CvImage::ConstPtr& cv_image_ref);

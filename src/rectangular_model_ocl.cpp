@@ -91,7 +91,12 @@ void RectangularModelOCL::doPrecomputation(const cv_bridge::CvImage::ConstPtr& c
 
   ROS_INFO_STREAM("Precomputation! " << call_count << std::endl);
   //image_cl_ = image_ref_.getUMat(cv::ACCESS_READ);
-  image_ref_.copyTo(image_cl_);
+  
+  {
+    boost::mutex::scoped_lock lock(model_mutex_);
+
+    image_ref_.copyTo(image_cl_);
+  }
 }
 
 /* Takes in the position of robot base in camera coordinate frame */
@@ -107,19 +112,21 @@ bool RectangularModelOCL::testCollisionImpl(const cv::Point3d pt)
     
     //std::cout << "Point: " << pt << ", co_rect: " << co_rect << ", umat: " << image_cl_.cols << "," << image_cl_.rows << std::endl;
     
-    //The collision object rectangle is our ROI in the original image
-    cv::UMat roi_cl(image_cl_,co_rect);
-
     float depth = co_depth*scale_;
+
+
     cv::UMat res_cl;
-    cv::compare(roi_cl, depth, res_cl, cv::CMP_LT);
+
+    {
+      boost::mutex::scoped_lock lock(model_mutex_);
+          //The collision object rectangle is our ROI in the original image
+      cv::UMat roi_cl(image_cl_,co_rect);
+      cv::compare(roi_cl, depth, res_cl, cv::CMP_LT);
+    }
 
     int num_collisions = cv::countNonZero(res_cl);
     bool collided = (num_collisions > 0);
-    
-    
-    //bool colllided = (cv::countNonZero(res_cl)>0);
-    
+        
     
     return collided;
 }
