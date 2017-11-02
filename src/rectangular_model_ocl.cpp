@@ -93,9 +93,9 @@ void RectangularModelOCL::doPrecomputation(const cv_bridge::CvImage::ConstPtr& c
   //image_cl_ = image_ref_.getUMat(cv::ACCESS_READ);
   
   {
-    boost::mutex::scoped_lock lock(model_mutex_);
+    //boost::mutex::scoped_lock lock(model_mutex_);
 
-    image_ref_.copyTo(image_cl_);
+    //image_ref_.copyTo(image_cl_);
   }
 }
 
@@ -119,8 +119,9 @@ bool RectangularModelOCL::testCollisionImpl(const cv::Point3d pt)
 
     {
       boost::mutex::scoped_lock lock(model_mutex_);
+      cv::UMat image_cl = image_ref_.getUMat(cv::ACCESS_READ);
           //The collision object rectangle is our ROI in the original image
-      cv::UMat roi_cl(image_cl_,co_rect);
+      cv::UMat roi_cl(image_cl,co_rect);
       cv::compare(roi_cl, depth, res_cl, cv::CMP_LT);
     }
 
