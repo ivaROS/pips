@@ -11,7 +11,7 @@ class RectangularModelOCL : public RectangularModel
     RectangularModelOCL();
     
   protected:  
-    cv::UMat image_cl_, roi_cl_, res_cl_;
+    cv::UMat image_cl_;
     boost::mutex model_mutex_;
     
   protected:
