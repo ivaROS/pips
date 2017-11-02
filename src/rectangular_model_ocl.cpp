@@ -89,7 +89,7 @@ void RectangularModelOCL::doPrecomputation(const cv_bridge::CvImage::ConstPtr& c
   static size_t call_count = 0;
   ++call_count;
 
-  ROS_INFO_STREAM("Precomputation! " << call_count << std::endl);
+  ROS_INFO_STREAM_THROTTLE(5,"Precomputation! " << call_count << std::endl);
   //image_cl_ = image_ref_.getUMat(cv::ACCESS_READ);
   
   {
@@ -109,7 +109,7 @@ bool RectangularModelOCL::testCollisionImpl(const cv::Point3d pt)
   static size_t call_count = 0;
   ++call_count;
 
-  ROS_INFO_STREAM("Collision check! " << call_count << std::endl);
+  ROS_INFO_STREAM_THROTTLE(2,"Collision check! " << call_count << std::endl);
     float co_depth;
     cv::Rect co_rect;
     getCollisionRect(pt,co_rect,co_depth);
