@@ -93,9 +93,13 @@ void RectangularModelOCL::doPrecomputation(const cv_bridge::CvImage::ConstPtr& c
   //image_cl_ = image_ref_.getUMat(cv::ACCESS_READ);
   
   {
-    //boost::mutex::scoped_lock lock(model_mutex_);
-
-    //image_ref_.copyTo(image_cl_);
+    boost::mutex::scoped_lock lock(model_mutex_);
+    
+    if(image_cl_.empty())
+    {
+      image_cl_.create(image_ref_.rows,image_ref_.cols, image_ref_.type(), cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+    }
+    image_ref_.copyTo(image_cl_);
   }
 }
 
@@ -114,18 +118,24 @@ bool RectangularModelOCL::testCollisionImpl(const cv::Point3d pt)
     
     float depth = co_depth*scale_;
 
-
-    cv::UMat res_cl;
+    int num_collisions;
 
     {
-      boost::mutex::scoped_lock lock(model_mutex_);
-      cv::UMat image_cl = image_ref_.getUMat(cv::ACCESS_READ);
+          boost::mutex::scoped_lock lock(model_mutex_);
+
+          cv::UMat res_cl;
+
+      //cv::UMat image_cl = image_ref_.getUMat(cv::ACCESS_READ);
           //The collision object rectangle is our ROI in the original image
-      cv::UMat roi_cl(image_cl,co_rect);
-      cv::compare(roi_cl, depth, res_cl, cv::CMP_LT);
+	  
+	  roi_cl_ = image_cl_(co_rect);
+	  
+      //cv::UMat roi_cl(image_cl_,co_rect);
+      cv::compare(depth, roi_cl_, res_cl_, cv::CMP_GT);
+          num_collisions = cv::countNonZero(res_cl_);
+
     }
 
-    int num_collisions = cv::countNonZero(res_cl);
     bool collided = (num_collisions > 0);
         
     
