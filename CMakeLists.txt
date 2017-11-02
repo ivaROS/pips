@@ -199,3 +199,9 @@ target_link_libraries(pips_collision_checker
   ${OpenCV_LIBRARIES}
   )
 
+
+add_executable(ocl_benchmarker src/approach_benchmarker.cpp)
+target_link_libraries(ocl_benchmarker
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  )
