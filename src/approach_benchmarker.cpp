@@ -52,7 +52,7 @@ int run1(cv::Mat img)
   auto t2 = std::chrono::high_resolution_clock::now();  
   
 
-  for(float depth = .1; depth < 2.0; depth+=.1)
+  for(float depth = .1; depth < 2.0; depth+=.01)
   {
     uint num_collisions = sequentialEval(roiIm, depth);
     auto t =  std::chrono::high_resolution_clock::now();  
@@ -85,5 +85,21 @@ int main()
   
   run1(img);
   
+  cv::Mat img2 = cv::Mat::ones(rows, cols, CV_32FC1);
+  img2 *= .8;
+  run1(img2);
+  
+  
+  cv::Mat img3 = cv::Mat::ones(rows-1, cols, CV_32FC1);
+  img3 *= 1.5;
+  run1(img3);
+  
+  cv::Mat img4 = cv::Mat::ones(rows, cols-1, CV_32FC1);
+  img4 *= 1.5;
+  run1(img4);
+  
+  cv::Mat img5 = cv::Mat::ones(rows, cols, CV_32FC1);
+  img5 *= .9;
+  run1(img5);
   
 }
