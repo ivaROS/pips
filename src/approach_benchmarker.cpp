@@ -84,6 +84,65 @@ int run1(cv::Mat img)
   
 }
 
+
+
+int run2(cv::Mat img)
+{
+  
+  auto t1 = std::chrono::high_resolution_clock::now();  
+  
+  cv::UMat uimg = img.getUMat(cv::ACCESS_READ);
+  
+  
+  cv::Rect roi(0,0,img.cols,img.rows);
+  
+  cv::UMat roiIm = getUMatROI(uimg,roi);
+  
+  std::vector<datapoint> res;
+
+  
+  auto t2 = std::chrono::high_resolution_clock::now();  
+  
+  std::chrono::time_point<std::chrono::high_resolution_clock> ptime = t2;
+
+
+  for(float depth = .1; depth < 2.0; depth+=.02)
+  {
+    cv::UMat res_cl, res_cl2;
+    cv::compare(depth, roiIm, res_cl, cv::CMP_GT);
+    float depth2 = depth + .01;
+    cv::compare(depth2, roiIm, res_cl2, cv::CMP_GT);
+    
+    uint num_collisions = cv::countNonZero(res_cl);
+    uint num_collisions2 = cv::countNonZero(res_cl2);
+
+    auto t =  std::chrono::high_resolution_clock::now();  
+
+    datapoint d(depth,ptime,t, num_collisions);
+    datapoint d2(depth2,ptime,t, num_collisions2);
+
+    ptime = t;
+    res.push_back(d);    
+    res.push_back(d2);    
+
+  }
+  
+  
+  std::cout << "Setup took " << std::chrono::duration<double, std::milli>(t2-t1).count() <<  "ms" << std::endl;
+  
+  std::cout << "First: ";
+  res.front().print();
+  std::cout << "Last: ";
+  res.back().print();
+  /*
+  for(auto d : res)
+  {
+    std::cout << "Depth = " << d.depth << ", collisions = " << d.collisions << ", in " << d.duration.count() << "ms" << std::endl;
+  }
+  */
+  
+}
+
 int main()
 {
   cv::ocl::setUseOpenCL(true);
@@ -121,5 +180,26 @@ int main()
   cv::Mat img5 = cv::Mat::ones(rows, cols, CV_32FC1);
   img5 *= .9;
   run1(img5);
+  
+  
+  std::cout << "32x16" << std::endl;
+  run2(img6);
+  
+  
+  std::cout << "640x480" << std::endl;
+  run2(img);
+  
+  std::cout << "640x480" << std::endl;
+  run2(img2);
+  
+  
+  std::cout << "640x479" << std::endl;
+  run2(img3);
+  
+  std::cout << "639x480" << std::endl;
+  run2(img4);
+  
+  std::cout << "640x480" << std::endl;
+  run2(img5);
   
 }
