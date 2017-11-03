@@ -9,14 +9,14 @@ struct datapoint
 {
   double depth;
   std::chrono::duration<double, std::milli> duration;
-  uint collisions;  
+  uint num_collisions;
  
-  datapoint(double depth, std::chrono::time_point<std::chrono::high_resolution_clock> t1, std::chrono::time_point<std::chrono::high_resolution_clock> t2, uint collisions) :
-    depth(depth), duration(std::chrono::duration<double, std::milli>(t2-t1)), collisions(collisions) {}
+  datapoint(double depth, std::chrono::time_point<std::chrono::high_resolution_clock> t1, std::chrono::time_point<std::chrono::high_resolution_clock> t2, uint num_collisions, uint num = 1) :
+    depth(depth), duration(std::chrono::duration<double, std::milli>(t2-t1)/num), num_collisions(num_collisions/num) {}
     
   void print()
   {
-     std::cout << "Depth = " << depth << ", collisions = " << collisions << ", in " << duration.count() << "ms" << std::endl;
+     std::cout << "Depth = " << depth << ", with avg " << num_collisions << ", in average " << duration.count() << "ms" << std::endl;
   }
 };
 
@@ -81,7 +81,7 @@ int run1(cv::Mat img)
     std::cout << "Depth = " << d.depth << ", collisions = " << d.collisions << ", in " << d.duration.count() << "ms" << std::endl;
   }
   */
-  
+  return 1;
 }
 
 
@@ -103,27 +103,28 @@ int run2(cv::Mat img)
   
   auto t2 = std::chrono::high_resolution_clock::now();  
   
-  std::chrono::time_point<std::chrono::high_resolution_clock> ptime = t2;
+  uint batch_size = 2;
 
-
-  for(float depth = .1; depth < 2.0; depth+=.02)
+  float depth_inc = .02;
+  for(float depth = .1; depth < 2.0; depth+=depth_inc)
   {
+    auto ts =  std::chrono::high_resolution_clock::now();  
+
     cv::UMat res_cl, res_cl2;
     cv::compare(depth, roiIm, res_cl, cv::CMP_GT);
-    float depth2 = depth + .01;
+    float depth2 = depth + depth_inc/batch_size;
     cv::compare(depth2, roiIm, res_cl2, cv::CMP_GT);
     
     uint num_collisions = cv::countNonZero(res_cl);
     uint num_collisions2 = cv::countNonZero(res_cl2);
 
     auto t =  std::chrono::high_resolution_clock::now();  
+    
+    
 
-    datapoint d(depth,ptime,t, num_collisions);
-    datapoint d2(depth2,ptime,t, num_collisions2);
+    datapoint d(depth,ts,t, num_collisions+num_collisions2,2);
 
-    ptime = t;
     res.push_back(d);    
-    res.push_back(d2);    
 
   }
   
@@ -141,6 +142,7 @@ int run2(cv::Mat img)
   }
   */
   
+  return 1;
 }
 
 int main()
