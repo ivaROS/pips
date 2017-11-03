@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <string>
 
 struct datapoint
 {
@@ -86,7 +87,7 @@ int run1(cv::Mat img)
 
 
 
-int run2(cv::Mat img)
+int runbatch(cv::Mat img, std::vector<float> depths, uint batch_size, int op, bool printout = true)
 {
   
   auto t1 = std::chrono::high_resolution_clock::now();  
@@ -103,38 +104,52 @@ int run2(cv::Mat img)
   
   auto t2 = std::chrono::high_resolution_clock::now();  
   
-  uint batch_size = 2;
 
-  float depth_inc = .02;
-  for(float depth = .1; depth < 2.0; depth+=depth_inc)
+  for(uint i = 0; i < depths.size(); i+=batch_size)
   {
     auto ts =  std::chrono::high_resolution_clock::now();  
 
-    cv::UMat res_cl, res_cl2;
-    cv::compare(depth, roiIm, res_cl, cv::CMP_GT);
-    float depth2 = depth + depth_inc/batch_size;
-    cv::compare(depth2, roiIm, res_cl2, cv::CMP_GT);
+    cv::UMat res_cl[batch_size];
+
+    for(uint j = 0; j < batch_size; ++j)
+    {
+      float depth = depths[i + j];
+      cv::compare(depth, roiIm, res_cl[j], op);
+    }
     
-    uint num_collisions = cv::countNonZero(res_cl);
-    uint num_collisions2 = cv::countNonZero(res_cl2);
+    uint num_collisions[batch_size];
+    for(uint j = 0; j < batch_size; ++j)
+    {
+      num_collisions[j] = cv::countNonZero(res_cl[j]);
+    }
+    
+    uint total_collisions = 0;
+    for(uint j = 0; j < batch_size; ++j)
+    {
+      total_collisions += num_collisions[j];
+    }
 
     auto t =  std::chrono::high_resolution_clock::now();  
     
     
 
-    datapoint d(depth,ts,t, num_collisions+num_collisions2,2);
+    datapoint d(0,ts,t, total_collisions, batch_size);
 
     res.push_back(d);    
 
   }
   
-  
-  std::cout << "Setup took " << std::chrono::duration<double, std::milli>(t2-t1).count() <<  "ms" << std::endl;
-  
-  std::cout << "First: ";
-  res.front().print();
-  std::cout << "Last: ";
-  res.back().print();
+  if(printout)
+  {
+    std::cout << "Image size = " << img.cols << "x" << img.rows << std::endl;
+
+    std::cout << "Setup took " << std::chrono::duration<double, std::milli>(t2-t1).count() <<  "ms" << std::endl;
+    
+    std::cout << "First: ";
+    res.front().print();
+    std::cout << "Last: ";
+    res.back().print();
+  }
   /*
   for(auto d : res)
   {
@@ -145,9 +160,28 @@ int run2(cv::Mat img)
   return 1;
 }
 
+
+
+/* opencl countNonZero implementation: https://github.com/opencv/opencv/blob/0f0f5652fb531d5ff4e45079662198dffa51e9d2/modules/core/src/stat.cpp#L1250
+			kernel: https://github.com/opencv/opencv/blob/05b15943d6a42c99e5f921b7dbaa8323f3c042c6/modules/core/src/opencl/reduce.cl#L563
+			  Note: does not block
+			
+   opencl compare implementation: https://github.com/opencv/opencv/blob/master/modules/core/src/arithm.cpp#L1133
+			kernel: https://github.com/opencv/opencv/blob/05b15943d6a42c99e5f921b7dbaa8323f3c042c6/modules/core/src/opencl/arithm.cl#L432
+			  Note: blocks!
+*/
+
 int main()
 {
   cv::ocl::setUseOpenCL(true);
+  
+  std::vector<float> depths;
+  for(float depth = .1; depth < 3; depth+=.01)
+  {
+    depths.push_back(depth);
+  }
+  
+  
   int rows = 480, cols = 640;
   
   
@@ -184,24 +218,28 @@ int main()
   run1(img5);
   
   
-  std::cout << "32x16" << std::endl;
-  run2(img6);
+  std::vector<int> oplist = {cv::CMP_GE, cv::CMP_GT, cv::CMP_LE, cv::CMP_LT};
+  std::vector<std::string> opnames = {">=",">","<=","<"};
   
+  std::vector<cv::Mat> imgs = {img6, img, img2, img3, img4, img5};
   
-  std::cout << "640x480" << std::endl;
-  run2(img);
-  
-  std::cout << "640x480" << std::endl;
-  run2(img2);
-  
-  
-  std::cout << "640x479" << std::endl;
-  run2(img3);
-  
-  std::cout << "639x480" << std::endl;
-  run2(img4);
-  
-  std::cout << "640x480" << std::endl;
-  run2(img5);
+  for(uint batch_size = 1; batch_size < 5; ++batch_size)
+  {
+    std::cout << std::endl << "Batch size = " << batch_size  << std::endl;
+    for(uint opnum = 0; opnum < oplist.size(); ++opnum)
+    {
+      int op = oplist[opnum];
+      std::cout << "Operation: " << opnames[opnum] << std::endl;
+      for(cv::Mat im : imgs)
+      {
+	auto t1 = std::chrono::high_resolution_clock::now();  
+	runbatch(im,depths,batch_size,op,false);
+	auto t2 = std::chrono::high_resolution_clock::now();  
+	std::cout << "Image size = " << im.cols << "x" << im.rows << ": " << std::chrono::duration<double, std::milli>(t2-t1).count() <<  "ms" << std::endl;
+
+      }
+    }
+  }
+
   
 }
