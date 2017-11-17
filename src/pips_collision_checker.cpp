@@ -68,6 +68,9 @@
       depth_generation_service_ = nh_.advertiseService("generate_depth_image", &PipsCollisionChecker::getDepthImageSrv, this);
   }
   
+  /*Currently, I don't use the 'optical_transform' anywhere. Everything happens within the robot model 
+   * (this was to enable optimized transformations of different representations
+   */
     void PipsCollisionChecker::setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
     {
       //Convert transform to Eigen
@@ -94,7 +97,8 @@
       //If data type 32bit float, unit is m; else mm
       scale_ = (input_bridge_ref_->encoding == sensor_msgs::image_encodings::TYPE_32FC1) ? SCALE_METERS : SCALE_MM;
       
-      //Make a copy of depth image and set all 0's (unknowns) in image to some large value
+      //Make a copy of depth image and set all 0's (unknowns) in image to some large value.
+      //Better idea: set them to Nan!
       image_ref_ = input_bridge_ref_->image;
       image_ref_.setTo(MAX_RANGE * scale_, image_ref_==0);
       
@@ -113,7 +117,7 @@
     //Reinitialize camera model with each image in case resolution has changed
 
     robot_model_.updateModel(input_bridge_ref_, info_msg, scale_);
-
+    return;
   }
 
       
@@ -187,5 +191,4 @@
   }
   
   */
-
 

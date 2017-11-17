@@ -102,6 +102,7 @@
 
   }
   
+
   
   void HallucinatedRobotModelInterface::updateModel(const cv_bridge::CvImage::ConstPtr& cv_image_ref, const sensor_msgs::CameraInfoConstPtr& info_msg, double scale)
   {

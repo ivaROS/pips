@@ -8,7 +8,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-
+#include <opencv2/highgui/highgui.hpp>
 #include <Eigen/Eigen>
 #include <image_transport/image_transport.h>
 #include <image_geometry/pinhole_camera_model.h>
@@ -16,7 +16,7 @@
 
 #include <iomanip>      // std::setprecision
 
-
+using namespace cv;
 RectangularModel::RectangularModel() : HallucinatedRobotModelImpl<cv::Point3d>()
 {
   name_ = "RectangularModel";
@@ -41,15 +41,13 @@ void RectangularModel::setParameters(double radius, double height, double safety
 bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
 {
   float co_depth;
+  //ROS_INFO_STREAM("point is" << pt);
   cv::Rect co_rect;
   getCollisionRect(pt,co_rect,co_depth);
-
   //The collision object rectangle is our ROI in the original image
   cv::Mat roi(image_ref_, co_rect);
-
   float depth = co_depth*scale_;
   bool collided = isLessThan(roi, depth);
-
   return collided;
 }
 
@@ -77,7 +75,8 @@ void RectangularModel::getCollisionRect(const cv::Point3d pt, cv::Rect& co_rect,
       
       //Project point to pixel coordinates
       cv::Point2d uv = cam_model_->project3dToPixel(addedpnt);
-      //ROS_DEBUG("Coords: %f, %f", uv.x, uv.y);
+
+      ROS_DEBUG("Coords: %f, %f", uv.x, uv.y);
       co_uv[it] = uv;
 
     }

@@ -67,7 +67,7 @@ class HallucinatedRobotModelBase
     {
     }
  
-
+    
     virtual bool testCollision(const geometry_msgs::Pose pose)=0;
     virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)=0;
     virtual void setParameters(double robot_radius, double robot_height, double floor_tolerance, double safety_expansion, bool show_im)=0;
