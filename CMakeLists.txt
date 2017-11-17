@@ -200,11 +200,17 @@ target_link_libraries(pips_collision_checker
   )
 
 
-add_executable(ocl_benchmarker src/approach_benchmarker.cpp)
-target_link_libraries(ocl_benchmarker
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-  )
+if(OpenCV_VERSION VERSION_LESS "3.0")
+  MESSAGE(STATUS "Your OpenCV version is less than 3.0, OpenCL benchmarker will not be built")
+else()
+  add_executable(ocl_benchmarker src/approach_benchmarker.cpp)
+  target_link_libraries(ocl_benchmarker
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+    )
+endif()
+
+
   
 add_executable(omp_benchmarker src/omp_benchmarker.cpp)
 target_link_libraries(omp_benchmarker
