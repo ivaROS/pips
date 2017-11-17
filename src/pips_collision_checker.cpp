@@ -84,7 +84,7 @@
   Description: Sets the PipsCollisionChecker's depth image and camera model. Called whenever there is a new image.
   Name: PipsCollisionChecker::setImage
   Inputs:
-    image_msg: The depth image. Either the image_raw (16bit unsigned) or image (32 bit float) topics may be used, but the raw topic is preferred (the reason being that the conversion nodelet is not needed and in theory we save some computation. However, the overhead is quite minimal, and it appears that some SIMD optimizations can only work with floats, so whatever).
+    image_msg: The depth image. Either the image_raw (16bit unsigned) or image (32 bit float) topics may be used, but the raw topic is preferred (the reason being that the conversion nodelet is not needed and in theory we save some computation. More importantly, 16u types can be vectorized more than 32f).
     info_msgs: The CameraInfo msg accompanying the image msg. It is necessary to update the camera model each time in order to permit changing the camera's resolution during operation.
   */ 
   void PipsCollisionChecker::setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)

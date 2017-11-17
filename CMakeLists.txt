@@ -205,3 +205,11 @@ target_link_libraries(ocl_benchmarker
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   )
+  
+add_executable(omp_benchmarker src/omp_benchmarker.cpp)
+target_link_libraries(omp_benchmarker
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  )
+
+target_compile_options(omp_benchmarker PRIVATE -march=native ${OpenMP_CXX_FLAGS} -ftree-vectorize -fassociative-math -fno-signed-zeros -fno-trapping-math  -ffast-math  ) # -freciprocal-math #-funsafe-math-optimizations #-fno-math-errno -ffinite-math-only -fno-rounding-math -fno-signaling-nans -fcx-limited-range -fexcess-precision=fast

@@ -49,6 +49,9 @@ void RectangularModel::setParameters(double radius, double height, double safety
     show_im_ = show_im;
 }
 
+/* One option would be to return an object that implements some comparable interface, allowing it to be used as boolean 'collided' variable, but also containing extra information that can be accessed
+ * by classes that choose to
+ */
 bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
 {
   float co_depth;

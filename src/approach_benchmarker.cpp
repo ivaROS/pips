@@ -86,18 +86,11 @@ int run1(cv::Mat img)
 }
 
 
-
-int runbatch(cv::Mat img, std::vector<float> depths, uint batch_size, int op, bool printout = true)
+template<typename T>
+int runbatch(cv::UMat img, std::vector<T> depths, uint batch_size, int op, bool printout = true)
 {
   
   auto t1 = std::chrono::high_resolution_clock::now();  
-  
-  cv::UMat uimg = img.getUMat(cv::ACCESS_READ);
-  
-  
-  cv::Rect roi(0,0,img.cols,img.rows);
-  
-  cv::UMat roiIm = getUMatROI(uimg,roi);
   
   std::vector<datapoint> res;
 
@@ -111,20 +104,20 @@ int runbatch(cv::Mat img, std::vector<float> depths, uint batch_size, int op, bo
 
     cv::UMat res_cl[batch_size];
 
-    for(uint j = 0; j < batch_size; ++j)
+    for(uint j = 0; j < batch_size && (i + j) < depths.size(); ++j)
     {
-      float depth = depths[i + j];
-      cv::compare(depth, roiIm, res_cl[j], op);
+      T depth = depths[i + j];
+      cv::compare(depth, img, res_cl[j], op);
     }
     
     uint num_collisions[batch_size];
-    for(uint j = 0; j < batch_size; ++j)
+    for(uint j = 0; j < batch_size && (i + j) < depths.size(); ++j)
     {
       num_collisions[j] = cv::countNonZero(res_cl[j]);
     }
     
     uint total_collisions = 0;
-    for(uint j = 0; j < batch_size; ++j)
+    for(uint j = 0; j < batch_size && (i + j) < depths.size(); ++j)
     {
       total_collisions += num_collisions[j];
     }
@@ -175,54 +168,44 @@ int main()
 {
   cv::ocl::setUseOpenCL(true);
   
-  std::vector<float> depths;
-  for(float depth = .1; depth < 3; depth+=.01)
-  {
-    depths.push_back(depth);
-  }
-  
-  
   int rows = 480, cols = 640;
   
   
-  cv::Mat img6 = cv::Mat::ones(16,32, CV_32FC1);
-  img6 *= 1.5;
-  std::cout << "32x16" << std::endl;
-  run1(img6);
+  cv::Mat img = cv::Mat::ones(rows, cols, CV_32FC1) * 1.5;
+
+  
+  std::vector<float> depths;
+  std::vector<cv::UMat> depthMats;
+
+  for(float depth = .1; depth < 3; depth+=.01)
+  {
+    depths.push_back(depth);
+    
+    cv::Mat cmpimg = cv::Mat::ones(rows, cols, CV_32FC1) * depth;
+    cv::UMat cmpuimg = cmpimg.getUMat(cv::ACCESS_READ, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+    depthMats.push_back(cmpuimg);
+    
+  }
   
   
-  cv::Mat img = cv::Mat::ones(rows, cols, CV_32FC1);
-  img *= 1.5;
-  std::cout << "640x480" << std::endl;
-  run1(img);
+
   
-  std::cout << "640x480" << std::endl;
-  cv::Mat img2 = cv::Mat::ones(rows, cols, CV_32FC1);
-  img2 *= .8;
-  run1(img2);
+  cv::UMat uimg = img.getUMat(cv::ACCESS_READ);
+
+
   
-  
-  std::cout << "640x479" << std::endl;
-  cv::Mat img3 = cv::Mat::ones(rows-1, cols, CV_32FC1);
-  img3 *= 1.5;
-  run1(img3);
-  
-  std::cout << "639x480" << std::endl;
-  cv::Mat img4 = cv::Mat::ones(rows, cols-1, CV_32FC1);
-  img4 *= 1.5;
-  run1(img4);
-  
-  std::cout << "640x480" << std::endl;
-  cv::Mat img5 = cv::Mat::ones(rows, cols, CV_32FC1);
-  img5 *= .9;
-  run1(img5);
-  
+  cv::Rect roi(0,0,img.cols,img.rows);
+  cv::Rect roi1(0,0,img.cols/2,img.rows);
+  cv::Rect roi2(0,0,img.cols,img.rows/2);
+  cv::Rect roi3(img.cols/2,0,img.cols/2,img.rows);
+  cv::Rect roi4(0,img.rows/2,img.cols,img.rows/2);
+
+  std::vector<cv::Rect> rois = {roi, roi1, roi2, roi3, roi4};
+
   
   std::vector<int> oplist = {cv::CMP_GE, cv::CMP_GT, cv::CMP_LE, cv::CMP_LT};
   std::vector<std::string> opnames = {">=",">","<=","<"};
-  
-  std::vector<cv::Mat> imgs = {img6, img, img2, img3, img4, img5};
-  
+    
   for(uint batch_size = 1; batch_size < 5; ++batch_size)
   {
     std::cout << std::endl << "Batch size = " << batch_size  << std::endl;
@@ -230,9 +213,10 @@ int main()
     {
       int op = oplist[opnum];
       std::cout << "Operation: " << opnames[opnum] << std::endl;
-      for(cv::Mat im : imgs)
+      for(cv::Rect rect : rois)
       {
 	auto t1 = std::chrono::high_resolution_clock::now();  
+	cv::UMat im = getUMatROI(uimg,rect);
 	runbatch(im,depths,batch_size,op,false);
 	auto t2 = std::chrono::high_resolution_clock::now();  
 	std::cout << "Image size = " << im.cols << "x" << im.rows << ": " << std::chrono::duration<double, std::milli>(t2-t1).count() <<  "ms" << std::endl;
@@ -241,5 +225,34 @@ int main()
     }
   }
 
+  
+  std::cout << "With mats:" << std::endl;
+  
+  for(uint batch_size = 1; batch_size < 5; ++batch_size)
+  {
+    std::cout << std::endl << "Batch size = " << batch_size  << std::endl;
+    for(uint opnum = 0; opnum < oplist.size(); ++opnum)
+    {
+      int op = oplist[opnum];
+      std::cout << "Operation: " << opnames[opnum] << std::endl;
+      for(cv::Rect rect : rois)
+      {
+	std::vector<cv::UMat> roiDepthMats;
+	for(cv::UMat depthmat : depthMats)
+	{
+	  cv::UMat roiDepthMat = getUMatROI(depthmat,rect);
+	  roiDepthMats.push_back(roiDepthMat);
+	}
+	
+	
+	auto t1 = std::chrono::high_resolution_clock::now();  
+	cv::UMat im = getUMatROI(uimg,rect);
+	runbatch(im,roiDepthMats,batch_size,op,false);
+	auto t2 = std::chrono::high_resolution_clock::now();  
+	std::cout << "Image size = " << im.cols << "x" << im.rows << ": " << std::chrono::duration<double, std::milli>(t2-t1).count() <<  "ms" << std::endl;
+
+      }
+    }
+  }
   
 }
