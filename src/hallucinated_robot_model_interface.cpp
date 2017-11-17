@@ -37,7 +37,7 @@
   {
     ROS_INFO_STREAM_NAMED(name_, "Reconfigure Request: "); // TODO: print out the model type and other parameter values
     
-    boost::mutex::scoped_lock lock(model_mutex_); /* Mutex prevents dynamic reconfigure from changing anything while model in use */
+    WriteLock lock(model_mutex_); /* Mutex prevents dynamic reconfigure from changing anything while model in use */
     
     /* if the model type in the reconfigure request is different than the previous, we need to instantiate the new one */
     if(config.model_type != model_type_)
@@ -123,7 +123,7 @@
     scale_ = scale;
     
     {
-      boost::mutex::scoped_lock lock(model_mutex_);
+      WriteLock lock(model_mutex_);
       model_->updateModel(cv_image_ref_, scale);
       cam_model_->fromCameraInfo(info_msg); //We are only updating the contents of cam_model_, rather than the object it points to, so no need to pass it to the model again
 
@@ -133,10 +133,11 @@
   void HallucinatedRobotModelInterface::setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
   {
     base_optical_transform_ = base_optical_transform;
+    
+    if(model_)
     {
-      boost::mutex::scoped_lock lock(model_mutex_);
-      if(model_)
-	model_->setTransform(base_optical_transform_);
+      WriteLock lock(model_mutex_);
+      model_->setTransform(base_optical_transform_);
     }
   }
   
