@@ -92,53 +92,6 @@ size_t middle_loop(const cv::Mat& img, const T& depth)
 
 
 
-size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it)
-{
- 
-    std::vector<size_t> results(num_it); 
-
-	#pragma omp parallel for schedule(dynamic) //if(parallelism_enabled_) //schedule(dynamic)
-        for(uint8_t i = 0; i < num_it; i++)
-        {
-	  float depth = i;
-	  size_t result = middle_loop(img, depth);
-	  results[i] = result;
-        }
-        
-        size_t sum = 0;
-        for(uint8_t i = 0; i < num_it; i++)
-        {
-	    sum+= results[i];
-        }
-   
-  return sum;
-}
-
-
-size_t outer_loop(const cv::Mat& img, uint8_t num_it)
-{
-  
-
-    std::vector<size_t> results(num_it); //std::vector<boost::shared_ptr<PipsTrajectory*>>
-
-        for(uint8_t i = 0; i < num_it; i++)
-        {
-	  float depth = i;
-	  size_t result = middle_loop(img, depth);
-	  results[i] = result;
-        }
-        
-        size_t sum = 0;
-        for(uint8_t i = 0; i < num_it; i++)
-        {
-	    sum+= results[i];
-        }
-        
-
-  return sum;
-}
-
-
 size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, bool parallelism_enabled)
 {
  
@@ -166,11 +119,11 @@ bool run_comparison(const cv::Mat& img, uint8_t num_it)
 {
       auto t1 = std::chrono::high_resolution_clock::now();
 
-      size_t val1 = outer_loop(img,  num_it);
+      size_t val1 = parallel_outer_loop(img,  num_it, false);
   
       auto t2 = std::chrono::high_resolution_clock::now();
       
-      size_t val2 = parallel_outer_loop(img,  num_it);
+      size_t val2 = parallel_outer_loop(img,  num_it, true);
 
       auto t3 = std::chrono::high_resolution_clock::now();
 
