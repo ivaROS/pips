@@ -43,9 +43,76 @@ uint16_t inner_loop(const cv::Mat& image, const T& depth)
 }
 
 
+template<typename T>
+      inline
+/* Vectorizeable by gcc when using -ffast-math */
+bool vect2(const cv::Mat& image, const T depth, const int vec_size)
+{
+  int nRows = image.rows;
+  int nCols = image.cols;
+	  
+  if (image.isContinuous())
+  {
+      nCols *= nRows;
+      nRows = 1;
+  }
+  
+  uint main_loops = nCols / vec_size;
+  uint remainder = nCols % vec_size;
+  
+  
+  for( int i = 0; i < nRows; ++i)
+  {
+  
+    const T* p = image.ptr<T>(i);
+
+    
+    for(int j=0; j <main_loops; ++j)
+    {
+      uint8_t temp[vec_size];
+      uint8_t sum=0;
+
+      for(int k=0; k < vec_size; ++k)
+      {
+	int a = j*vec_size + k;
+	temp[k] = (p[a] < depth) ? 1 : 0;
+	sum |= 0;
+      }
+      
+      if( sum >0 )
+      {
+	return true;
+      }
+  
+      
+      
+      
+    }
+    
+    for(int k = 0; k < remainder; ++k)
+    {
+      int a = main_loops*vec_size + k; 
+      uint8_t temp = (p[a] < depth) ? 1 : 0;
+      if(temp > 0)
+      {
+	return true;
+      }
+    }
+
+    
+  }
+  
+  return false;
+
+}  
+
+
+
+
+
       template<typename T>
       inline
-size_t middle_loop(const cv::Mat& img, const T& depth)
+size_t middle_loop(const cv::Mat& img, const T& depth, const int vect_size)
 {
   size_t sum = 0;
   
@@ -68,7 +135,7 @@ size_t middle_loop(const cv::Mat& img, const T& depth)
     
     cv::Rect rect(x,y,width,height);
     cv::Mat roi(img,rect);
-    uint16_t val = inner_loop(img, depth);
+    uint16_t val = vect2(img, depth, vect_size);
     sum += val;
   }
   
@@ -92,7 +159,7 @@ size_t middle_loop(const cv::Mat& img, const T& depth)
 
 
 
-size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it)
+size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, int vect_size)
 {
  
     std::vector<size_t> results(num_it); 
@@ -101,7 +168,7 @@ size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it)
         for(uint8_t i = 0; i < num_it; i++)
         {
 	  float depth = i;
-	  size_t result = middle_loop(img, depth);
+	  size_t result = middle_loop(img, depth,vect_size);
 	  results[i] = result;
         }
         
@@ -115,7 +182,7 @@ size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it)
 }
 
 
-size_t outer_loop(const cv::Mat& img, uint8_t num_it)
+size_t outer_loop(const cv::Mat& img, uint8_t num_it, int vect_size)
 {
   
 
@@ -124,7 +191,7 @@ size_t outer_loop(const cv::Mat& img, uint8_t num_it)
         for(uint8_t i = 0; i < num_it; i++)
         {
 	  float depth = i;
-	  size_t result = middle_loop(img, depth);
+	  size_t result = middle_loop(img, depth, vect_size);
 	  results[i] = result;
         }
         
@@ -139,7 +206,7 @@ size_t outer_loop(const cv::Mat& img, uint8_t num_it)
 }
 
 
-size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, bool parallelism_enabled)
+size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, int vect_size, bool parallelism_enabled)
 {
  
     std::vector<size_t> results(num_it); 
@@ -148,7 +215,7 @@ size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, bool parallelism_
         for(uint8_t i = 0; i < num_it; i++)
         {
 	  float depth = i;
-	  size_t result = middle_loop(img, depth);
+	  size_t result = middle_loop(img, depth, vect_size);
 	  results[i] = result;
         }
         
@@ -162,15 +229,15 @@ size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, bool parallelism_
 }
 
 
-bool run_comparison(const cv::Mat& img, uint8_t num_it)
+bool run_comparison(const cv::Mat& img, uint8_t num_it, int vect_size)
 {
       auto t1 = std::chrono::high_resolution_clock::now();
 
-      size_t val1 = outer_loop(img,  num_it);
+      size_t val1 = outer_loop(img,  num_it, vect_size);
   
       auto t2 = std::chrono::high_resolution_clock::now();
       
-      size_t val2 = parallel_outer_loop(img,  num_it);
+      size_t val2 = parallel_outer_loop(img,  num_it, vect_size);
 
       auto t3 = std::chrono::high_resolution_clock::now();
 
@@ -178,7 +245,7 @@ bool run_comparison(const cv::Mat& img, uint8_t num_it)
         
       std::chrono::duration<double, std::milli> fp_ms2 = t3 - t2;
 
-      std::cout << "(" <<  (uint)num_it <<  ") Standard loop: " << fp_ms1.count() << "ms, Parallel loop: " <<  fp_ms2.count()  << std::endl << std::endl;
+      std::cout << "(" <<  (uint)num_it <<  "," << (uint)vect_size << ") Standard loop: " << fp_ms1.count() << "ms, Parallel loop: " <<  fp_ms2.count()  << std::endl << std::endl;
       
       return (val1 ==  val2);
 }
@@ -191,7 +258,10 @@ int main()
     
     for (uint i = 1; i < 30; ++i)
     {
-      bool ret = run_comparison(img,  i);
+      for(uint vect_size = 1; vect_size <9; ++vect_size)
+      {
+	bool ret = run_comparison(img,  i, vect_size);
+      }
 
     }
 
