@@ -108,7 +108,7 @@ uint16_t vect2(const cv::Mat& image, const T depth)
 
 
 
-      template<typename T, uint V>
+      template<typename T, uint V, uint A>
       inline
 size_t middle_loop(const cv::Mat& img, const T& depth)
 {
@@ -133,7 +133,19 @@ size_t middle_loop(const cv::Mat& img, const T& depth)
     
     cv::Rect rect(x,y,width,height);
     cv::Mat roi(img,rect);
-    uint16_t val = vect2<T, V>(img, depth);
+    
+    
+    uint16_t val;
+    switch(A)
+    {
+      case 0: 
+	val = inner_loop(img, depth);
+	break;
+      case 1:
+	val = vect2<T, V>(img, depth);
+	break;
+    }
+	
     sum += val;
   }
   
@@ -156,7 +168,7 @@ size_t middle_loop(const cv::Mat& img, const T& depth)
 }
 
 
-      template<uint V>
+      template<uint V, uint A>
       inline
 size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, bool parallelism_enabled)
 {
@@ -167,7 +179,7 @@ size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, bool parallelism_
         for(uint8_t i = 0; i < num_it; i++)
         {
 	  float depth = i;
-	  size_t result = middle_loop<float,V>(img, depth);
+	  size_t result = middle_loop<float,V,A>(img, depth);
 	  results[i] = result;
         }
         
@@ -186,11 +198,11 @@ bool run_comparison(const cv::Mat& img, uint8_t num_it)
 {
       auto t1 = std::chrono::high_resolution_clock::now();
 
-      size_t val1 = parallel_outer_loop<V>(img,  num_it, false);
+      size_t val1 = parallel_outer_loop<V,0>(img,  num_it, true);
   
       auto t2 = std::chrono::high_resolution_clock::now();
       
-      size_t val2 = parallel_outer_loop<V>(img,  num_it, true);
+      size_t val2 = parallel_outer_loop<V,1>(img,  num_it, true);
 
       auto t3 = std::chrono::high_resolution_clock::now();
 
