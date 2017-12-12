@@ -43,10 +43,10 @@ uint16_t inner_loop(const cv::Mat& image, const T& depth)
 }
 
 
-template<typename T>
+template<typename T, uint V>
       inline
 /* Vectorizeable by gcc when using -ffast-math */
-bool vect2(const cv::Mat& image, const T depth, const int vec_size)
+uint16_t vect2(const cv::Mat& image, const T depth)
 {
   int nRows = image.rows;
   int nCols = image.cols;
@@ -57,10 +57,12 @@ bool vect2(const cv::Mat& image, const T depth, const int vec_size)
       nRows = 1;
   }
   
-  uint main_loops = nCols / vec_size;
-  uint remainder = nCols % vec_size;
+  uint main_loops = nCols / V;
+  uint remainder = nCols % V;
   
   
+  uint16_t sum = 0;
+
   for( int i = 0; i < nRows; ++i)
   {
   
@@ -69,40 +71,36 @@ bool vect2(const cv::Mat& image, const T depth, const int vec_size)
     
     for(int j=0; j <main_loops; ++j)
     {
-      uint8_t temp[vec_size];
-      uint8_t sum=0;
+      uint8_t temp[V];
+      uint16_t intsum=0;
 
-      for(int k=0; k < vec_size; ++k)
+      for(int k=0; k < V; ++k)
       {
-	int a = j*vec_size + k;
+	int a = j*V + k;
+	//std::cout << "a: " << a << "\t";
+
 	temp[k] = (p[a] < depth) ? 1 : 0;
-	sum |= 0;
+	intsum += temp[k];
       }
       
-      if( sum >0 )
-      {
-	return true;
-      }
-  
+      sum += intsum;
       
-      
-      
+  // std::cout << "intsum: " << intsum<< "\t";
+
+
     }
     
     for(int k = 0; k < remainder; ++k)
     {
-      int a = main_loops*vec_size + k; 
+      int a = main_loops*V + k; 
       uint8_t temp = (p[a] < depth) ? 1 : 0;
-      if(temp > 0)
-      {
-	return true;
-      }
+      sum += temp;
     }
 
     
   }
   
-  return false;
+  return sum;
 
 }  
 
@@ -110,9 +108,9 @@ bool vect2(const cv::Mat& image, const T depth, const int vec_size)
 
 
 
-      template<typename T>
+      template<typename T, uint V>
       inline
-size_t middle_loop(const cv::Mat& img, const T& depth, const int vect_size)
+size_t middle_loop(const cv::Mat& img, const T& depth)
 {
   size_t sum = 0;
   
@@ -135,7 +133,7 @@ size_t middle_loop(const cv::Mat& img, const T& depth, const int vect_size)
     
     cv::Rect rect(x,y,width,height);
     cv::Mat roi(img,rect);
-    uint16_t val = vect2(img, depth, vect_size);
+    uint16_t val = vect2<T, V>(img, depth);
     sum += val;
   }
   
@@ -158,55 +156,9 @@ size_t middle_loop(const cv::Mat& img, const T& depth, const int vect_size)
 }
 
 
-
-size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, int vect_size)
-{
- 
-    std::vector<size_t> results(num_it); 
-
-	#pragma omp parallel for schedule(dynamic) //if(parallelism_enabled_) //schedule(dynamic)
-        for(uint8_t i = 0; i < num_it; i++)
-        {
-	  float depth = i;
-	  size_t result = middle_loop(img, depth,vect_size);
-	  results[i] = result;
-        }
-        
-        size_t sum = 0;
-        for(uint8_t i = 0; i < num_it; i++)
-        {
-	    sum+= results[i];
-        }
-   
-  return sum;
-}
-
-
-size_t outer_loop(const cv::Mat& img, uint8_t num_it, int vect_size)
-{
-  
-
-    std::vector<size_t> results(num_it); //std::vector<boost::shared_ptr<PipsTrajectory*>>
-
-        for(uint8_t i = 0; i < num_it; i++)
-        {
-	  float depth = i;
-	  size_t result = middle_loop(img, depth, vect_size);
-	  results[i] = result;
-        }
-        
-        size_t sum = 0;
-        for(uint8_t i = 0; i < num_it; i++)
-        {
-	    sum+= results[i];
-        }
-        
-
-  return sum;
-}
-
-
-size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, int vect_size, bool parallelism_enabled)
+      template<uint V>
+      inline
+size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, bool parallelism_enabled)
 {
  
     std::vector<size_t> results(num_it); 
@@ -215,7 +167,7 @@ size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, int vect_size, bo
         for(uint8_t i = 0; i < num_it; i++)
         {
 	  float depth = i;
-	  size_t result = middle_loop(img, depth, vect_size);
+	  size_t result = middle_loop<float,V>(img, depth);
 	  results[i] = result;
         }
         
@@ -228,16 +180,17 @@ size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, int vect_size, bo
   return sum;
 }
 
-
-bool run_comparison(const cv::Mat& img, uint8_t num_it, int vect_size)
+      template<uint V>
+      inline
+bool run_comparison(const cv::Mat& img, uint8_t num_it)
 {
       auto t1 = std::chrono::high_resolution_clock::now();
 
-      size_t val1 = outer_loop(img,  num_it, vect_size);
+      size_t val1 = parallel_outer_loop<V>(img,  num_it, false);
   
       auto t2 = std::chrono::high_resolution_clock::now();
       
-      size_t val2 = parallel_outer_loop(img,  num_it, vect_size);
+      size_t val2 = parallel_outer_loop<V>(img,  num_it, true);
 
       auto t3 = std::chrono::high_resolution_clock::now();
 
@@ -245,7 +198,12 @@ bool run_comparison(const cv::Mat& img, uint8_t num_it, int vect_size)
         
       std::chrono::duration<double, std::milli> fp_ms2 = t3 - t2;
 
-      std::cout << "(" <<  (uint)num_it <<  "," << (uint)vect_size << ") Standard loop: " << fp_ms1.count() << "ms, Parallel loop: " <<  fp_ms2.count()  << std::endl << std::endl;
+      std::cout << "(" <<  (uint)num_it <<  "," << (uint)V << ") Standard loop: " << fp_ms1.count() << "ms, Parallel loop: " <<  fp_ms2.count()  << std::endl << std::endl;
+      
+      if(val1 !=  val2)
+      {
+	std::cout << "Error!" << std::endl;
+      }
       
       return (val1 ==  val2);
 }
@@ -258,10 +216,11 @@ int main()
     
     for (uint i = 1; i < 30; ++i)
     {
-      for(uint vect_size = 1; vect_size <9; ++vect_size)
-      {
-	bool ret = run_comparison(img,  i, vect_size);
-      }
+      bool ret = run_comparison<1>(img,  i);
+      ret = run_comparison<2>(img,  i);
+      ret = run_comparison<4>(img,  i);
+      ret = run_comparison<8>(img,  i);
+      ret = run_comparison<16>(img,  i);
 
     }
 
