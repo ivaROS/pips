@@ -105,7 +105,15 @@ uint16_t vect2(const cv::Mat& image, const T depth)
 }  
 
 
+template<typename T>
+uint16_t stock(const cv::Mat& img, const T& depth)
+{
+ cv::Mat res;
+      cv::compare(img, depth, res, cv::CMP_LT);
 
+      int num_collisions = cv::countNonZero(res); 
+      return num_collisions;
+}
 
 
       template<typename T, uint V, uint A>
@@ -143,6 +151,9 @@ size_t middle_loop(const cv::Mat& img, const T& depth)
 	break;
       case 1:
 	val = vect2<T, V>(img, depth);
+	break;
+      case 2:
+	val = stock(img,depth);
 	break;
     }
 	
@@ -198,26 +209,33 @@ bool run_comparison(const cv::Mat& img, uint8_t num_it)
 {
       auto t1 = std::chrono::high_resolution_clock::now();
 
-      size_t val1 = parallel_outer_loop<V,0>(img,  num_it, true);
+      size_t val1 = parallel_outer_loop<V,2>(img,  num_it, true);
   
       auto t2 = std::chrono::high_resolution_clock::now();
       
-      size_t val2 = parallel_outer_loop<V,1>(img,  num_it, true);
+      size_t val2 = parallel_outer_loop<V,0>(img,  num_it, true);
 
       auto t3 = std::chrono::high_resolution_clock::now();
+      
+      size_t val3 = parallel_outer_loop<V,1>(img, num_it, true);
+      
+      auto t4 = std::chrono::high_resolution_clock::now();
+
 
       std::chrono::duration<double, std::milli> fp_ms1 = t2 - t1;
         
       std::chrono::duration<double, std::milli> fp_ms2 = t3 - t2;
 
-      std::cout << "(" <<  (uint)num_it <<  "," << (uint)V << ") Standard loop: " << fp_ms1.count() << "ms, Parallel loop: " <<  fp_ms2.count()  << std::endl << std::endl;
+      std::chrono::duration<double, std::milli> fp_ms3 = t4 - t3;
+
+      std::cout << "(" <<  (uint)num_it <<  "," << (uint)V << ") Stock: " << fp_ms1.count() << "ms, vectorized: " <<  fp_ms2.count()  << "ms, vect2: " << fp_ms3.count() << "ms" << std::endl << std::endl;
       
-      if(val1 !=  val2)
+      if(val3 !=  val2 || val3 != val1)
       {
 	std::cout << "Error!" << std::endl;
       }
       
-      return (val1 ==  val2);
+      return (val3 ==  val1);
 }
         
 int main()
