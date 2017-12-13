@@ -134,7 +134,7 @@ SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ss)
 add_library(cylindrical_model_t_vect
   src/cylindrical_model_t_vect.cpp
   )
-target_compile_options(cylindrical_model_t_vect PRIVATE -march=native -ffast-math -ftree-vectorize ) #-ftree-vectorizer-verbose=7
+target_compile_options(cylindrical_model_t_vect PRIVATE -march=native -ffast-math -ftree-vectorize ) #-ftree-vectorizer-verbose=7 -fopt-info-vec-all
 target_compile_options(cylindrical_model_t_vect PUBLIC  -std=c++11)
 target_link_libraries(cylindrical_model_t_vect
   ${catkin_LIBRARIES}
@@ -218,4 +218,4 @@ target_link_libraries(omp_benchmarker
   ${OpenCV_LIBRARIES}
   )
 
-target_compile_options(omp_benchmarker PRIVATE -march=native ${OpenMP_CXX_FLAGS} -ftree-vectorize -fassociative-math -fno-signed-zeros -fno-trapping-math  -ffast-math  ) # -freciprocal-math #-funsafe-math-optimizations #-fno-math-errno -ffinite-math-only -fno-rounding-math -fno-signaling-nans -fcx-limited-range -fexcess-precision=fast
+target_compile_options(omp_benchmarker PRIVATE -g  -save-temps -fverbose-asm   -march=native ${OpenMP_CXX_FLAGS} -ftree-vectorize -fassociative-math -fno-signed-zeros -fno-trapping-math  -ffast-math -fopt-info-vec-all ) # -freciprocal-math #-funsafe-math-optimizations #-fno-math-errno -ffinite-math-only -fno-rounding-math -fno-signaling-nans -fcx-limited-range -fexcess-precision=fast
