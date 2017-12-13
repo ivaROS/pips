@@ -281,11 +281,11 @@ uint16_t vect5(const cv::Mat& image, const T depth)
   
     const T* p = image.ptr<T>(i);
 
-    float intsum=0;
+    T intsum=0;
 
     for(int j=0; j <nCols; ++j)
     {
-	float t = (p[j] < depth) ? 1 : 0;
+	T t = (p[j] < depth) ? 1 : 0;
 	intsum += t;
     }
       sum += intsum;
@@ -529,22 +529,32 @@ size_t middle_loop(const cv::Mat& img, const T depth)
 size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, bool parallelism_enabled)
 {
  
-    std::vector<size_t> results(num_it); 
+  std::vector<size_t> results(num_it); 
 
-	#pragma omp parallel for schedule(dynamic) if(parallelism_enabled) //schedule(dynamic)
-        for(uint8_t i = 0; i < num_it; i++)
-        {
-	  float depth = i;
-	  size_t result = middle_loop<float,V,A>(img, depth);
-	  results[i] = result;
-        }
-        
-        size_t sum = 0;
-        for(uint8_t i = 0; i < num_it; i++)
-        {
-	    sum+= results[i];
-        }
-   
+    #pragma omp parallel for schedule(dynamic) if(parallelism_enabled) //schedule(dynamic)
+    for(uint8_t i = 0; i < num_it; i++)
+    {
+      float depth = i;
+      size_t result;
+      //This condition increases time from 170 to 210 for vect5
+      if(img.type() == CV_32FC1)
+      {
+	result = middle_loop<float,V,A>(img, depth);
+      }
+      else if (img.type() == CV_16UC1)
+      {
+	result = middle_loop<uint16_t,V,A>(img, depth);
+      }
+	
+      results[i] = result;
+    }
+    
+    size_t sum = 0;
+    for(uint8_t i = 0; i < num_it; i++)
+    {
+	sum+= results[i];
+    }
+  
   return sum;
 }
 
