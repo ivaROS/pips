@@ -44,6 +44,7 @@ uint16_t inner_loop(const cv::Mat& image, const T& depth)
 
 
 /*
+ * 200ms
   Vectorization factor: 8
   Vector inside of loop cost: 2
   Vector prologue cost: 17
@@ -69,7 +70,7 @@ uint16_t vect2(const cv::Mat& image, const T depth)
       nRows = 1;
   }
   
-  int sum = 0;
+  int sum = 0; //doesn't matter if this is int or float
 
   for( int i = 0; i < nRows; ++i)
   {
@@ -84,9 +85,9 @@ uint16_t vect2(const cv::Mat& image, const T depth)
       
 	//temp[j] = (p[j] < depth) ? 1 : 0;
 	
-	float t = 0;
-	if( p[j] < depth)
-	  t = 1;
+	float t = (p[j] < depth) ? 1 : 0;
+	//if( p[j] < depth)
+	//  t = 1;
 	
 	
 	
@@ -96,6 +97,83 @@ uint16_t vect2(const cv::Mat& image, const T depth)
 
     }
       sum += intsum;
+
+    
+  }
+  
+  return sum;
+
+}  
+
+
+template<typename T>
+      inline
+/* Vectorizeable by gcc when using -ffast-math */
+uint16_t vect7(const cv::Mat& image, const T depth)
+{
+  int nRows = image.rows;
+  int nCols = image.cols;
+	  
+  if (image.isContinuous())
+  {
+      nCols *= nRows;
+      nRows = 1;
+  }
+  
+  uint main_loops = nCols / 8;
+  uint remainder = nCols % 8;
+  
+  
+  int sum = 0;
+
+  for( int i = 0; i < nRows; ++i)
+  {
+  
+    const T* p = image.ptr<T>(i);
+
+    int a = 0;
+
+    for(int j=0; j <main_loops; ++j)
+    {
+      float temp[8];
+      float intsum=0;
+      
+      for(int k = 0; k < 8; ++k)
+      {
+	float t = (p[a] < depth) ? 1 : 0;
+	intsum+=t;
+	++a;
+      
+	/*
+	temp[0] = (p[a + 0] < depth) ? 1 : 0;
+	temp[1] = (p[a + 1] < depth) ? 1 : 0;
+	temp[2] = (p[a + 2] < depth) ? 1 : 0;
+	temp[3] = (p[a + 3] < depth) ? 1 : 0;
+	temp[4] = (p[a + 4] < depth) ? 1 : 0;
+	temp[5] = (p[a + 5] < depth) ? 1 : 0;
+	temp[6] = (p[a + 6] < depth) ? 1 : 0;
+	temp[7] = (p[a + 7] < depth) ? 1 : 0;
+	
+	
+	intsum = temp[0] + temp[1] + temp[2] + temp[3] + temp[4] + temp[5] + temp[6] + temp[7];
+	a+=8;
+	*/
+      
+      }
+      
+      sum += intsum;
+      
+  // std::cout << "intsum: " << intsum<< "\t";
+
+
+    }
+    
+    for(int k = 0; k < remainder; ++k)
+    {
+      uint8_t temp = (p[a] < depth) ? 1 : 0;
+      a++;
+      sum += temp;
+    }
 
     
   }
@@ -170,6 +248,7 @@ uint16_t vect6(const cv::Mat& image, const T depth)
 }  
 
 /*
+ * 200ms
   Vectorization factor: 8
   Vector inside of loop cost: 2
   Vector prologue cost: 17
@@ -195,7 +274,7 @@ uint16_t vect5(const cv::Mat& image, const T depth)
       nRows = 1;
   }
   
-  float sum = 0;
+  float sum = 0; //doesn't matter if this is int or float
 
   for( int i = 0; i < nRows; ++i)
   {
@@ -203,24 +282,11 @@ uint16_t vect5(const cv::Mat& image, const T depth)
     const T* p = image.ptr<T>(i);
 
     float intsum=0;
-    float temp[nCols];
 
     for(int j=0; j <nCols; ++j)
     {
-
-      
-	//temp[j] = (p[j] < depth) ? 1 : 0;
-	
-	float t = 0;
-	if( p[j] < depth)
-	  t = 1;
-	
-	
-	
-	intsum += t;// temp[j];
-      
-      
-
+	float t = (p[j] < depth) ? 1 : 0;
+	intsum += t;
     }
       sum += intsum;
 
@@ -235,6 +301,7 @@ uint16_t vect5(const cv::Mat& image, const T depth)
 
 
 /*
+ * 288ms
   Vector inside of loop cost: 4
   Vector prologue cost: 21
   Vector epilogue cost: 27
@@ -427,8 +494,11 @@ size_t middle_loop(const cv::Mat& img, const T& depth)
       case 4:
 	val = vect4<T>(img, depth);
 	break;
-	      case 5:
+      case 5:
 	val = vect5<T>(img, depth);
+	break;
+      case 7:
+	val = vect7<T>(img, depth);
 	break;
     }
 	
@@ -484,15 +554,15 @@ bool run_comparison(const cv::Mat& img, uint8_t num_it)
 {
       auto t1 = std::chrono::high_resolution_clock::now();
 
-      size_t val1 = parallel_outer_loop<V,4>(img,  num_it, false);
+      size_t val1 = parallel_outer_loop<V,1>(img,  num_it, false);
   
       auto t2 = std::chrono::high_resolution_clock::now();
       
-      size_t val2 = parallel_outer_loop<V,5>(img,  num_it, false);
+      size_t val2 = parallel_outer_loop<V,0>(img,  num_it, false);
 
       auto t3 = std::chrono::high_resolution_clock::now();
       
-      size_t val3 = parallel_outer_loop<V,2>(img, num_it, false);
+      size_t val3 = parallel_outer_loop<V,5>(img, num_it, false);
       
       auto t4 = std::chrono::high_resolution_clock::now();
 
@@ -503,7 +573,7 @@ bool run_comparison(const cv::Mat& img, uint8_t num_it)
 
       std::chrono::duration<double, std::milli> fp_ms3 = t4 - t3;
 
-      std::cout << "(" <<  (uint)num_it <<  "," << (uint)V << ") vect4: " << fp_ms1.count() << "ms, vect5: " <<  fp_ms2.count()  << "ms, vect2: " << fp_ms3.count() << "ms" << std::endl << std::endl;
+      std::cout << "(" <<  (uint)num_it <<  "," << (uint)V << ") stock: " << fp_ms1.count() << "ms, simple loop: " <<  fp_ms2.count()  << "ms, vect5: " << fp_ms3.count() << "ms" << std::endl << std::endl;
       
       std::cout << "values: " << val1 << ", " << val2 << ", " << val3 << std::endl;
       
