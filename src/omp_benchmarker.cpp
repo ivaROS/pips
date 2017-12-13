@@ -6,7 +6,7 @@
 #include <omp.h>
 
 #include <opencv2/core/core.hpp>
-#include "opencv2/imgproc/imgproc.hpp"
+#include <opencv2/imgproc/imgproc.hpp>
 
 #include <iostream>
 
@@ -14,7 +14,7 @@
 
       template<typename T>
       inline
-uint16_t inner_loop(const cv::Mat& image, const T& depth)
+uint16_t inner_loop(const cv::Mat& image, const T depth)
 {
 
 	int nRows = image.rows;
@@ -439,7 +439,7 @@ uint16_t vect3(const cv::Mat& image, const T depth)
 
 
 template<typename T>
-uint16_t stock(const cv::Mat& img, const T& depth)
+uint16_t stock(const cv::Mat& img, const T depth)
 {
  cv::Mat res;
       cv::compare(img, depth, res, cv::CMP_LT);
@@ -451,7 +451,7 @@ uint16_t stock(const cv::Mat& img, const T& depth)
 
       template<typename T, uint V, uint A>
       inline
-size_t middle_loop(const cv::Mat& img, const T& depth)
+size_t middle_loop(const cv::Mat& img, const T depth)
 {
   size_t sum = 0;
   
@@ -480,7 +480,7 @@ size_t middle_loop(const cv::Mat& img, const T& depth)
     switch(A)
     {
       case 0: 
-	val = inner_loop(img, depth);
+	val = inner_loop<T>(img, depth);
 	break;
       case 1:
 	val = stock(img,depth);
