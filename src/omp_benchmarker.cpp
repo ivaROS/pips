@@ -448,7 +448,6 @@ uint16_t stock(const cv::Mat& img, const T depth)
       return num_collisions;
 }
 
-
       template<typename T, uint V, uint A>
       inline
 size_t middle_loop(const cv::Mat& img, const T depth)
@@ -480,25 +479,25 @@ size_t middle_loop(const cv::Mat& img, const T depth)
     switch(A)
     {
       case 0: 
-	val = inner_loop<T>(img, depth);
+	val = inner_loop<T>(roi, depth);
 	break;
       case 1:
-	val = stock(img,depth);
+	val = stock(roi,depth);
 	break;
       case 2:
-	val = vect2<T>(img, depth);
+	val = vect2<T>(roi, depth);
 	break;
       case 3:
-	val = vect3<T, V>(img, depth);
+	val = vect3<T, V>(roi, depth);
 	break;
       case 4:
-	val = vect4<T>(img, depth);
+	val = vect4<T>(roi, depth);
 	break;
       case 5:
-	val = vect5<T>(img, depth);
+	val = vect5<T>(roi, depth);
 	break;
       case 7:
-	val = vect7<T>(img, depth);
+	val = vect7<T>(roi, depth);
 	break;
     }
 	
@@ -530,21 +529,26 @@ size_t parallel_outer_loop(const cv::Mat& img, uint8_t num_it, bool parallelism_
 {
  
   std::vector<size_t> results(num_it); 
+  
 
+    
     #pragma omp parallel for schedule(dynamic) if(parallelism_enabled) //schedule(dynamic)
     for(uint8_t i = 0; i < num_it; i++)
     {
-      float depth = i;
-      size_t result;
+      float depth = (float)i / num_it;      
       //This condition increases time from 170 to 210 for vect5
+      
+      size_t result;
       if(img.type() == CV_32FC1)
       {
 	result = middle_loop<float,V,A>(img, depth);
       }
       else if (img.type() == CV_16UC1)
       {
-	result = middle_loop<uint16_t,V,A>(img, depth);
+	float scaled_depth = std::numeric_limits<uint16_t>::max()*depth;
+	result = middle_loop<uint16_t,V,A>(img, scaled_depth);
       }
+      
 	
       results[i] = result;
     }
@@ -594,12 +598,37 @@ bool run_comparison(const cv::Mat& img, uint8_t num_it)
       
       return (val3 ==  val1);
 }
+
+void fill_mat(cv::Mat& img)
+{
+  size_t num_pixels = img.rows * img.cols;
+  
+  int ind = 0;
+      if(img.type() == CV_32FC1)
+      {
+	cv::MatIterator_<float> it, end;
+        for( it = img.begin<float>(), end = img.end<float>(); it != end; ++it, ++ind)
+	{
+	  *it = ((float)ind / num_pixels);
+	}
+      }
+      else if (img.type() == CV_16UC1)
+      {
+	cv::MatIterator_<uint16_t> it, end;
+        for( it = img.begin<uint16_t>(), end = img.end<uint16_t>(); it != end; ++it, ++ind)
+	{
+	  *it = (uint16_t)(std::numeric_limits<uint16_t>::max() * ind / num_pixels);
+	}
+      }
+}
         
 int main()
 {
     uint rows = 480, cols = 640;
   
     cv::Mat img = cv::Mat::ones(rows, cols, CV_32FC1) * 1.5;
+    
+    fill_mat(img);
     
     //for (uint i = 1; i < 30; ++i)
     uint i = 30;
