@@ -20,26 +20,20 @@ uint16_t inner_loop(const cv::Mat& image, const T depth)
 	int nRows = image.rows;
 	int nCols = image.cols;
 	      
-	uint16_t sum = 0;
 	for( int i = 0; i < nRows; ++i)
 	{
 	  
 	    const T* p = image.ptr<T>(i);
-	    uint16_t intsum = 0;
-	    uint8_t temp[nCols];
 	    for(int j=0; j < nCols; ++j)
 	    {
-		temp[j] = (p[j] < depth) ? 1 : 0;
-		intsum += temp[j];
+		T val = (p[j] < depth) ? 1 : 0;
+		if(val)
+		  return 1;
 	    }
-	    sum += intsum;
 
 	}
 
- 
- 
-	    	return sum;
-
+	return 0;
 }
 
 
@@ -268,11 +262,13 @@ uint16_t vect5(const cv::Mat& image, const T depth)
   int nRows = image.rows;
   int nCols = image.cols;
 	  
-  if (image.isContinuous())
+  // This has slight benefits for uint16 when no obstacles (790 vs 870), but significant penalties when any obstacles exist
+ /* if (image.isContinuous())
   {
       nCols *= nRows;
       nRows = 1;
   }
+  */
   
   float sum = 0; //doesn't matter if this is int or float
 
@@ -288,12 +284,16 @@ uint16_t vect5(const cv::Mat& image, const T depth)
 	T t = (p[j] < depth) ? 1 : 0;
 	intsum += t;
     }
-      sum += intsum;
+    
+    if(intsum)
+    {
+      return 1;
+    }
 
     
   }
   
-  return sum;
+  return 0;
 
 }  
 
@@ -445,7 +445,7 @@ uint16_t stock(const cv::Mat& img, const T depth)
       cv::compare(img, depth, res, cv::CMP_LT);
 
       int num_collisions = cv::countNonZero(res); 
-      return num_collisions;
+      return num_collisions > 0;
 }
 
       template<typename T, uint V, uint A>
@@ -474,6 +474,8 @@ size_t middle_loop(const cv::Mat& img, const T depth)
     
     cv::Rect rect(x,y,width,height);
     cv::Mat roi(img,rect);
+    
+    roi = img;
     
     //Note: I should really also use 'roi' if I want to test how well does with nonaligned accesses
     uint16_t val;
@@ -600,7 +602,7 @@ bool run_comparison(const cv::Mat& img, uint8_t num_it)
       return (val3 ==  val1);
 }
 
-void fill_mat(cv::Mat& img)
+void fill_mat(cv::Mat& img, float ratio)
 {
   size_t num_pixels = img.rows * img.cols;
   
@@ -610,7 +612,7 @@ void fill_mat(cv::Mat& img)
 	cv::MatIterator_<float> it, end;
         for( it = img.begin<float>(), end = img.end<float>(); it != end; ++it, ++ind)
 	{
-	  *it = ((float)ind / num_pixels);
+	  *it = 1 - ((float)ind * ratio / num_pixels);
 	}
       }
       else if (img.type() == CV_16UC1)
@@ -618,7 +620,7 @@ void fill_mat(cv::Mat& img)
 	cv::MatIterator_<uint16_t> it, end;
         for( it = img.begin<uint16_t>(), end = img.end<uint16_t>(); it != end; ++it, ++ind)
 	{
-	  *it = (uint16_t)(std::numeric_limits<uint16_t>::max() * ind / num_pixels);
+	  *it = (uint16_t)(std::numeric_limits<uint16_t>::max() - (std::numeric_limits<uint16_t>::max() * ratio * ind / num_pixels));
 	}
       }
 }
@@ -630,11 +632,13 @@ int main()
     cv::Mat img1 = cv::Mat::zeros(rows, cols, CV_32FC1);
     cv::Mat img2 = cv::Mat::zeros(rows, cols, CV_16UC1);
     
-    fill_mat(img1);
-    fill_mat(img2);
+    fill_mat(img1, .03);
+    fill_mat(img2, .03);
+    
+    //std::cout << img1 << std::endl;
     
     //for (uint i = 1; i < 30; ++i)
-    uint i = 30;
+    uint i = 3000;
     {
       std::cout << "32F:" << std::endl;
       bool ret = run_comparison<1>(img1,  i);
