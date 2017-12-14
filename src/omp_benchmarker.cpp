@@ -457,17 +457,18 @@ size_t middle_loop(const cv::Mat& img, const T depth)
   const uint16_t num_rows = img.rows;
   const uint16_t num_reduced_rows = img.rows / 4;
   const uint16_t num_cols = img.cols;
-  
+  const uint16_t num_reduced_cols = img.cols/4;
+
   auto t1 = std::chrono::high_resolution_clock::now();
 
   for(int i = 0; i < 100; ++i)
   {
     uint16_t x,y,width,height;
     
-    x=0;
+    x = i % num_reduced_cols;
     
     y = i % num_reduced_rows;
-    width = num_cols;
+    width = num_cols - 2*x;
     
     height = num_rows - y;
     
@@ -626,19 +627,25 @@ int main()
 {
     uint rows = 480, cols = 640;
   
-    cv::Mat img = cv::Mat::ones(rows, cols, CV_32FC1) * 1.5;
+    cv::Mat img1 = cv::Mat::zeros(rows, cols, CV_32FC1);
+    cv::Mat img2 = cv::Mat::zeros(rows, cols, CV_16UC1);
     
-    fill_mat(img);
+    fill_mat(img1);
+    fill_mat(img2);
     
     //for (uint i = 1; i < 30; ++i)
     uint i = 30;
     {
-      bool ret = run_comparison<1>(img,  i);
+      std::cout << "32F:" << std::endl;
+      bool ret = run_comparison<1>(img1,  i);
       /*ret = run_comparison<2>(img,  i);
       ret = run_comparison<4>(img,  i);
       ret = run_comparison<8>(img,  i);
       ret = run_comparison<16>(img,  i);
       */
+      
+      std::cout << "Uint16:" << std::endl;
+      ret = run_comparison<1>(img2,  i);
       
     }
 
