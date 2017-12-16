@@ -68,7 +68,7 @@ public :
     PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh);
 
     void setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
-    bool testCollisionImpl(PoseType pose);
+    CCResult testCollisionImpl(PoseType pose, CCOptions options=CCOptions());
     cv::Mat generateDepthImage(PoseType pose);
     
     void initImpl();

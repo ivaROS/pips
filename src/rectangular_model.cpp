@@ -52,7 +52,7 @@ void RectangularModel::setParameters(double radius, double height, double safety
 /* One option would be to return an object that implements some comparable interface, allowing it to be used as boolean 'collided' variable, but also containing extra information that can be accessed
  * by classes that choose to
  */
-bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
+ComparisonResult RectangularModel::testCollisionImpl(const cv::Point3d pt, CCOptions options)
 {
   float co_depth;
   cv::Rect co_rect;
@@ -62,25 +62,31 @@ bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
   cv::Mat roi(image_ref_, co_rect);
 
   float depth = co_depth*scale_;
-  bool collided = isLessThan(roi, depth);
+  ComparisonResult collided = isLessThan(roi, depth);
   
 
 
-  if(collided)
+  if(collided && options)
   {        
-      cv::Point collisionPnt;
-      isLessThan(roi,depth,collisionPnt);
-
+      if(!collided.has_details())
+      {
+	collided = isLessThanDetails(roi,depth);
+      }
+      
+      /* Note: all of the following code is generic and should be moved to one of the the hallucinated_robot_model classes */
+      
       cv::Point offset;
       cv::Size size;
       roi.locateROI(size, offset);
+            
+      cv::Point collisionPnt = collided.point() + offset;
       
-      collisionPnt += offset;
-      cv::Point3d ray = cam_model_->projectPixelTo3dRay(collisionPnt);
-      cv::Point3d worldPoint = ray * co_depth;
+      return ComparisonResult(collisionPnt);
+      
+
       
       //ROS_INFO_STREAM("Collision: pixel = " << collisionPnt << ", offset = " << offset << ", roi = " << co_rect << ", depth = " << depth << ", ray = " << ray << ", worldpoint = " << worldPoint );
-      
+      /*
       PointCloud::Ptr msg (new PointCloud);
       msg->header.stamp = ros::Time::now().toNSec()/1e3;	//https://answers.ros.org/question/172241/pcl-and-rostime/
       msg->header.frame_id = cam_model_->cameraInfo().header.frame_id;// "camera_depth_optical_frame";
@@ -88,6 +94,7 @@ bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
       msg->points.push_back (pcl::PointXYZ(worldPoint.x, worldPoint.y, worldPoint.z));
       
       pub_.publish(msg);
+      */
   }
   
 
@@ -161,21 +168,21 @@ bool RectangularModel::inFrame(const cv::Point3d& pt)
 
 }
 
-bool RectangularModel::isLessThan(const cv::Mat& image, const float depth)
+ComparisonResult RectangularModel::isLessThan(const cv::Mat& image, const float depth)
 {
-  bool collided = utils::isLessThan::stock(image, depth);
+  ComparisonResult collided = utils::isLessThan::stock(image, depth);
   return collided;
 }
 
-bool RectangularModel::isLessThan(const cv::Mat& image, const float depth, cv::Point& pnt)
+ComparisonResult RectangularModel::isLessThanDetails(const cv::Mat& image, const float depth)
 {
   if(image.depth() == CV_32FC1)
   {
-    return isLessThan<float>(image, depth, pnt);
+    return isLessThanDetails<float>(image, depth);
   }
   else if (image.depth() == CV_16UC1)
   {
-    return isLessThan<uint16_t>(image, depth, pnt);
+    return isLessThanDetails<uint16_t>(image, depth);
   }
   ROS_INFO_STREAM("Not good!");
   return false;

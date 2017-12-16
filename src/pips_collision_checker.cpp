@@ -130,9 +130,9 @@
   Output:
     bool: coordinates cause collision
   */ 
-  bool PipsCollisionChecker::testCollisionImpl(geometry_msgs::Pose pose)
+  CCResult PipsCollisionChecker::testCollisionImpl(geometry_msgs::Pose pose, CCOptions options)
   {
-    bool collided = robot_model_.testCollision(pose);
+    CCResult collided = robot_model_.testCollision(pose, options);
     
     if(collided)
     { 

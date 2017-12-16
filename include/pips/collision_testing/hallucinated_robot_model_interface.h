@@ -24,10 +24,10 @@ public:
   void init();
   
   template <typename T>
-  bool testCollision(const T pose)
+  CCResult testCollision(const T pose, CCOptions options)
   {
     ReadLock lock(model_mutex_);
-    return model_->testCollision(pose);
+    return model_->testCollision(pose, options);
   }
   
   template <typename T>

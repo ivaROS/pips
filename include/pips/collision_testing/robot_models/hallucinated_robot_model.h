@@ -2,6 +2,9 @@
 #define HALLUCINATED_ROBOT_MODEL_H
 
 #include <pips/utils/pose_conversions.h>
+#include <pips/collision_testing/collision_checking_options.h>
+#include <pips/collision_testing/collision_checking_result.h>
+#include <pips/utils/image_comparison_result.h>
 
 //#include <dynamic_reconfigure/server.h>
 #include <sensor_msgs/Image.h>
@@ -67,7 +70,7 @@ class HallucinatedRobotModelBase
     }
  
 
-    virtual bool testCollision(const geometry_msgs::Pose pose)=0;
+    virtual CCResult testCollision(const geometry_msgs::Pose pose, CCOptions options)=0;
     virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)=0;
     virtual void setParameters(double robot_radius, double robot_height, double floor_tolerance, double safety_expansion, bool show_im)=0;
     virtual bool inFrame(const cv::Point3d& pt){ return true;}
@@ -157,13 +160,24 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
 
     }
     
-    virtual bool testCollision(const geometry_msgs::Pose pose)
+    virtual CCResult testCollision(const geometry_msgs::Pose pose, CCOptions options)
     {
       ROS_DEBUG_STREAM_NAMED(name_, "Collision request for model " << name_ << ": " << toString(pose));
       geometry_msgs::Pose pose_t = transformPose(pose);
       S convertedPose;
       convertPose(pose_t, convertedPose);
-      return testCollisionImpl(convertedPose);
+      ComparisonResult result = testCollisionImpl(convertedPose, options);
+      
+      if(options.get_details_ && result.collides() && result.has_details())
+      {	
+	cv::Point3d ray = cam_model_->projectPixelTo3dRay(result.point());
+	cv::Point3d worldPoint = ray * result.depth() / scale_;
+	
+	return CCResult(worldPoint);
+      }
+      
+      return CCResult(result.collides());
+      
     }
          
     virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)
@@ -185,7 +199,7 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
     
   protected:
   
-    virtual bool testCollisionImpl(const S pose)=0;
+    virtual ComparisonResult testCollisionImpl(const S pose, CCOptions options)=0;
     
     virtual cv::Mat generateHallucinatedRobotImpl(const S pose)
     {
@@ -228,150 +242,6 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
     }
 };
 
-/*
-
-template<typename S> 
-class HallucinatedRobotModelCacheLayer : public HallucinatedRobotModelImpl<S>
-{
-
-  public: 
-    
-    HallucinatedRobotModelCacheLayer() : HallucinatedRobotModelImpl<S>()
-    {
-
-    }
-    
-    virtual bool testCollision(const geometry_msgs::Pose pose)
-    {
-      //ROS_DEBUG_STREAM_NAMED(name_, "Collision request for model " << name_ << ": " << toString(pose));
-      
-      cv::Mat gen = generateHallucinatedRobot(pose);
-      
-      return isLessThan(HallucinatedRobotModelImpl<S>::cv_image_ref_->image,gen);
-    }
-    
-    // Should add ability to use only relevant ROI to avoid checking more than necessary
-    // Models should implement a getROI method
-    virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)
-    {
-      auto search = cache.find(pose);
-      if(search != cache.end())
-      {
-        return search->second.image;
-      }
-      else
-      {
-        cv::Mat image = HallucinatedRobotModelImpl<S>::generateHallucinatedRobotImpl(pose);
-        CacheEntry entry;
-        entry.image = image;
-        cache.insert(std::make_pair(pose,entry));
-      }
-    }
-  
-    
-      
-    private:
-    
-      struct CacheEntry
-      {
-        cv::Rect roi;
-        cv::Mat image;
-      };
-    
-      std::map<S, CacheEntry> cache;
-
-      
-    bool isLessThan(const cv::Mat& image1, const cv::Mat& image2)
-    {
-      cv::Mat res;
-      cv::compare(image1, image2, res, cv::CMP_LT);
-
-      int num_collisions = cv::countNonZero(res);
-      bool collided = (num_collisions > 0);
-      return collided;
-    }
-};
-
-
-
-template<typename S> 
-class HallucinatedRobotModelCacheRedirect : public HallucinatedRobotModelBase
-{
-
-  public: 
-    
-    HallucinatedRobotModelCacheRedirect() : HallucinatedRobotModelBase(), model()
-    {
-      //Could probably prepend/append something to the name here?
-    }
-    
-    virtual bool testCollision(const geometry_msgs::Pose pose)
-    {
-      //ROS_DEBUG_STREAM_NAMED(name_, "Collision request for model " << name_ << ": " << toString(pose));
-      
-      cv::Mat gen = generateHallucinatedRobot(pose);
-      
-      return isLessThan(HallucinatedRobotModelImpl<S>::cv_image_ref_->image,gen);
-    }
-    
-    // Should add ability to use only relevant ROI to avoid checking more than necessary
-    // Models should implement a getROI method
-    virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)
-    {
-      auto search = cache.find(pose);
-      if(search != cache.end())
-      {
-        return search->second.image;
-      }
-      else
-      {
-        cv::Mat image = model.generateHallucinatedRobotImpl(pose);
-        CacheEntry entry;
-        entry.image = image;
-        cache.insert(std::make_pair(pose,entry));
-      }
-    }
-    
-      
-    virtual void init(std::shared_ptr<image_geometry::PinholeCameraModel>& cam_model, const geometry_msgs::TransformStamped& base_optical_transform)
-    {
-      model.init(cam_model, base_optical_transform);
-    }
-    
-    virtual void updateModel(const cv_bridge::CvImage::ConstPtr& cv_image_ref, double scale)
-    {
-      model.updateModel(cv_image_ref, scale);
-    }
-    
-    virtual void setParameters(double robot_radius, double robot_height, double floor_tolerance, double safety_expansion, bool show_im)
-    {
-      model.setParameters(robot_radius, robot_height, floor_tolerance, safety_expansion, show_im);
-    }
-      
-  private:
-    
-      struct CacheEntry
-      {
-        cv::Rect roi;
-        cv::Mat image;
-      };
-    
-      std::map<geometry_msgs::Pose, CacheEntry> cache;
-      
-      S model;
-
-      
-    bool isLessThan(const cv::Mat& image1, const cv::Mat& image2)
-    {
-      cv::Mat res;
-      cv::compare(image1, image2, res, cv::CMP_LT);
-
-      int num_collisions = cv::countNonZero(res);
-      bool collided = (num_collisions > 0);
-      return collided;
-    }
-};
-*/
 
 namespace std
 {
@@ -432,7 +302,7 @@ class HallucinatedRobotModelCacheWrapper : public T
       //Could probably prepend/append something to the name here?
     }
     
-    virtual bool testCollision(const geometry_msgs::Pose pose)
+    virtual bool testCollision(const geometry_msgs::Pose pose, CCOptions options)
     {
       //ROS_DEBUG_STREAM_NAMED(name_, "Collision request for model " << name_ << ": " << toString(pose));
       
@@ -485,6 +355,7 @@ class HallucinatedRobotModelCacheWrapper : public T
       std::map<geometry_msgs::Pose, CacheEntry> cache;
 
       
+      //TODO: replace this with optimized version
     bool isLessThan(const cv::Mat& image1, const cv::Mat& image2)
     {
       cv::Mat res;
