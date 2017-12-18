@@ -22,6 +22,15 @@
 
 #include <climits>
 
+
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+
+//#include <pcl/conversions.h>
+//#include <pcl_ros/transforms.h>
+typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
+
+
 //#include <extended_local/ExtPose.h>
 //#include <extended_local/ExtPoseRequest.h>
 //#include <extended_local/ExtPoseResponse.h>
@@ -67,6 +76,9 @@
       //TODO: This should probably accept a CameraInfo message as an optional parameter, allowing it to be used without a camera
       depth_generation_service_ = nh_.advertiseService("generate_depth_image", &PipsCollisionChecker::getDepthImageSrv, this);
       posepub_ = nh_.advertise<geometry_msgs::PoseStamped>("collision_poses",100);
+      
+      pointpub_ = nh_.advertise<PointCloud>("collisions",100);
+
   }
   
   /*Currently, I don't use the 'optical_transform' anywhere. Everything happens within the robot model 
@@ -136,9 +148,24 @@
     
     if(collided)
     { 
+      
+	if(options)
+	{
+	    cv::Point3d worldPoint = collided.getCollisionPnt();
+	    
+	    PointCloud::Ptr msg (new PointCloud);
+	    msg->header.stamp = input_bridge_ref_->header.stamp.toNSec()/1e3; // ros::Time::now().toNSec()/1e3;	//https://answers.ros.org/question/172241/pcl-and-rostime/
+	    msg->header.frame_id = input_bridge_ref_->header.frame_id;// "camera_depth_optical_frame";
+	    msg->height = msg->width = 1;
+	    msg->points.push_back (pcl::PointXYZ(worldPoint.x, worldPoint.y, worldPoint.z));
+	    
+	    pointpub_.publish(msg);
+	}
+      
+      
       geometry_msgs::PoseStamped pose_stamped;
       pose_stamped.pose = pose;
-      pose_stamped.header.stamp = input_bridge_ref_->header.stamp; //This could potentially be non-threadsafe... It might be best to switch from Pose to PoseStamped for everything...
+      pose_stamped.header.stamp = input_bridge_ref_->header.stamp; //This is only threadsafe if it is known that collision checks will not happen at the same time as updating camera info... It might be best to switch from Pose to PoseStamped for everything...
       pose_stamped.header.frame_id = base_optical_transform_.child_frame_id;
       posepub_.publish(pose_stamped);
     }

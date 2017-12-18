@@ -16,7 +16,8 @@ struct ComparisonResult
   ComparisonResult(int row, int col, float depth) : 
       has_details_(true),
       collides_(true),
-      collision_point_(col,row)
+      collision_point_(col,row),
+      collision_depth_(depth)
       {}
   
   

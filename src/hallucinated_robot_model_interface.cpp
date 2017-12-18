@@ -42,7 +42,8 @@
     ROS_INFO_STREAM_NAMED(name_, "Reconfigure Request: "); // TODO: print out the model type and other parameter values
     
     WriteLock lock(model_mutex_); /* Mutex prevents dynamic reconfigure from changing anything while model in use */
-    
+            model_ = std::make_shared<RectangularModel>();
+
     /* if the model type in the reconfigure request is different than the previous, we need to instantiate the new one */
     if(config.model_type != model_type_)
     {

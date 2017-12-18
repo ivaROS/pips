@@ -17,20 +17,15 @@
 //#include <iomanip>      // std::setprecision
 
 #include <ros/ros.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl/point_types.h>
 
 #include <pips/utils/image_comparison_implementations.h>
 
-//#include <pcl/conversions.h>
-//#include <pcl_ros/transforms.h>
-typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
 
 RectangularModel::RectangularModel() : HallucinatedRobotModelImpl<cv::Point3d>()
 {
   name_ = "RectangularModel";
-  pub_ = nh_.advertise<PointCloud>("collisions",100);
+  //pub_ = nh_.advertise<PointCloud>("collisions",100);
 }
 
 
@@ -79,9 +74,9 @@ ComparisonResult RectangularModel::testCollisionImpl(const cv::Point3d pt, CCOpt
       cv::Size size;
       roi.locateROI(size, offset);
             
-      cv::Point collisionPnt = collided.point() + offset;
+      collided.collision_point_+= offset;	//Note: need to decide whether to embrace accessor functions or just use struct members directly
       
-      return ComparisonResult(collisionPnt);
+      return collided;
       
 
       

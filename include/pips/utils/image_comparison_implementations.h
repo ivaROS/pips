@@ -1,6 +1,8 @@
 #ifndef IMAGE_COMPARISON_IMPLEMENTATIONS
 #define IMAGE_COMPARISON_IMPLEMENTATIONS
 
+#include <pips/utils/image_comparison_result.h>
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -96,13 +98,16 @@ namespace utils
     }
 
     inline
-    bool stock(const cv::Mat& image, const float depth)
+    ComparisonResult stock(const cv::Mat& image, const float depth)
     {
       cv::Mat res;
       cv::compare(image, depth, res, cv::CMP_LT);
 
       int num_collisions = cv::countNonZero(res);
       bool collided = (num_collisions > 0);
+      
+      ComparisonResult result(collided);
+      
       return collided;
     }
     

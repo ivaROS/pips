@@ -3,7 +3,7 @@
 
 struct CCOptions
 {
-  bool get_details_ = false;
+  bool get_details_ = true;
   
   
   CCOptions() {}
