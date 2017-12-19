@@ -27,7 +27,7 @@ RectangularModelSS::RectangularModelSS()
     name_ = "RectangularModelSS";
 }
 
-bool RectangularModelSS::isLessThan(const cv::Mat& image, const float depth)
+ComparisonResult RectangularModelSS::isLessThan(const cv::Mat& image, const float depth)
 {
 
 

@@ -290,7 +290,7 @@
     return cols;
   }
   
-  bool CylindricalModel::testCollisionImpl(const cv::Point3d pt)
+  ComparisonResult CylindricalModel::testCollisionImpl(const cv::Point3d pt, CCOptions options)
   {
     std::vector<COLUMN_TYPE> cols = getColumns(pt);
   
@@ -299,18 +299,39 @@
       cv::Mat col = cv::Mat(this->image_ref_,cols[i].rect); //cols[i].image;
       float depth = cols[i].depth;
       
-      if(isLessThan(col, depth))
+      ComparisonResult result = isLessThan(col, depth);
+      if(result)
       {
-        return true; 
+        return result; 
       }
     }
+    
+    //Future: add support for detailed point info
+    /*
+    if(collided && options)
+    {        
+	if(!collided.has_details())
+	{
+	  collided = isLessThanDetails(roi,depth);
+	}
+	
+	
+	cv::Point offset;
+	cv::Size size;
+	roi.locateROI(size, offset);
+	      
+	collided.collision_point_+= offset;	//Note: need to decide whether to embrace accessor functions or just use struct members directly
+	
+	return collided;
+    }
+    */
  
     return false;
   }
   
-  bool CylindricalModel::isLessThan(const cv::Mat& col, float depth)
+  ComparisonResult CylindricalModel::isLessThan(const cv::Mat& col, float depth)
   {
-    return cv::countNonZero(col < depth) > 0;
+    return ComparisonResult(cv::countNonZero(col < depth) > 0);
   }
     
 

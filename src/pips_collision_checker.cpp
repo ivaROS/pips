@@ -149,7 +149,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     if(collided)
     { 
       
-	if(options)
+	if(collided.details())
 	{
 	    cv::Point3d worldPoint = collided.getCollisionPnt();
 	    

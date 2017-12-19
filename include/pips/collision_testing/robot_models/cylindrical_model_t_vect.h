@@ -11,7 +11,7 @@ class CylindricalModelTVect : public CylindricalModelT
     
   protected:
 
-    virtual bool isLessThan(const cv::Mat& image, const float depth);
+    virtual ComparisonResult isLessThan(const cv::Mat& image, const float depth);
     
 };
 

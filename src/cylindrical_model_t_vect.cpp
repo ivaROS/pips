@@ -27,9 +27,9 @@ CylindricalModelTVect::CylindricalModelTVect()
     name_ = "CylindricalModelTVect";
 }
 
-bool CylindricalModelTVect::isLessThan(const cv::Mat& image, const float depth)
+ComparisonResult CylindricalModelTVect::isLessThan(const cv::Mat& image, const float depth)
 {
-    return utils::isLessThan::vectorized(image, depth);
+    return ComparisonResult(utils::isLessThan::vectorized(image, depth));
     
 }
 

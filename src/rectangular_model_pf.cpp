@@ -67,7 +67,7 @@ private:
   
 };
 
-bool RectangularModelPF::isLessThan(const cv::Mat& image, const float depth)
+ComparisonResult RectangularModelPF::isLessThan(const cv::Mat& image, const float depth)
 {
       //cv::Mat image = cv::Mat::zeros(4,10,img.type());
       //image += .3;
@@ -81,7 +81,7 @@ bool RectangularModelPF::isLessThan(const cv::Mat& image, const float depth)
     cv::parallel_for_(cv::Range(0, nRows), parallelLessThan);
     
     int num_nonzero = cv::countNonZero(rowRes);
-    return num_nonzero > 0;
+    return ComparisonResult(num_nonzero > 0);
 
 }
 

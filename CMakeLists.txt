@@ -117,30 +117,30 @@ target_link_libraries(rectangular_model
   )
 SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model)
 
-# add_library(rectangular_model_ss
-#   src/rectangular_model_ss.cpp
-#   )
-#   
-# #For verbose vectorizing output on gcc 4.6: -ftree-vectorizer-verbose=7
-# #For verbose vectorizing output on gcc 5.4: -fopt-info-vec-all
-# target_compile_options(rectangular_model_ss PRIVATE -march=native ${OpenMP_CXX_FLAGS} -ftree-vectorize -fassociative-math -fno-signed-zeros -fno-trapping-math  -ffast-math  ) # -freciprocal-math #-funsafe-math-optimizations #-fno-math-errno -ffinite-math-only -fno-rounding-math -fno-signaling-nans -fcx-limited-range -fexcess-precision=fast
-# target_compile_options(rectangular_model_ss PUBLIC  -std=c++11)
-# target_link_libraries(rectangular_model_ss
-#   ${catkin_LIBRARIES}
-#   ${OpenMP_CXX_FLAGS}
-#   )
-# SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ss)
-# 
-# add_library(cylindrical_model_t_vect
-#   src/cylindrical_model_t_vect.cpp
-#   )
-# target_compile_options(cylindrical_model_t_vect PRIVATE -march=native -ffast-math -ftree-vectorize ) #-ftree-vectorizer-verbose=7 -fopt-info-vec-all
-# target_compile_options(cylindrical_model_t_vect PUBLIC  -std=c++11)
-# target_link_libraries(cylindrical_model_t_vect
-#   ${catkin_LIBRARIES}
-#   )
-# SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model_t_vect)
-# 
+add_library(rectangular_model_ss
+  src/rectangular_model_ss.cpp
+  )
+  
+#For verbose vectorizing output on gcc 4.6: -ftree-vectorizer-verbose=7
+#For verbose vectorizing output on gcc 5.4: -fopt-info-vec-all
+target_compile_options(rectangular_model_ss PRIVATE -march=native ${OpenMP_CXX_FLAGS} -ftree-vectorize -fassociative-math -fno-signed-zeros -fno-trapping-math  -ffast-math  ) # -freciprocal-math #-funsafe-math-optimizations #-fno-math-errno -ffinite-math-only -fno-rounding-math -fno-signaling-nans -fcx-limited-range -fexcess-precision=fast
+target_compile_options(rectangular_model_ss PUBLIC  -std=c++11)
+target_link_libraries(rectangular_model_ss
+  ${catkin_LIBRARIES}
+  ${OpenMP_CXX_FLAGS}
+  )
+SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ss)
+
+add_library(cylindrical_model_t_vect
+  src/cylindrical_model_t_vect.cpp
+  )
+target_compile_options(cylindrical_model_t_vect PRIVATE -march=native -ffast-math -ftree-vectorize ) #-ftree-vectorizer-verbose=7 -fopt-info-vec-all
+target_compile_options(cylindrical_model_t_vect PUBLIC  -std=c++11)
+target_link_libraries(cylindrical_model_t_vect
+  ${catkin_LIBRARIES}
+  )
+SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model_t_vect)
+
 # if(OpenCV_VERSION VERSION_LESS "3.0")
 #   MESSAGE(STATUS "Your OpenCV version is less than 3.0, OpenCL model will not be built")
 # else()
@@ -155,31 +155,31 @@ SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model)
 #   SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ocl)
 # endif()
 # 
-# add_library(rectangular_model_pf
-#   src/rectangular_model_pf.cpp
-#   )
-# target_link_libraries(rectangular_model_pf
-#   ${catkin_LIBRARIES}
-#   )
-# SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_pf)
-# 
-# add_library(cylindrical_model 
-#   src/cylindrical_model.cpp
-#   )
-# #target_compile_options(cylindrical_model PRIVATE -ftree-vectorize -ftree-vectorizer-verbose=7)
-# #target_compile_options(cylindrical_model PUBLIC  -std=c++11)
-# target_link_libraries(cylindrical_model
-#   ${catkin_LIBRARIES}
-#   )
-# SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model)
-# 
-# add_library(cylindrical_model_t 
-#   src/cylindrical_model_t.cpp
-#   )
-# target_link_libraries(cylindrical_model_t
-#   ${catkin_LIBRARIES}
-#   )
-# SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model_t)
+add_library(rectangular_model_pf
+  src/rectangular_model_pf.cpp
+  )
+target_link_libraries(rectangular_model_pf
+  ${catkin_LIBRARIES}
+  )
+SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_pf)
+
+add_library(cylindrical_model 
+  src/cylindrical_model.cpp
+  )
+#target_compile_options(cylindrical_model PRIVATE -ftree-vectorize -ftree-vectorizer-verbose=7)
+#target_compile_options(cylindrical_model PUBLIC  -std=c++11)
+target_link_libraries(cylindrical_model
+  ${catkin_LIBRARIES}
+  )
+SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model)
+
+add_library(cylindrical_model_t 
+  src/cylindrical_model_t.cpp
+  )
+target_link_libraries(cylindrical_model_t
+  ${catkin_LIBRARIES}
+  )
+SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model_t)
 
 MESSAGE(STATUS "ROBOT MODELS " ${ROBOT_MODEL_LIBS})
    

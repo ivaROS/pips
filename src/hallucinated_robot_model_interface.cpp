@@ -1,14 +1,14 @@
 #include "pips/collision_testing/hallucinated_robot_model_interface.h"
 #include <pips/collision_testing/robot_models/rectangular_model.h>
 
-/*
+
 #include <pips/collision_testing/robot_models/rectangular_model_ss.h>
 #include <pips/collision_testing/robot_models/rectangular_model_pf.h>
 
 #include <pips/collision_testing/robot_models/cylindrical_model.h>
 #include <pips/collision_testing/robot_models/cylindrical_model_t.h>
 #include <pips/collision_testing/robot_models/cylindrical_model_t_vect.h>
-*/
+
 
 
 #include <pips/HallucinatedRobotModelConfig.h>
@@ -42,7 +42,6 @@
     ROS_INFO_STREAM_NAMED(name_, "Reconfigure Request: "); // TODO: print out the model type and other parameter values
     
     WriteLock lock(model_mutex_); /* Mutex prevents dynamic reconfigure from changing anything while model in use */
-            model_ = std::make_shared<RectangularModel>();
 
     /* if the model type in the reconfigure request is different than the previous, we need to instantiate the new one */
     if(config.model_type != model_type_)
@@ -63,24 +62,24 @@
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ss)
       {
 	ROS_INFO_STREAM_NAMED(name_, "New model type = RectangularSS");
-        //model_ = std::make_shared<RectangularModelSS>();
+        model_ = std::make_shared<RectangularModelSS>();
       }
       else if(config.model_type == pips::HallucinatedRobotModel_cylindrical_t_vect)
       {
-        //model_ = std::make_shared<CylindricalModelTVect>();
+        model_ = std::make_shared<CylindricalModelTVect>();
       }
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_pf)
       {
 	ROS_INFO_STREAM_NAMED(name_, "New model type = ParallelFor");
-	//model_ = std::make_shared<RectangularModelPF>();
+	model_ = std::make_shared<RectangularModelPF>();
       }
       else if (config.model_type == pips::HallucinatedRobotModel_cylindrical)
       {
-       // model_ = std::make_shared<CylindricalModel>();
+        model_ = std::make_shared<CylindricalModel>();
       }
       else if (config.model_type == pips::HallucinatedRobotModel_cylindrical_t)
       {
-        //model_ = std::make_shared<CylindricalModelT>();
+        model_ = std::make_shared<CylindricalModelT>();
       }
       else if (config.model_type == pips::HallucinatedRobotModel_cylindrical_c)
       {
