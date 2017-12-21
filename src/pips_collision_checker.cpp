@@ -59,6 +59,8 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     pub_image: When enabled, the collision object's projection is added to the current depth image and published. Only enable when debugging- during normal usage far too many images would be published.
   */ 
   
+  
+  
 
   PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : CollisionChecker(nh,pnh),
     nh_(nh, name_), pnh_(pnh, name_), robot_model_(nh_, pnh_)
@@ -151,13 +153,19 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
       
 	if(collided.details())
 	{
-	    cv::Point3d worldPoint = collided.getCollisionPnt();
-	    
+	    std::vector<cv::Point3d> worldPoints = collided.getCollisionPnts();
+	    	    
 	    PointCloud::Ptr msg (new PointCloud);
 	    msg->header.stamp = input_bridge_ref_->header.stamp.toNSec()/1e3; // ros::Time::now().toNSec()/1e3;	//https://answers.ros.org/question/172241/pcl-and-rostime/
 	    msg->header.frame_id = input_bridge_ref_->header.frame_id;// "camera_depth_optical_frame";
-	    msg->height = msg->width = 1;
-	    msg->points.push_back (pcl::PointXYZ(worldPoint.x, worldPoint.y, worldPoint.z));
+	    msg->height = 1;
+	    //msg->points.insert(std::end(msg->points), std::begin(worldPoints), std::end(worldPoints));
+	    msg->width = worldPoints.size();
+	    
+	    for(auto point : worldPoints)
+	    {
+	      msg->points.push_back (pcl::PointXYZ(point.x, point.y, point.z));
+	    }
 	    
 	    pointpub_.publish(msg);
 	}

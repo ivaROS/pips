@@ -8,7 +8,7 @@ struct CCResult
 {
   bool collides_=false;
   bool has_details_=false;
-  cv::Point3d collision_point_;
+  std::vector<cv::Point3d> collision_points_;
   
   
   CCResult() {}
@@ -19,9 +19,17 @@ struct CCResult
   
   CCResult(cv::Point3d collision_point) : 
       collides_(true),
-      has_details_(true),
-      collision_point_(collision_point)
-      {}
+      has_details_(true)
+      {
+	collision_points_.push_back(collision_point);
+      }
+  
+  CCResult(std::vector<cv::Point3d> collision_points) : 
+    collides_(true),
+    has_details_(true),
+    collision_points_(collision_points)
+    {
+    }
   
   
   operator bool() const
@@ -34,9 +42,9 @@ struct CCResult
     return collides_;
   }
   
-  cv::Point3d getCollisionPnt() const
+  std::vector<cv::Point3d> getCollisionPnts() const
   {
-    return collision_point_;
+    return collision_points_;
   }
   
   bool details() const
