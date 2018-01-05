@@ -325,7 +325,8 @@
   
   ComparisonResult CylindricalModel::isLessThan(const cv::Mat& col, float depth)
   {
-    return ComparisonResult(cv::countNonZero(col < depth) > 0); //TODO: replace this with a call to image_comparison_implementations
+    return utils::isLessThan::stock(col, depth);
+    //return ComparisonResult(cv::countNonZero(col < depth) > 0); //TODO: replace this with a call to image_comparison_implementations
   }
   
   ComparisonResult CylindricalModel::isLessThanDetails(const cv::Mat& col, float depth)
