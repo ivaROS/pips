@@ -33,6 +33,8 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
     virtual ComparisonResult testCollisionImpl(const cv::Point3d pt, CCOptions options);
     
     virtual ComparisonResult isLessThan(const cv::Mat& col, float depth);
+    virtual ComparisonResult isLessThanDetails(const cv::Mat& col, float depth);
+
     
     virtual COLUMN_TYPE getColumn(const cv::Point2d top, const cv::Point2d bottom, const float depth);
     std::vector<COLUMN_TYPE> getColumns(const cv::Point3d pt);

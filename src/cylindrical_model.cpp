@@ -1,6 +1,6 @@
 
 #include "pips/collision_testing/robot_models/cylindrical_model.h"
-
+#include <pips/utils/image_comparison_implementations.h>
 //#include <sensor_msgs/Image.h>
 //#include <geometry_msgs/TransformStamped.h>
 
@@ -300,38 +300,37 @@
       float depth = cols[i].depth;
       
       ComparisonResult result = isLessThan(col, depth);
-      if(result)
-      {
-        return result; 
+
+      if(result && options)
+      {        
+	  if(!result.has_details())
+	  {
+	    result = isLessThanDetails(col,depth);
+	  }
+	  cv::Point offset;
+	  cv::Size size;
+	  col.locateROI(size, offset);
+		
+	  result.collision_point_+= offset;	//Note: need to decide whether to embrace accessor functions or just use struct members directly
+	
+	  
+	  return result;
       }
     }
     
-    //Future: add support for detailed point info
-    /*
-    if(collided && options)
-    {        
-	if(!collided.has_details())
-	{
-	  collided = isLessThanDetails(roi,depth);
-	}
-	
-	
-	cv::Point offset;
-	cv::Size size;
-	roi.locateROI(size, offset);
-	      
-	collided.collision_point_+= offset;	//Note: need to decide whether to embrace accessor functions or just use struct members directly
-	
-	return collided;
-    }
-    */
+    
  
     return false;
   }
   
   ComparisonResult CylindricalModel::isLessThan(const cv::Mat& col, float depth)
   {
-    return ComparisonResult(cv::countNonZero(col < depth) > 0);
+    return ComparisonResult(cv::countNonZero(col < depth) > 0); //TODO: replace this with a call to image_comparison_implementations
+  }
+  
+  ComparisonResult CylindricalModel::isLessThanDetails(const cv::Mat& col, float depth)
+  {
+    return utils::isLessThan::details(col, depth);
   }
     
 

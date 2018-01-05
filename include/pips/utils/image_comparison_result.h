@@ -20,6 +20,12 @@ struct ComparisonResult
       collision_depth_(depth)
       {}
   
+  ComparisonResult(const cv::Point& pt, float depth) :
+    has_details_(true),
+    collides_(true),
+    collision_point_(pt),
+    collision_depth_(depth)
+    {}
   
   operator bool() const
   {
