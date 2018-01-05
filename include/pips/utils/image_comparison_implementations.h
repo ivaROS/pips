@@ -10,86 +10,112 @@ namespace utils
 {
   namespace comparisons
   {
- 
       template<typename T>
       inline
-      bool simple(const cv::Mat& image, const T depth)
+      ComparisonResult evaluate(const cv::Mat& image, const float depth)
+      {
+	T comparison;
+	if(image.depth() == CV_32FC1)
+	{
+	  return comparison(image, (float) depth);
+	}
+	else if (image.depth() == CV_16UC1)
+	{
+	  return comparison(image, (uint16_t) depth);
+	}
+	/* Make warning somehow, maybe additional field in ComparisonResult? */
+	return false;
+      }
+    
+    
+      struct simple
+      {
+	template<typename T>
+	inline
+	bool operator()(const cv::Mat& image, const T depth)
+	{
+	  int nRows = image.rows;
+	  int nCols = image.cols;
+      
+	  const T* p;
+	  for(int i = 0; i < nRows; ++i)
+	  {
+	    p = image.ptr<T>(i);
+	    for(int j = 0; j < nCols; ++j)
+	    {
+	      if(p[j] < depth)
+	      {
+		return true;
+	      }
+	    }
+	  }
+	  return false;
+	}
+      };
+      
+      struct vectorized
+      {
+	template<typename T>
+	inline
+	/* Vectorizeable by gcc when using -ffast-math */
+	bool operator()(const cv::Mat& image, const T depth)
+	{
+	  int nRows = image.rows;
+	  int nCols = image.cols;
+		
+	  for( int i = 0; i < nRows; ++i)
+	  {
+	    
+	      const T* p = image.ptr<T>(i);
+	      uint8_t sum = 0;
+	      uint8_t temp[nCols];
+	      for(int j=0; j < nCols; ++j)
+	      {
+		  temp[j] = (p[j] < depth) ? 1 : 0;
+		  sum |= temp[j];
+	      }
+	      
+	      if( sum >0 )
+	      {
+		return true;
+	      }
+	    
+	  }
+	  return false;
+	}
+      };
+      
+    struct details
+    {
+      template<typename T>
+      inline
+      ComparisonResult operator()(const cv::Mat& image, const T depth)
       {
 	int nRows = image.rows;
 	int nCols = image.cols;
-    
+	
+	int i;
+	
 	const T* p;
-	for(int i = 0; i < nRows; ++i)
+	for( i = 0; i < nRows; ++i)
 	{
 	  p = image.ptr<T>(i);
 	  for(int j = 0; j < nCols; ++j)
 	  {
-	    if(p[j] < depth)
+	    T pixel_depth = p[j];
+	    if(pixel_depth < depth)
 	    {
-	      return true;
+	      //ROS_INFO_STREAM("p: " << p[j] << ", depth: " << depth << ", i: " << i << ", j: " << j);
+	      ;
+	      //pnt.x = j;
+	      //pnt.y = i;
+	      return ComparisonResult(i,j, pixel_depth);
 	    }
 	  }
 	}
-	return false;
+	return ComparisonResult(false);
       }
-      
-      template<typename T>
-      inline
-      /* Vectorizeable by gcc when using -ffast-math */
-      bool vectorized(const cv::Mat& image, const T depth)
-      {
-	int nRows = image.rows;
-	int nCols = image.cols;
-	      
-	for( int i = 0; i < nRows; ++i)
-	{
-	  
-	    const T* p = image.ptr<T>(i);
-	    uint8_t sum = 0;
-	    uint8_t temp[nCols];
-	    for(int j=0; j < nCols; ++j)
-	    {
-		temp[j] = (p[j] < depth) ? 1 : 0;
-		sum |= temp[j];
-	    }
-	    
-	    if( sum >0 )
-	    {
-	      return true;
-	    }
-	  
-	}
-	return false;
-      }
-      
-    template<typename T>
-    inline
-    ComparisonResult details(const cv::Mat& image, const T depth)
-    {
-      int nRows = image.rows;
-      int nCols = image.cols;
-      
-      int i;
-      
-      const T* p;
-      for( i = 0; i < nRows; ++i)
-      {
-        p = image.ptr<T>(i);
-	for(int j = 0; j < nCols; ++j)
-	{
-	  T pixel_depth = p[j];
-	  if(pixel_depth < depth)
-	  {
-	    //ROS_INFO_STREAM("p: " << p[j] << ", depth: " << depth << ", i: " << i << ", j: " << j);
-	    ;
-	    //pnt.x = j;
-	    //pnt.y = i;
-	    return ComparisonResult(i,j, pixel_depth);
-	  }
-	}
-      }
-      return ComparisonResult(false);
-    }
+    };
       
   }
     
@@ -108,30 +134,15 @@ namespace utils
     inline
     bool simple(const cv::Mat& image, const float depth)
     {
-      if(image.depth() == CV_32FC1)
-      {
-	return utils::comparisons::simple<float>(image, depth);
-      }
-      else if (image.depth() == CV_16UC1)
-      {
-	return utils::comparisons::simple<uint16_t>(image, depth);
-      }
-      return false;
+      return utils::comparisons::evaluate<utils::comparisons::simple>(image, depth);
     }
     
     /* Returns true if collision happens (eg. the world is closer than the requested depth) */
     inline
     bool vectorized(const cv::Mat& image, const float depth)
     {
-      if(image.depth() == CV_32FC1)
-      {
-	return utils::comparisons::vectorized<float>(image, depth);
-      }
-      else if (image.depth() == CV_16UC1)
-      {
-	return utils::comparisons::vectorized<uint16_t>(image, depth);
-      }
-      return false;
+            return utils::comparisons::evaluate<utils::comparisons::vectorized>(image, depth);
+
     }
 
     inline
@@ -151,15 +162,7 @@ namespace utils
     inline
     ComparisonResult details(const cv::Mat& image, const float depth)
     {
-      if(image.depth() == CV_32FC1)
-      {
-	return utils::comparisons::details<float>(image, depth);
-      }
-      else if (image.depth() == CV_16UC1)
-      {
-	return utils::comparisons::details<uint16_t>(image, depth);
-      }
-      
+      return utils::comparisons::evaluate<utils::comparisons::details>(image, depth);
     }
     
   }

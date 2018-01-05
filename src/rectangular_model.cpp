@@ -172,19 +172,6 @@ ComparisonResult RectangularModel::isLessThan(const cv::Mat& image, const float 
 ComparisonResult RectangularModel::isLessThanDetails(const cv::Mat& image, const float depth)
 {
   return utils::isLessThan::details(image, depth);
-
-  
-  
-  if(image.depth() == CV_32FC1)
-  {
-    return isLessThanDetails<float>(image, depth);
-  }
-  else if (image.depth() == CV_16UC1)
-  {
-    return isLessThanDetails<uint16_t>(image, depth);
-  }
-  ROS_INFO_STREAM("Not good!");
-  return false;
 }
 
 cv::Mat RectangularModel::generateHallucinatedRobotImpl(const cv::Point3d pt)
