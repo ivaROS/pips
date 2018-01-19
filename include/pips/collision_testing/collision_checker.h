@@ -12,7 +12,7 @@
 
 #include <pips/collision_testing/collision_checking_options.h>
 #include <pips/collision_testing/collision_checking_result.h>
-
+#include <pips/utils/duration_accumulator.h>
 
 class CollisionChecker
 {
@@ -63,6 +63,7 @@ private :
     ros::NodeHandle nh_, pnh_;	// For now, separate node handles for base and derived
     ros::ServiceServer collision_testing_service_;
 
+    pips::utils::DurationAccumulator durations_;
                               
 } ;
 /*

@@ -3,7 +3,7 @@
 #include <chrono>
 
  
- CollisionChecker::CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : nh_(nh, name_), pnh_(pnh, name_)
+ CollisionChecker::CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : nh_(nh, name_), pnh_(pnh, name_), durations_("CollisionChecker")
  {
    
  }
@@ -28,15 +28,19 @@
  CCResult CollisionChecker::testCollision(geometry_msgs::Pose pose, CCOptions options)
  {
     //Start the clock
-    auto t1 = std::chrono::high_resolution_clock::now();
+    //auto t1 = std::chrono::high_resolution_clock::now();
+    auto t1 = ros::WallTime::now();
 
     CCResult collided = testCollisionImpl(pose, options);
     
     //Calculate elapsed time for this computation
-    auto t2 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> fp_ms = t2 - t1;
+    //auto t2 = std::chrono::high_resolution_clock::now();
+    auto t2 = ros::WallTime::now();
+
+    //std::chrono::duration<double, std::milli> fp_ms = t2 - t1;
     
-    ROS_DEBUG_STREAM_NAMED(name_, "Collision checking took " << fp_ms.count() << " ms");
+    //ROS_DEBUG_STREAM_NAMED(name_, "Collision checking took " << fp_ms.count() << " ms");
+    durations_.addDuration(t1,t2);
 
     return collided;
  }
