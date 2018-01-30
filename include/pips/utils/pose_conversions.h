@@ -1,7 +1,7 @@
 #ifndef POSE_CONVERSIONS_H
 #define POSE_CONVERSIONS_H
 
-#include <Eigen/Eigen>
+//#include <Eigen/Eigen>
 #include <geometry_msgs/Pose.h>
 #include <tf/transform_datatypes.h> //For creating quaternion easily
 #include <tf2_eigen/tf2_eigen.h> // For converting betwen Eigen and tf types
@@ -24,11 +24,27 @@
   }
   
   inline
-  void convertPose(const geometry_msgs::Pose pose_in, cv::Point3d& pose_out)
+  void convertPose(const geometry_msgs::Pose& pose_in, cv::Point3d& pose_out)
   {
       pose_out = cv::Point3d(pose_in.position.x, pose_in.position.y, pose_in.position.z);
   }
   
+  inline 
+  void convertPose(const geometry_msgs::Point& pose_in, geometry_msgs::Pose& pose_out)
+  {
+      pose_out.position = pose_in;
+      pose_out.orientation.w = 1;
+  }
+  
+  inline
+  void convertPose(const double distance, geometry_msgs::Pose& pose_out)
+  {
+    pose_out.position.x = distance;
+    pose_out.orientation.w = 1;
+  }
+  
+  
+  /*
   inline
   void convertPose(double pose_in[], geometry_msgs::Pose& pose_out)
   {
@@ -45,6 +61,7 @@
       pose_out.orientation.w = 1;
     }
   }
+  */
 
 
   inline
