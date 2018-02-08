@@ -18,22 +18,23 @@ struct DurationAccumulator
   
 private:
   ros::WallDuration total_duration;
+  ros::WallDuration last_duration;
 
   size_t num_samples=0;
-  std::string name;
+  std::string logger, name;
 
 
 public:
-  DurationAccumulator(std::string name) : name(name)
+  DurationAccumulator(std::string logger, std::string name) : logger(logger), name(name)
   {
   }
   
   void addDuration(ros::WallTime startTime, ros::WallTime endTime)
   {
-    ros::WallDuration duration = (endTime - startTime);
-    addDuration(duration);
-    ROS_DEBUG_STREAM_NAMED(name + ".current_duration", toString(duration.toSec()));
-    ROS_DEBUG_STREAM_NAMED(name + ".average_duration", "Average duration of " << num_samples << " samples: " << averageDuration());
+    last_duration = (endTime - startTime);
+    addDuration(last_duration);
+    //ROS_DEBUG_STREAM_NAMED(logger, "[" << name << "] Current duration: " << toString(duration.toSec()));
+    //ROS_DEBUG_STREAM_NAMED(logger, "[" << name << "] Average duration of " << num_samples << " samples: " << averageDuration());
   }
   
   void addDuration(ros::WallDuration duration)
@@ -53,6 +54,11 @@ public:
     }
     else
       return "N/A";
+  }
+  
+  int64_t getLastDuration()
+  {
+    return last_duration.toNSec();
   }
   
   std::string toString(double sec)

@@ -3,7 +3,7 @@
 #include <chrono>
 
  
- CollisionChecker::CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : nh_(nh, name_), pnh_(pnh, name_), durations_("CollisionChecker")
+ CollisionChecker::CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : nh_(nh, name_), pnh_(pnh, name_), durations_(name_, "checking")
  {
    
  }
@@ -40,7 +40,11 @@
     //std::chrono::duration<double, std::milli> fp_ms = t2 - t1;
     
     //ROS_DEBUG_STREAM_NAMED(name_, "Collision checking took " << fp_ms.count() << " ms");
+    int64_t duration = (t2-t1).toNSec();
     durations_.addDuration(t1,t2);
+    
+    ROS_DEBUG_STREAM_NAMED("CollisionChecker.current_duration", "[CollisionChecker]: Duration = " << duration << " ns. Distance = " << pose.position.x);
+    
 
     return collided;
  }
