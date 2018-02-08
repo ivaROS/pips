@@ -1,25 +1,31 @@
 
 #include "pips/collision_testing/robot_models/rectangular_model.h"
 
-#include <sensor_msgs/Image.h>
-#include <geometry_msgs/TransformStamped.h>
+//#include <sensor_msgs/Image.h>
+//#include <geometry_msgs/TransformStamped.h>
 
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include <opencv2/highgui/highgui.hpp>
-#include <Eigen/Eigen>
-#include <image_transport/image_transport.h>
-#include <image_geometry/pinhole_camera_model.h>
-#include <cv_bridge/cv_bridge.h>
 
-#include <iomanip>      // std::setprecision
+//#include <Eigen/Eigen>
+//#include <image_transport/image_transport.h>
+//#include <image_geometry/pinhole_camera_model.h>
+//#include <cv_bridge/cv_bridge.h>
 
-using namespace cv;
+//#include <iomanip>      // std::setprecision
+
+#include <ros/ros.h>
+
+#include <pips/utils/image_comparison_implementations.h>
+
+
+
 RectangularModel::RectangularModel() : HallucinatedRobotModelImpl<cv::Point3d>()
 {
   name_ = "RectangularModel";
+  //pub_ = nh_.advertise<PointCloud>("collisions",100);
 }
 
 
@@ -38,16 +44,55 @@ void RectangularModel::setParameters(double radius, double height, double safety
     show_im_ = show_im;
 }
 
-bool RectangularModel::testCollisionImpl(const cv::Point3d pt)
+/* One option would be to return an object that implements some comparable interface, allowing it to be used as boolean 'collided' variable, but also containing extra information that can be accessed
+ * by classes that choose to
+ */
+ComparisonResult RectangularModel::testCollisionImpl(const cv::Point3d pt, CCOptions options)
 {
   float co_depth;
-  //ROS_INFO_STREAM("point is" << pt);
   cv::Rect co_rect;
   getCollisionRect(pt,co_rect,co_depth);
+
   //The collision object rectangle is our ROI in the original image
   cv::Mat roi(image_ref_, co_rect);
+
   float depth = co_depth*scale_;
-  bool collided = isLessThan(roi, depth);
+  ComparisonResult collided = isLessThan(roi, depth);
+  
+
+
+  if(collided && options)
+  {        
+      if(!collided.has_details())
+      {
+	collided = isLessThanDetails(roi,depth);
+      }
+      
+      /* Note: all of the following code is generic and should be moved to one of the the hallucinated_robot_model classes */
+      
+      cv::Point offset;
+      cv::Size size;
+      roi.locateROI(size, offset);
+            
+      collided.collision_point_+= offset;	//Note: need to decide whether to embrace accessor functions or just use struct members directly
+      
+      return collided;
+      
+
+      
+      //ROS_INFO_STREAM("Collision: pixel = " << collisionPnt << ", offset = " << offset << ", roi = " << co_rect << ", depth = " << depth << ", ray = " << ray << ", worldpoint = " << worldPoint );
+      /*
+      PointCloud::Ptr msg (new PointCloud);
+      msg->header.stamp = ros::Time::now().toNSec()/1e3;	//https://answers.ros.org/question/172241/pcl-and-rostime/
+      msg->header.frame_id = cam_model_->cameraInfo().header.frame_id;// "camera_depth_optical_frame";
+      msg->height = msg->width = 1;
+      msg->points.push_back (pcl::PointXYZ(worldPoint.x, worldPoint.y, worldPoint.z));
+      
+      pub_.publish(msg);
+      */
+  }
+  
+
   return collided;
 }
 
@@ -59,60 +104,75 @@ cv::Rect RectangularModel::getROIImpl(const cv::Point3d pt)
   return co_rect;
 }
 
+void RectangularModel::getRawCollisionRect(const cv::Point3d pt, cv::Rect& co_rect, float& depth)
+{
+  cv::Point2d co_uv[4];
+
+  float co_depth;
+
+  for (int it = 0; it <4; ++it) 
+  {
+    //Add specified offsets to robot's base position
+    cv::Point3d addedpnt = pt + co_offsets_[it];
+    
+    //Store the depth of the collision object
+    co_depth = addedpnt.z;
+    
+    //Project point to pixel coordinates
+    cv::Point2d uv = cam_model_->project3dToPixel(addedpnt);
+    //ROS_DEBUG("Coords: %f, %f", uv.x, uv.y);
+    co_uv[it] = uv;
+
+  }
+  
+  depth = co_depth;
+
+
+  //Using the 4 points, construct a rectangle
+  double minXVal, maxXVal, minYVal,maxYVal;
+  minYVal = std::min(co_uv[0].y,co_uv[1].y);
+  minXVal = std::min(co_uv[1].x,co_uv[2].x);
+  maxYVal = std::max(co_uv[2].y,co_uv[3].y);
+  maxXVal = std::max(co_uv[3].x,co_uv[0].x);
+
+  cv::Point2d topL(minXVal, minYVal);
+  cv::Point2d bottomR(maxXVal, maxYVal);
+
+  co_rect = cv::Rect(topL, bottomR);
+}
+
+//TODO: pass pt by const reference
 void RectangularModel::getCollisionRect(const cv::Point3d pt, cv::Rect& co_rect, float& depth)
 {
-    cv::Point2d co_uv[4];
-
-    float co_depth;
-
-    for (int it = 0; it <4; ++it) 
-    {
-      //Add specified offsets to robot's base position
-      cv::Point3d addedpnt = pt + co_offsets_[it];
-      
-      //Store the depth of the collision object
-      co_depth = addedpnt.z;
-      
-      //Project point to pixel coordinates
-      cv::Point2d uv = cam_model_->project3dToPixel(addedpnt);
-
-      ROS_DEBUG("Coords: %f, %f", uv.x, uv.y);
-      co_uv[it] = uv;
-
-    }
-    
-    depth = co_depth;
-
-
-    //Using the 4 points, construct a rectangle
-    double minXVal, maxXVal, minYVal,maxYVal;
-    minYVal = std::min(image_ref_.rows-1.0,std::max(0.0,std::min(co_uv[0].y,co_uv[1].y)));
-    minXVal = std::min(image_ref_.cols-1.0,std::max(0.0, std::min(co_uv[1].x,co_uv[2].x)));
-    maxYVal = std::max(0.0, std::min(image_ref_.rows-1.0, std::max(co_uv[2].y,co_uv[3].y)));
-    maxXVal = std::max(0.0, std::min(image_ref_.cols-1.0, std::max(co_uv[3].x,co_uv[0].x)));
-
-    cv::Point2d topL(minXVal, minYVal);
-    cv::Point2d bottomR(maxXVal, maxYVal);
-
-    co_rect = cv::Rect(topL, bottomR);
-    
+  getRawCollisionRect(pt, co_rect, depth);
+  
+  co_rect &= getImageRect();
     
     //The following should be a more elegant way to take the collision outline and crop it to fit in the image
     //However, I would have to know which point was which. Rather than force an arbitrary order, a single-time call could create 2 points, one for topl, and one for bottomr r, that would be used in place of co_offsets_; that would also only require projecting 2 points, so no need for the loop.
     //cv::Rect co_rect1 = cv::Rect(cv::Point2d(co_uv[0].x, co_uv.y), cv::Point2d(co_uv[, bottomR) &= cv::Rect(Point(0, 0), image_ref_->size());
 }
 
+bool RectangularModel::inFrame(const cv::Point3d& pt)
+{
+  cv::Rect co_rect;
+  float depth;
+  getRawCollisionRect(pt, co_rect, depth);
+  
+  return co_rect == (co_rect & getImageRect());
 
-    bool RectangularModel::isLessThan(const cv::Mat& image, const float depth)
-    {
-      cv::Mat res;
-      cv::compare(image, depth, res, cv::CMP_LT);
+}
 
-      int num_collisions = cv::countNonZero(res);
-      bool collided = (num_collisions > 0);
-      return collided;
-    }
+ComparisonResult RectangularModel::isLessThan(const cv::Mat& image, const float depth)
+{
+  ComparisonResult collided = utils::isLessThan::stock(image, depth);
+  return collided;
+}
 
+ComparisonResult RectangularModel::isLessThanDetails(const cv::Mat& image, const float depth)
+{
+  return utils::isLessThan::details(image, depth);
+}
 
 cv::Mat RectangularModel::generateHallucinatedRobotImpl(const cv::Point3d pt)
 {

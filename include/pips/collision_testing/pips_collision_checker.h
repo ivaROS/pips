@@ -7,15 +7,18 @@
 #include <pips/GenerateDepthImage.h>
 
 #include <sensor_msgs/Image.h>
-#include <image_transport/image_transport.h>
-#include <image_geometry/pinhole_camera_model.h>
+//#include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 
 #include <geometry_msgs/TransformStamped.h>
-#include <Eigen/Eigen>
+#include <Eigen/Geometry> // <Eigen/Eigen>
 #include <image_geometry/pinhole_camera_model.h>
 #include <chrono>
 #include <memory>
+
+//Things that could be forward declared:
+#include <image_geometry/pinhole_camera_model.h>
+
 
 //class cv::Mat;
 
@@ -65,14 +68,14 @@ public :
     PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh);
 
     void setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
-    bool testCollisionImpl(PoseType pose);
+    CCResult testCollisionImpl(PoseType pose, CCOptions options=CCOptions());
     cv::Mat generateDepthImage(PoseType pose);
     
     void initImpl();
     
     void setTransform(const geometry_msgs::TransformStamped& base_optical_transform);
     
-    void generateImageCoord(const double xyz[], double * uv);
+    //void generateImageCoord(const double xyz[], double * uv);
     /*
     template<typename T>
     bool testCollision(T pose_in)
@@ -90,18 +93,24 @@ public :
       return generateDepthImage(pose_out);
     }
     */
+    
+protected:
+  ros::Publisher posepub_, pointpub_;
 
 private:
     bool getDepthImageSrv(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res);
     
 private :
     std::string name_ = "PipsCollisionChecker";
+    
+    //ros::ServiceClient checker_; 
 
-    image_transport::Publisher depthpub_;
+
+    //image_transport::Publisher depthpub_;
     std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_;
     ros::NodeHandle nh_, pnh_;
 
-    image_transport::ImageTransport it_; // Needs to be after node handles to ensure they are initialized first
+    //image_transport::ImageTransport it_; // Needs to be after node handles to ensure they are initialized first
 
     
     Eigen::Affine3d optical_transform_;

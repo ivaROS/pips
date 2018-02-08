@@ -20,16 +20,17 @@
   
   void CollisionChecker::init()
   {
+      //TODO: is it possible for the service to be advertised and an attempt made to use it before initImpl finishes?
       collision_testing_service_ = nh_.advertiseService("test_collision", &CollisionChecker::testCollisionSrv, this);
       initImpl();
   }
   
- bool CollisionChecker::testCollision(geometry_msgs::Pose pose)
+ CCResult CollisionChecker::testCollision(geometry_msgs::Pose pose, CCOptions options)
  {
     //Start the clock
     auto t1 = std::chrono::high_resolution_clock::now();
 
-    bool collided = testCollisionImpl(pose);
+    CCResult collided = testCollisionImpl(pose, options);
     
     //Calculate elapsed time for this computation
     auto t2 = std::chrono::high_resolution_clock::now();

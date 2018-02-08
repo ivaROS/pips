@@ -1,5 +1,5 @@
 
-#include "pips/collision_testing/robot_models/rectangular_model_ss.h"
+#include "pips/collision_testing/robot_models/cylindrical_model_t_vect.h"
 
 #include <pips/utils/image_comparison_implementations.h>
 
@@ -22,15 +22,14 @@
 //#include <iomanip>      // std::setprecision
 
 // Should be renamed 'SC' for 'Short Circuit'
-RectangularModelSS::RectangularModelSS()
+CylindricalModelTVect::CylindricalModelTVect()
 {
-    name_ = "RectangularModelSS";
+    name_ = "CylindricalModelTVect";
 }
 
-ComparisonResult RectangularModelSS::isLessThan(const cv::Mat& image, const float depth)
+ComparisonResult CylindricalModelTVect::isLessThan(const cv::Mat& image, const float depth)
 {
-
-
-  return utils::isLessThan::vectorized(image, depth);
+    return ComparisonResult(utils::isLessThan::vectorized(image, depth));
+    
 }
 

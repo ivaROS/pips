@@ -17,6 +17,8 @@ class CylindricalModelT : public CylindricalModel
 
     virtual cv::Mat getImageImpl(const cv::Mat& image);
 
+    virtual ComparisonResult testCollisionImpl(const cv::Point3d pt, CCOptions options);
+
 };
 
 

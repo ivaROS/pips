@@ -19,15 +19,21 @@
 
 
 #include <sensor_msgs/image_encodings.h>
-#include <image_transport/subscriber_filter.h>
-#include <message_filters/subscriber.h>
-#include <message_filters/time_synchronizer.h>
-#include <message_filters/sync_policies/exact_time.h>
-#include <message_filters/sync_policies/approximate_time.h>
 
 #include <climits>
 
 
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+
+//#include <pcl/conversions.h>
+//#include <pcl_ros/transforms.h>
+typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
+
+
+//#include <extended_local/ExtPose.h>
+//#include <extended_local/ExtPoseRequest.h>
+//#include <extended_local/ExtPoseResponse.h>
 
 
 #define MAX_RANGE 10    //Maximum expected range of sensor, used to fill unknowns (0's) in image
@@ -53,11 +59,11 @@
     pub_image: When enabled, the collision object's projection is added to the current depth image and published. Only enable when debugging- during normal usage far too many images would be published.
   */ 
   
-  /* The publish_image_ parameter will either be moved to dyanmic reconfigure or will be automatically toggled 
-     based on the presence of subscribers
-  */
+  
+  
+
   PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : CollisionChecker(nh,pnh),
-    nh_(nh, name_), pnh_(pnh, name_), it_(nh_), robot_model_(nh_, pnh_)
+    nh_(nh, name_), pnh_(pnh, name_), robot_model_(nh_, pnh_)
   {
       ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
   }
@@ -65,12 +71,21 @@
   void PipsCollisionChecker::initImpl()
   {
       robot_model_.init();
+      
+      //checker_ = nh_.serviceClient<extended_local::ExtPose>("/ext_check");
+
+      
+      //TODO: This should probably accept a CameraInfo message as an optional parameter, allowing it to be used without a camera
       depth_generation_service_ = nh_.advertiseService("generate_depth_image", &PipsCollisionChecker::getDepthImageSrv, this);
+      posepub_ = nh_.advertise<geometry_msgs::PoseStamped>("collision_poses",100);
+      
+      pointpub_ = nh_.advertise<PointCloud>("collisions",100);
+
   }
   
   /*Currently, I don't use the 'optical_transform' anywhere. Everything happens within the robot model 
-   * (this was to enable optimized transformations of different representations
-   */
+  * (this was to enable optimized transformations of different representations, which really wasn't worth implementing)
+  */
     void PipsCollisionChecker::setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
     {
       //Convert transform to Eigen
@@ -83,7 +98,7 @@
   Description: Sets the PipsCollisionChecker's depth image and camera model. Called whenever there is a new image.
   Name: PipsCollisionChecker::setImage
   Inputs:
-    image_msg: The depth image. Either the image_raw (16bit unsigned) or image (32 bit float) topics may be used, but the raw topic is preferred (the reason being that the conversion nodelet is not needed and in theory we save some computation. However, the overhead is quite minimal, and it appears that some SIMD optimizations can only work with floats, so whatever).
+    image_msg: The depth image. Either the image_raw (16bit unsigned) or image (32 bit float) topics may be used, but the raw topic is preferred (the reason being that the conversion nodelet is not needed and in theory we save some computation. More importantly, 16u types can be vectorized more than 32f).
     info_msgs: The CameraInfo msg accompanying the image msg. It is necessary to update the camera model each time in order to permit changing the camera's resolution during operation.
   */ 
   void PipsCollisionChecker::setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
@@ -113,7 +128,7 @@
       ROS_ERROR_NAMED(name_, "Failed to convert image");
       return;
     }
- 
+
     //Reinitialize camera model with each image in case resolution has changed
 
     robot_model_.updateModel(input_bridge_ref_, info_msg, scale_);
@@ -129,9 +144,61 @@
   Output:
     bool: coordinates cause collision
   */ 
-  bool PipsCollisionChecker::testCollisionImpl(geometry_msgs::Pose pose)
+  CCResult PipsCollisionChecker::testCollisionImpl(geometry_msgs::Pose pose, CCOptions options)
   {
-    bool collided = robot_model_.testCollision(pose);
+    CCResult collided = robot_model_.testCollision(pose, options);
+    
+    if(collided)
+    { 
+      
+	if(collided.details())
+	{
+	    std::vector<cv::Point3d> worldPoints = collided.getCollisionPnts();
+	    	    
+	    PointCloud::Ptr msg (new PointCloud);
+	    msg->header.stamp = input_bridge_ref_->header.stamp.toNSec()/1e3; // ros::Time::now().toNSec()/1e3;	//https://answers.ros.org/question/172241/pcl-and-rostime/
+	    msg->header.frame_id = input_bridge_ref_->header.frame_id;// "camera_depth_optical_frame";
+	    msg->height = 1;
+	    //msg->points.insert(std::end(msg->points), std::begin(worldPoints), std::end(worldPoints));
+	    msg->width = worldPoints.size();
+	    
+	    for(auto point : worldPoints)
+	    {
+	      msg->points.push_back (pcl::PointXYZ(point.x, point.y, point.z));
+	    }
+	    
+	    pointpub_.publish(msg);
+	}
+      
+      
+      geometry_msgs::PoseStamped pose_stamped;
+      pose_stamped.pose = pose;
+      pose_stamped.header.stamp = input_bridge_ref_->header.stamp; //This is only threadsafe if it is known that collision checks will not happen at the same time as updating camera info... It might be best to switch from Pose to PoseStamped for everything...
+      pose_stamped.header.frame_id = base_optical_transform_.child_frame_id;
+      posepub_.publish(pose_stamped);
+    }
+    /*
+    else if(false)
+    {
+      extended_local::ExtPose srv;
+      srv.request.pose = pose;
+      srv.request.radius.data = .2;
+      
+      
+      
+      if(checker_.call(srv))
+      {
+	//Service worked
+	ROS_DEBUG_STREAM_NAMED(name_, "service call worked!");
+      
+	if (srv.response.result)
+	{
+	    collided = true;
+	    ROS_INFO_STREAM_NAMED(name_, "Out of sight pose collided!");
+	}
+      }
+    }
+    */
     
     return collided;
   }
@@ -146,7 +213,7 @@
   bool PipsCollisionChecker::getDepthImageSrv(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res)
   {
     ROS_INFO_STREAM_NAMED(name_, "Depth image generation request received.");
- 
+
     cv_bridge::CvImage out_msg;
     //out_msg.header   = ; // Same timestamp and tf frame as input image
     out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;// (scale_ == SCALE_METERS) ? sensor_msgs::image_encodings::TYPE_32FC1 : sensor_msgs::image_encodings::TYPE_16UC1;
@@ -157,7 +224,9 @@
     return true;
   }
 
+
   // Incomplete and Not currently used
+  /*
   void PipsCollisionChecker::generateImageCoord(const double xyz[], double * uv)
   {
     //Convert coordinates to Eigen Vector
@@ -171,7 +240,7 @@
 
     
   }
-  
+  */
   
   
   
@@ -191,4 +260,5 @@
   }
   
   */
+
 

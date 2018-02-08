@@ -20,12 +20,19 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   geometry_msgs
   dynamic_reconfigure
+   pcl_ros
 #  dense_depth_projection
+#  extended_local
 )
+
+find_package(OpenMP)
 
 #tf2_eigen must be at least version 0.5.15
 
-find_package(Eigen3 REQUIRED)
+#find_package(Eigen3 REQUIRED)
+
+#Will work with either 2.4 or 3.0+
+find_package(OpenCV REQUIRED)
 
 generate_dynamic_reconfigure_options(
   cfg/HallucinatedRobotModel.cfg
@@ -46,25 +53,26 @@ generate_messages(
 
 
 catkin_package(
-  INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIR}
+  INCLUDE_DIRS include ${OpenCV_INCLUDE_DIRS} #${EIGEN3_INCLUDE_DIR} 
   LIBRARIES collision_checker pips_collision_checker
-  CATKIN_DEPENDS image_geometry cv_bridge message_runtime #dense_depth_projection
-  DEPENDS Eigen3 
+  CATKIN_DEPENDS image_geometry cv_bridge message_runtime #extended_local dense_depth_projection
+  DEPENDS  OpenCV tf2_eigen #Eigen3
 )
 
 include_directories(
   include
 
   ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIR}
+#  ${EIGEN3_INCLUDE_DIR}
 #  ${PROJECT_SOURCE_DIR}
+  ${OpenCV_INCLUDE_DIRS}
 
 #  include
 )
 
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fopenmp")	#TODO: remove these and at least switch to add_definitions, though openmp should really only be enabled on target that needs it
 
 ## Declare the collision_checker library
 add_library(collision_checker src/collision_checker.cpp)
@@ -101,6 +109,9 @@ add_dependencies(pips_collision_checker
 add_library(rectangular_model
   src/rectangular_model.cpp
   )
+target_compile_options(rectangular_model PRIVATE -march=native -ffast-math -ftree-vectorize ) #-ftree-vectorizer-verbose=7
+target_compile_options(rectangular_model PUBLIC  -std=c++11)
+
 target_link_libraries(rectangular_model
   ${catkin_LIBRARIES}
   )
@@ -109,26 +120,54 @@ SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model)
 add_library(rectangular_model_ss
   src/rectangular_model_ss.cpp
   )
+  
+#For verbose vectorizing output on gcc 4.6: -ftree-vectorizer-verbose=7
+#For verbose vectorizing output on gcc 5.4: -fopt-info-vec-all
+target_compile_options(rectangular_model_ss PRIVATE -march=native ${OpenMP_CXX_FLAGS} -ftree-vectorize -fassociative-math -fno-signed-zeros -fno-trapping-math  -ffast-math  ) # -freciprocal-math #-funsafe-math-optimizations #-fno-math-errno -ffinite-math-only -fno-rounding-math -fno-signaling-nans -fcx-limited-range -fexcess-precision=fast
+target_compile_options(rectangular_model_ss PUBLIC  -std=c++11)
 target_link_libraries(rectangular_model_ss
   ${catkin_LIBRARIES}
+  ${OpenMP_CXX_FLAGS}
   )
 SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ss)
 
-if(OpenCV_VERSION VERSION_LESS "3.0")
-  MESSAGE(STATUS "Your OpenCV version is less than 3.0, OpenCL model will not be built")
-else()
-  add_library(rectangular_model_ocl
-    src/rectangular_model_ocl.cpp
-    )
-  target_link_libraries(rectangular_model_ocl
-    ${catkin_LIBRARIES}
-    )
-  SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ocl)
-endif()
-  
+add_library(cylindrical_model_t_vect
+  src/cylindrical_model_t_vect.cpp
+  )
+target_compile_options(cylindrical_model_t_vect PRIVATE -march=native -ffast-math -ftree-vectorize ) #-ftree-vectorizer-verbose=7 -fopt-info-vec-all
+target_compile_options(cylindrical_model_t_vect PUBLIC  -std=c++11)
+target_link_libraries(cylindrical_model_t_vect
+  ${catkin_LIBRARIES}
+  )
+SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model_t_vect)
+
+# if(OpenCV_VERSION VERSION_LESS "3.0")
+#   MESSAGE(STATUS "Your OpenCV version is less than 3.0, OpenCL model will not be built")
+# else()
+#   add_library(rectangular_model_ocl
+#     src/rectangular_model_ocl.cpp
+#     )
+#   target_compile_options(rectangular_model_ocl PRIVATE -g)
+#   target_link_libraries(rectangular_model_ocl
+#     ${catkin_LIBRARIES}
+#     -g
+#     )
+#   SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ocl)
+# endif()
+# 
+add_library(rectangular_model_pf
+  src/rectangular_model_pf.cpp
+  )
+target_link_libraries(rectangular_model_pf
+  ${catkin_LIBRARIES}
+  )
+SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_pf)
+
 add_library(cylindrical_model 
   src/cylindrical_model.cpp
   )
+#target_compile_options(cylindrical_model PRIVATE -ftree-vectorize -ftree-vectorizer-verbose=7)
+#target_compile_options(cylindrical_model PUBLIC  -std=c++11)
 target_link_libraries(cylindrical_model
   ${catkin_LIBRARIES}
   )
@@ -157,5 +196,26 @@ target_link_libraries(pips_collision_checker
   collision_checker
   robot_model_interface
   ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
   )
 
+
+if(OpenCV_VERSION VERSION_LESS "3.0")
+  MESSAGE(STATUS "Your OpenCV version is less than 3.0, OpenCL benchmarker will not be built")
+else()
+  add_executable(ocl_benchmarker src/approach_benchmarker.cpp)
+  target_link_libraries(ocl_benchmarker
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+    )
+endif()
+
+
+  
+add_executable(omp_benchmarker src/omp_benchmarker.cpp)
+target_link_libraries(omp_benchmarker
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  )
+
+target_compile_options(omp_benchmarker PRIVATE -g  -save-temps -fverbose-asm   -march=native ${OpenMP_CXX_FLAGS} -ftree-vectorize -fassociative-math -fno-signed-zeros -fno-trapping-math  -ffast-math ) # -fopt-info-vec-all  -freciprocal-math #-funsafe-math-optimizations #-fno-math-errno -ffinite-math-only -fno-rounding-math -fno-signaling-nans -fcx-limited-range -fexcess-precision=fast

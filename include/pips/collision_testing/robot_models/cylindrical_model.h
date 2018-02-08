@@ -22,6 +22,7 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
     
   
     void setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im);
+    virtual bool inFrame(const cv::Point3d& pt);
 
   protected:
   
@@ -29,9 +30,11 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
   
     // Question: is it better to use the camera model's methods for clarity, or to use pure Eigen matrices for speed?
     // Initially, will use the model, but will likely switch over in the future.
-    virtual bool testCollisionImpl(const cv::Point3d pt);
+    virtual ComparisonResult testCollisionImpl(const cv::Point3d pt, CCOptions options);
     
-    virtual bool isLessThan(const cv::Mat& col, float depth);
+    virtual ComparisonResult isLessThan(const cv::Mat& col, float depth);
+    virtual ComparisonResult isLessThanDetails(const cv::Mat& col, float depth);
+
      
     virtual COLUMN_TYPE getColumn(const cv::Point2d top, const cv::Point2d bottom, const float depth);
     std::vector<COLUMN_TYPE> getColumns(const cv::Point3d pt);

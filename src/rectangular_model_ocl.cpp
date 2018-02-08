@@ -1,8 +1,8 @@
 
 #include "pips/collision_testing/robot_models/rectangular_model_ocl.h"
 
-#include <sensor_msgs/Image.h>
-#include <geometry_msgs/TransformStamped.h>
+//#include <sensor_msgs/Image.h>
+//#include <geometry_msgs/TransformStamped.h>
 
 
 #include <opencv2/core/core.hpp>
@@ -10,12 +10,12 @@
 #include "opencv2/imgproc/imgproc.hpp"
 
 
-#include <Eigen/Eigen>
-#include <image_transport/image_transport.h>
-#include <image_geometry/pinhole_camera_model.h>
-#include <cv_bridge/cv_bridge.h>
+//#include <Eigen/Eigen>
+//#include <image_transport/image_transport.h>
+//#include <image_geometry/pinhole_camera_model.h>
+//#include <cv_bridge/cv_bridge.h>
 
-#include <iomanip>      // std::setprecision
+//#include <iomanip>      // std::setprecision
 
 
 RectangularModelOCL::RectangularModelOCL()
@@ -33,17 +33,17 @@ RectangularModelOCL::RectangularModelOCL()
 
             std::cout << "OPENCV_OPENCL_DEVICE=" << getenv("OPENCV_OPENCL_DEVICE") << std::endl;
             cv::ocl::Context& context = cv::ocl::Context::getDefault();
+
+            std::cout << "OpenCL devices:" << std::endl;
             for (size_t i = 0; i < context.ndevices(); i++) {
               std::cout << context.device(i).name() << std::endl;
             }
-
             
             if (!mainContext.create(cv::ocl::Device::TYPE_ALL))
             {
                std::cout << "Unable to create OpenCL Context" << std::endl;
             }
             
-
             for (unsigned int i = 0; i < mainContext.ndevices(); i++)
             {
                 cv::ocl::Device device = mainContext.device(i);
@@ -84,32 +84,61 @@ RectangularModelOCL::RectangularModelOCL()
 }
 
 
-void RectangularModelOCL::doPrecomputation()
+void RectangularModelOCL::doPrecomputation(const cv_bridge::CvImage::ConstPtr& cv_image_ref)
 {
+  static size_t call_count = 0;
+  ++call_count;
+
+  ROS_INFO_STREAM_THROTTLE(5,"Precomputation! " << call_count << std::endl);
   image_cl_ = image_ref_.getUMat(cv::ACCESS_READ);
+  /*
+  {
+    boost::mutex::scoped_lock lock(model_mutex_);
+    
+    if(image_cl_.empty())
+    {
+      image_cl_.create(image_ref_.rows,image_ref_.cols, image_ref_.type(), cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+    }
+    image_ref_.copyTo(image_cl_);
+  }
+  */
 }
 
 /* Takes in the position of robot base in camera coordinate frame */
 bool RectangularModelOCL::testCollisionImpl(const cv::Point3d pt)
 {
+  static size_t call_count = 0;
+  ++call_count;
+
+  ROS_INFO_STREAM_THROTTLE(2,"Collision check! " << call_count << std::endl);
     float co_depth;
     cv::Rect co_rect;
     getCollisionRect(pt,co_rect,co_depth);
     
+    //std::cout << "Point: " << pt << ", co_rect: " << co_rect << ", umat: " << image_cl_.cols << "," << image_cl_.rows << std::endl;
     
-    //The collision object rectangle is our ROI in the original image
-    cv::UMat roi_cl(image_cl_,co_rect);
-
     float depth = co_depth*scale_;
-    cv::UMat res_cl;
-    cv::compare(roi_cl, depth, res_cl, cv::CMP_LT);
 
-    int num_collisions = cv::countNonZero(res_cl);
+    int num_collisions;
+
+    {
+          //boost::mutex::scoped_lock lock(model_mutex_);
+
+          cv::UMat res_cl;
+
+      //cv::UMat image_cl = image_ref_.getUMat(cv::ACCESS_READ);
+          //The collision object rectangle is our ROI in the original image
+	  
+	  //roi_cl_ = image_cl_(co_rect);
+	  
+      cv::UMat roi_cl(image_cl_,co_rect);
+      cv::compare(depth, roi_cl, res_cl, cv::CMP_GT);
+          num_collisions = cv::countNonZero(res_cl);
+
+    }
+
     bool collided = (num_collisions > 0);
-    
-    
-    //bool colllided = (cv::countNonZero(res_cl)>0);
-    
+        
     
     return collided;
 }

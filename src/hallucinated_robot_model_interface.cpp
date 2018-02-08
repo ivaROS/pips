@@ -1,8 +1,15 @@
 #include "pips/collision_testing/hallucinated_robot_model_interface.h"
 #include <pips/collision_testing/robot_models/rectangular_model.h>
+
+
 #include <pips/collision_testing/robot_models/rectangular_model_ss.h>
+#include <pips/collision_testing/robot_models/rectangular_model_pf.h>
+
 #include <pips/collision_testing/robot_models/cylindrical_model.h>
 #include <pips/collision_testing/robot_models/cylindrical_model_t.h>
+#include <pips/collision_testing/robot_models/cylindrical_model_t_vect.h>
+
+
 
 #include <pips/HallucinatedRobotModelConfig.h>
 
@@ -34,13 +41,14 @@
   {
     ROS_INFO_STREAM_NAMED(name_, "Reconfigure Request: "); // TODO: print out the model type and other parameter values
     
-    boost::mutex::scoped_lock lock(model_mutex_); /* Mutex prevents dynamic reconfigure from changing anything while model in use */
-    
+    WriteLock lock(model_mutex_); /* Mutex prevents dynamic reconfigure from changing anything while model in use */
+
     /* if the model type in the reconfigure request is different than the previous, we need to instantiate the new one */
     if(config.model_type != model_type_)
     {
       if(config.model_type == pips::HallucinatedRobotModel_rectangular)
       {
+	ROS_INFO_STREAM_NAMED(name_, "New model type = Rectangular");
         model_ = std::make_shared<RectangularModel>();
       }
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ocl)
@@ -48,12 +56,22 @@
         #if CV_MAJOR_VERSION == 2
           ROS_ERROR_STREAM_NAMED(name_, "OpenCL model not supported with OpenCV 2.x. Model not changed, please select another.");
         #elif CV_MAJOR_VERSION == 3
-          model_ = std::make_shared<RectangularModelOCL>();
+          //model_ = std::make_shared<RectangularModelOCL>();
         #endif
       }
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ss)
       {
+	ROS_INFO_STREAM_NAMED(name_, "New model type = RectangularSS");
         model_ = std::make_shared<RectangularModelSS>();
+      }
+      else if(config.model_type == pips::HallucinatedRobotModel_cylindrical_t_vect)
+      {
+        model_ = std::make_shared<CylindricalModelTVect>();
+      }
+      else if(config.model_type == pips::HallucinatedRobotModel_rectangular_pf)
+      {
+	ROS_INFO_STREAM_NAMED(name_, "New model type = ParallelFor");
+	model_ = std::make_shared<RectangularModelPF>();
       }
       else if (config.model_type == pips::HallucinatedRobotModel_cylindrical)
       {
@@ -65,7 +83,7 @@
       }
       else if (config.model_type == pips::HallucinatedRobotModel_cylindrical_c)
       {
-        model_ = std::make_shared<HallucinatedRobotModelCacheWrapper<CylindricalModel> >();
+        //model_ = std::make_shared<HallucinatedRobotModelCacheWrapper<CylindricalModel> >();
       }
       
       /*
@@ -110,7 +128,7 @@
     scale_ = scale;
     
     {
-      boost::mutex::scoped_lock lock(model_mutex_);
+      WriteLock lock(model_mutex_);
       model_->updateModel(cv_image_ref_, scale);
       cam_model_->fromCameraInfo(info_msg); //We are only updating the contents of cam_model_, rather than the object it points to, so no need to pass it to the model again
 
@@ -120,6 +138,12 @@
   void HallucinatedRobotModelInterface::setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
   {
     base_optical_transform_ = base_optical_transform;
+    
+    if(model_)
+    {
+      WriteLock lock(model_mutex_);
+      model_->setTransform(base_optical_transform_);
+    }
   }
   
 

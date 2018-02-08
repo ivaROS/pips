@@ -39,4 +39,18 @@
   }
 
 
+  ComparisonResult CylindricalModelT::testCollisionImpl(const cv::Point3d pt, CCOptions options)
+  {
+    ComparisonResult result = CylindricalModel::testCollisionImpl(pt, options);
+    
+    if(result)
+    {
+      cv::Point tmp(result.point());
+      result.collision_point_.x = tmp.y;
+      result.collision_point_.y = tmp.x;
+    }
+    
+    return result;
+  }
+
 

@@ -10,26 +10,31 @@
 #include <memory>
 
 
+#include <pips/collision_testing/collision_checking_options.h>
+#include <pips/collision_testing/collision_checking_result.h>
+
+
 class CollisionChecker
 {
 
 
 public :
+  //EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   typedef geometry_msgs::Pose PoseType;
 
     CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh);
 
-    bool testCollision(PoseType pose);
+    CCResult testCollision(PoseType pose, CCOptions options = CCOptions());
     
     void init();
 
     
     template<typename T>
-    bool testCollision(const T pose_in)
+    CCResult testCollision(const T pose_in, CCOptions options = CCOptions())
     {
       PoseType pose_out;
       convertPose(pose_in, pose_out);
-      return testCollision(pose_out);
+      return testCollision(pose_out, options);
     }
 
     /*
@@ -45,14 +50,17 @@ public :
 private:
    bool testCollisionSrv(pips::TestCollision::Request &req, pips::TestCollision::Response &res);
    
-   virtual bool testCollisionImpl(PoseType pose)=0;
+   virtual CCResult testCollisionImpl(PoseType pose, CCOptions options)=0;
 
    virtual void initImpl() {}
-    
+
+protected:
+    //ros::Publisher posepub_;
+
+   
 private :
     std::string name_ = "CollisionChecker";
     ros::NodeHandle nh_, pnh_;	// For now, separate node handles for base and derived
-    ros::Publisher posepub_;
     ros::ServiceServer collision_testing_service_;
 
                               

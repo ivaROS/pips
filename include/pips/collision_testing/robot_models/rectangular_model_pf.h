@@ -1,13 +1,13 @@
-#ifndef RECTANGULAR_MODEL_SS
-#define RECTANGULAR_MODEL_SS
+#ifndef RECTANGULAR_MODEL_PF
+#define RECTANGULAR_MODEL_PF
 
 #include <pips/collision_testing/robot_models/rectangular_model.h>
 
 
-class RectangularModelSS : public RectangularModel
+class RectangularModelPF : public RectangularModel
 {
   public:
-    RectangularModelSS();
+    RectangularModelPF();
     
   protected:
 
@@ -15,4 +15,4 @@ class RectangularModelSS : public RectangularModel
     
 };
 
-#endif // RECTANGULAR_MODEL_SS
+#endif // RECTANGULAR_MODEL_PF
