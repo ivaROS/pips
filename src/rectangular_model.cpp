@@ -53,7 +53,7 @@ ComparisonResult RectangularModel::testCollisionImpl(const cv::Point3d pt, CCOpt
   cv::Rect co_rect;
   getCollisionRect(pt,co_rect,co_depth);
   
-  ROS_INFO_STREAM_NAMED(name_, "Collision checking " << pt << ": ROI= " << co_rect << ", depth= " << co_depth);
+  ROS_DEBUG_STREAM_NAMED(name_, "Collision checking " << pt << ": ROI= " << co_rect << ", depth= " << co_depth);
 
   //The collision object rectangle is our ROI in the original image
   cv::Mat roi(image_ref_, co_rect);
