@@ -154,6 +154,8 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 	if(collided.details())
 	{
 	    std::vector<cv::Point3d> worldPoints = collided.getCollisionPnts();
+	    
+	    ROS_INFO_STREAM_NAMED(name_, "point depth: " << worldPoints[0].z);
 	    	    
 	    PointCloud::Ptr msg (new PointCloud);
 	    msg->header.stamp = input_bridge_ref_->header.stamp.toNSec()/1e3; // ros::Time::now().toNSec()/1e3;	//https://answers.ros.org/question/172241/pcl-and-rostime/
