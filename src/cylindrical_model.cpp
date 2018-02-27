@@ -110,7 +110,7 @@
       rect |= cols[i].rect;
     }
     
-    ROS_INFO_STREAM_THROTTLE(1,"Pt = " << pt << ", rect = " << rect);
+    ROS_DEBUG_STREAM_THROTTLE(1,"Pt = " << pt << ", rect = " << rect);
     
     return rect;
   }
@@ -300,21 +300,24 @@
       float depth = cols[i].depth;
       
       ComparisonResult result = isLessThan(col, depth);
+      
+      if(result)
+      {
+        if(options)
+        {
 
-      if(result && options)
-      {        
-	  if(!result.has_details())
-	  {
-	    result = isLessThanDetails(col,depth);
-	  }
-	  cv::Point offset;
-	  cv::Size size;
-	  col.locateROI(size, offset);
-		
-	  result.collision_point_+= offset;	//Note: need to decide whether to embrace accessor functions or just use struct members directly
-	
-	  
-	  return result;
+          if(!result.has_details())
+          {
+              result = isLessThanDetails(col,depth);
+          }
+          cv::Point offset;
+          cv::Size size;
+          col.locateROI(size, offset);
+              
+          result.collision_point_+= offset;	//Note: need to decide whether to embrace accessor functions or just use struct members directly
+        }
+        
+        return result;
       }
     }
     
