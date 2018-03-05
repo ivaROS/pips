@@ -303,7 +303,7 @@
 
       if(result && options)
       {        
-	  if(!result.has_details())
+	  if(!result.hasDetails())
 	  {
 	    result = isLessThanDetails(col,depth);
 	  }
@@ -311,7 +311,7 @@
 	  cv::Size size;
 	  col.locateROI(size, offset);
 		
-	  result.collision_point_+= offset;	//Note: need to decide whether to embrace accessor functions or just use struct members directly
+	  result.addOffset(offset);	
 	
 	  
 	  return result;

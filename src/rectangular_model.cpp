@@ -63,9 +63,9 @@ ComparisonResult RectangularModel::testCollisionImpl(const cv::Point3d pt, CCOpt
 
   if(collided && options)
   {        
-      if(!collided.has_details())
+      if(!collided.hasDetails())
       {
-	collided = isLessThanDetails(roi,depth);
+          collided = isLessThanDetails(roi,depth);
       }
       
       /* Note: all of the following code is generic and should be moved to one of the the hallucinated_robot_model classes */
@@ -73,12 +73,11 @@ ComparisonResult RectangularModel::testCollisionImpl(const cv::Point3d pt, CCOpt
       cv::Point offset;
       cv::Size size;
       roi.locateROI(size, offset);
-            
-      collided.collision_point_+= offset;	//Note: need to decide whether to embrace accessor functions or just use struct members directly
+      
+      collided.addOffset(offset);
       
       return collided;
       
-
       
       //ROS_INFO_STREAM("Collision: pixel = " << collisionPnt << ", offset = " << offset << ", roi = " << co_rect << ", depth = " << depth << ", ray = " << ray << ", worldpoint = " << worldPoint );
       /*
@@ -171,7 +170,7 @@ ComparisonResult RectangularModel::isLessThan(const cv::Mat& image, const float 
 
 ComparisonResult RectangularModel::isLessThanDetails(const cv::Mat& image, const float depth)
 {
-  return utils::isLessThan::details(image, depth);
+  return utils::isLessThan::fulldetails(image, depth);
 }
 
 cv::Mat RectangularModel::generateHallucinatedRobotImpl(const cv::Point3d pt)

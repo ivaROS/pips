@@ -168,12 +168,18 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
       convertPose(pose_t, convertedPose);
       ComparisonResult result = testCollisionImpl(convertedPose, options);
       
-      if(options.get_details_ && result.collides() && result.has_details())
+      if(options.get_details_ && result.collides() && result.hasDetails())
       {	
-	cv::Point3d ray = cam_model_->projectPixelTo3dRay(result.point());
-	cv::Point3d worldPoint = ray * result.depth() / scale_;
+        std::vector<cv::Point3d> world_points;
+        for(auto point : result.points())
+        {
+          ROS_DEBUG_STREAM_NAMED(name_, "Collision pixel coordinates: (" << point.pt.x << "," << point.pt.y << ")");
+          cv::Point3d ray = cam_model_->projectPixelTo3dRay(point.pt);
+          cv::Point3d worldPoint = ray * point.depth / scale_;
+          world_points.push_back(worldPoint);
+        }
 	
-	return CCResult(worldPoint);
+	return CCResult(world_points);
       }
       
       return CCResult(result.collides());

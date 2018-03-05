@@ -116,6 +116,41 @@ namespace utils
 	return ComparisonResult(false);
       }
     };
+    
+    
+    
+    struct fulldetails
+    {
+      template<typename T>
+      inline
+      ComparisonResult operator()(const cv::Mat& image, const T depth)
+      {
+        int nRows = image.rows;
+        int nCols = image.cols;
+
+        int i;
+        
+        ComparisonResult result;
+
+        const T* p;
+        for( i = 0; i < nRows; ++i)
+        {
+          p = image.ptr<T>(i);
+          for(int j = 0; j < nCols; ++j)
+          {
+            T pixel_depth = p[j];
+            if(pixel_depth < depth)
+            {
+              //ROS_INFO_STREAM("p: " << p[j] << ", depth: " << depth << ", i: " << i << ", j: " << j);
+              
+              result.addPoint(i, j, pixel_depth);
+              //return ComparisonResult(i,j, pixel_depth);
+            }
+          }
+        }
+        return result;
+      }
+    };
       
   }
     
@@ -163,6 +198,12 @@ namespace utils
     ComparisonResult details(const cv::Mat& image, const float depth)
     {
       return utils::comparisons::evaluate<utils::comparisons::details>(image, depth);
+    }
+    
+    inline
+    ComparisonResult fulldetails(const cv::Mat& image, const float depth)
+    {
+      return utils::comparisons::evaluate<utils::comparisons::fulldetails>(image, depth);
     }
     
   }

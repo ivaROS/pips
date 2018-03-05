@@ -4,32 +4,95 @@
 
 #include <opencv2/core/types.hpp>
 
+struct PixelCollision
+{
+  cv::Point pt;
+  float depth;
+  
+  PixelCollision(cv::Point pt, float depth):
+    depth(depth),
+    pt(pt)
+  {}
+    
+  PixelCollision(int row, int col, float depth):
+    depth(depth),
+    pt(cv::Point(col,row))
+  {}
+  
+};
+
 struct ComparisonResult
 {
+private:
   bool has_details_=false;
   bool collides_ = false;
-  cv::Point collision_point_;
-  float collision_depth_=-1;//nanf;
+  std::vector<PixelCollision> collision_points_;
+  
+public:
+  ComparisonResult()
+  {}
   
   ComparisonResult(bool is_collision) : collides_(is_collision) {}
   
-  ComparisonResult(int row, int col, float depth) : 
-      has_details_(true),
-      collides_(true),
-      collision_point_(col,row),
-      collision_depth_(depth)
-      {}
+  ComparisonResult(int row, int col, float depth)
+  {
+    addPoint(row,col,depth);
+  }
   
   ComparisonResult(const cv::Point& pt, float depth) :
     has_details_(true),
-    collides_(true),
-    collision_point_(pt),
-    collision_depth_(depth)
-    {}
+    collides_(true)
+  {
+    addPoint(pt, depth);
+  }
+  
+
+  
+  void addPoint(const cv::Point& pt, float depth)
+  {
+    PixelCollision pc(pt,depth);
+    addPoint(pc);
+  }
+  
+  void addPoint(int row, int col, float depth)
+  {
+    PixelCollision pc(row,col,depth);
+    addPoint(pc);
+  }
+  
+  void addPoint(PixelCollision pc)
+  {
+    collision_points_.push_back(pc);
+    has_details_ = true;
+    collides_ = true;
+  }
+  
+  void addOffset(cv::Point pt)
+  {
+    for(auto point : collision_points_)
+    {
+      point.pt += pt;
+    }
+  }
+  
+  void transpose()
+  {
+    for(auto point : collision_points_)
+    {
+      cv::Point pt_t(point.pt.y, point.pt.x);
+      point.pt = pt_t;
+    }
+  }
+  
+  // Getters
+  bool hasDetails() const
+  {
+    return has_details_;
+  }
   
   operator bool() const
   {
-      return collides(); // Or false!
+    return collides(); // Or false!
   }
   
   bool collides() const
@@ -37,20 +100,11 @@ struct ComparisonResult
     return collides_;
   }
   
-  bool has_details() const
+  std::vector<PixelCollision> points() const
   {
-    return has_details_;
+    return collision_points_;
   }
-  
-  cv::Point point() const
-  {
-    return collision_point_;
-  }
-  
-  float depth() const
-  {
-    return collision_depth_;
-  }
+
 };
 
 #endif /* IMAGE_COMPARISON_RESULT_H */
