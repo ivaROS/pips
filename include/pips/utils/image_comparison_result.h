@@ -69,7 +69,7 @@ public:
   
   void addOffset(cv::Point pt)
   {
-    for(auto point : collision_points_)
+    for(auto& point : collision_points_)
     {
       point.pt += pt;
     }
@@ -77,7 +77,7 @@ public:
   
   void transpose()
   {
-    for(auto point : collision_points_)
+    for(auto& point : collision_points_)
     {
       cv::Point pt_t(point.pt.y, point.pt.x);
       point.pt = pt_t;
