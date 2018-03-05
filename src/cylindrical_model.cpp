@@ -294,33 +294,40 @@
   {
     std::vector<COLUMN_TYPE> cols = getColumns(pt);
   
+    ComparisonResult result;
     for(unsigned int i = 0; i < cols.size(); ++i)
     {
       cv::Mat col = cv::Mat(this->image_ref_,cols[i].rect); //cols[i].image;
       float depth = cols[i].depth;
       
-      ComparisonResult result = isLessThan(col, depth);
+      ComparisonResult column_result = isLessThan(col, depth);
 
-      if(result && options)
+      if(column_result && options)
       {        
-	  if(!result.hasDetails())
+        if(!column_result.hasDetails())
 	  {
-	    result = isLessThanDetails(col,depth);
+      column_result = isLessThanDetails(col,depth);
 	  }
 	  cv::Point offset;
 	  cv::Size size;
 	  col.locateROI(size, offset);
 		
-	  result.addOffset(offset);	
+    column_result.addOffset(offset);	
 	
-	  
-	  return result;
+	  if(show_im_)
+    {
+      result.addResult(column_result);
+    }
+    else
+    {
+      return column_result;
+    }
       }
     }
     
     
  
-    return false;
+    return result;
   }
   
   ComparisonResult CylindricalModel::isLessThan(const cv::Mat& col, float depth)
@@ -330,7 +337,14 @@
   
   ComparisonResult CylindricalModel::isLessThanDetails(const cv::Mat& col, float depth)
   {
-    return utils::isLessThan::details(col, depth);
+    if(show_im_)
+    {
+      return utils::isLessThan::fulldetails(col, depth);
+    }
+    else
+    {
+      return utils::isLessThan::details(col, depth);
+    }
   }
     
 

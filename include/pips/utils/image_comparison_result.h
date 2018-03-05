@@ -67,6 +67,14 @@ public:
     collides_ = true;
   }
   
+  void addResult(ComparisonResult result)
+  {
+    for(auto point : result.points())
+    {
+      addPoint(point);
+    }
+  }
+  
   void addOffset(cv::Point pt)
   {
     for(auto& point : collision_points_)
