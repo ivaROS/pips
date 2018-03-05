@@ -6,7 +6,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include <ros/ros.h>
+//#include <ros/ros.h>
 
 namespace utils
 {
@@ -143,7 +143,7 @@ namespace utils
             T pixel_depth = p[j];
             if(pixel_depth < depth)
             {
-              ROS_INFO_STREAM("p: " << p[j] << ", depth: " << depth << ", i: " << i << ", j: " << j);
+              //ROS_INFO_STREAM("p: " << p[j] << ", depth: " << depth << ", i: " << i << ", j: " << j);
               
               result.addPoint(i, j, pixel_depth);
               //return ComparisonResult(i,j, pixel_depth);

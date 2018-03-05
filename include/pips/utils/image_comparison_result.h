@@ -10,13 +10,13 @@ struct PixelCollision
   float depth;
   
   PixelCollision(cv::Point pt, float depth):
-    depth(depth),
-    pt(pt)
+    pt(pt),
+    depth(depth)
   {}
     
   PixelCollision(int row, int col, float depth):
-    depth(depth),
-    pt(cv::Point(col,row))
+    pt(cv::Point(col,row)),
+    depth(depth)
   {}
   
 };

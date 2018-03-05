@@ -339,6 +339,7 @@
   {
     if(show_im_)
     {
+      ROS_INFO_STREAM("FULL details!");
       return utils::isLessThan::fulldetails(col, depth);
     }
     else

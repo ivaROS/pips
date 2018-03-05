@@ -33,7 +33,9 @@ ComparisonResult CylindricalModelTVect::isLessThan(const cv::Mat& image, const f
     
 }
 
+/*
 ComparisonResult CylindricalModel::isLessThanDetails(const cv::Mat& col, float depth)
 {
   return utils::isLessThan::details(col, depth);
 }
+*/
