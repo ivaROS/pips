@@ -114,7 +114,7 @@
     
     return rect;
   }
-  
+
   bool CylindricalModel::inFrame(const cv::Point3d& pt)
   {
     double h_squared = pt.x*pt.x + pt.z*pt.z;
@@ -305,23 +305,23 @@
       if(column_result && options)
       {        
         if(!column_result.hasDetails())
-	  {
-      column_result = isLessThanDetails(col,depth);
-	  }
-	  cv::Point offset;
-	  cv::Size size;
-	  col.locateROI(size, offset);
-		
-    column_result.addOffset(offset);	
-	
-	  if(show_im_)
-    {
-      result.addResult(column_result);
-    }
-    else
-    {
-      return column_result;
-    }
+        {
+            column_result = isLessThanDetails(col,depth);
+        }
+        cv::Point offset;
+        cv::Size size;
+        col.locateROI(size, offset);
+            
+        column_result.addOffset(offset);	
+
+        if(show_im_)
+        {
+          result.addResult(column_result);
+        }
+        else
+        {
+          return column_result;
+        }
       }
     }
     
