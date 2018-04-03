@@ -43,7 +43,7 @@
     int64_t duration = (t2-t1).toNSec();
     durations_.addDuration(t1,t2);
     
-    ROS_DEBUG_STREAM_NAMED("CollisionChecker.current_duration", "[CollisionChecker]: Duration = " << duration << " ns. Distance = " << pose.position.x);
+    ROS_DEBUG_STREAM_NAMED("CollisionChecker.current_duration", "[CollisionChecker]: Collision Checking Duration = " << duration << " ns. Distance = " << pose.position.x);
     
 
     return collided;
