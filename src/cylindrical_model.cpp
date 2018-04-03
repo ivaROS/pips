@@ -236,7 +236,7 @@
     }
 
 
-    for(unsigned int p_x = left; p_x < right; ++p_x)
+    for(int p_x : cam_model_->getColumnRange(left,right))
     {
         
       /*%reprojecting x pixel coordinate at center of y coordinates to ray
