@@ -66,14 +66,15 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     nh_(nh, name_), pnh_(pnh, name_), robot_model_(nh_, pnh_), setup_durations_(name_, "pips_construction")
   {
       ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
-      
-      cam_model_ = std::make_shared<pips::utils::DepthCameraModel>();
-      
-      robot_model_.setCameraModel(cam_model_);
+
   }
 
   void PipsCollisionChecker::initImpl()
   {
+    cam_model_ = getCameraModel();
+    
+    robot_model_.setCameraModel(cam_model_);
+    
       robot_model_.init();
       
       //checker_ = nh_.serviceClient<extended_local::ExtPose>("/ext_check");
@@ -105,7 +106,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     image_msg: The depth image. Either the image_raw (16bit unsigned) or image (32 bit float) topics may be used, but the raw topic is preferred (the reason being that the conversion nodelet is not needed and in theory we save some computation. More importantly, 16u types can be vectorized more than 32f).
     info_msgs: The CameraInfo msg accompanying the image msg. It is necessary to update the camera model each time in order to permit changing the camera's resolution during operation.
   */ 
-  void PipsCollisionChecker::setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
+  void PipsCollisionChecker::setImage(const sensor_msgs::ImageConstPtr& image_msg)
   {
     ROS_DEBUG_STREAM_NAMED(name_, "Setting new image" << std::endl);
     
@@ -141,8 +142,6 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     }
 
     //Reinitialize camera model with each image in case resolution has changed
-
-    cam_model_->setInfo(info_msg);
     
     robot_model_.updateModel(input_bridge_ref_, scale_);
     return;

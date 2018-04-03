@@ -71,11 +71,12 @@ public :
 
     PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh);
 
-    void setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
+    void setImage(const sensor_msgs::ImageConstPtr& image_msg);
     CCResult testCollisionImpl(PoseType pose, CCOptions options=CCOptions());
     cv::Mat generateDepthImage(PoseType pose);
     
     void initImpl();
+    
     
     void setTransform(const geometry_msgs::TransformStamped& base_optical_transform);
     
@@ -100,9 +101,12 @@ public :
     
 protected:
   ros::Publisher posepub_, pointpub_;
+  
 
 private:
     bool getDepthImageSrv(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res);
+    virtual std::shared_ptr<pips::utils::AbstractCameraModel> getCameraModel()=0;
+    
     
 private :
     std::string name_ = "PipsCollisionChecker";
@@ -111,7 +115,7 @@ private :
 
 
     //image_transport::Publisher depthpub_;
-    std::shared_ptr<pips::utils::DepthCameraModel> cam_model_;
+    std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_;
     ros::NodeHandle nh_, pnh_;
 
     //image_transport::ImageTransport it_; // Needs to be after node handles to ensure they are initialized first

@@ -54,7 +54,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include ${OpenCV_INCLUDE_DIRS} #${EIGEN3_INCLUDE_DIR} 
-  LIBRARIES collision_checker pips_collision_checker
+  LIBRARIES collision_checker pips_collision_checker depth_image_collision_checker
   CATKIN_DEPENDS image_geometry cv_bridge message_runtime #extended_local dense_depth_projection
   DEPENDS  OpenCV tf2_eigen #Eigen3
 )
@@ -74,12 +74,16 @@ include_directories(
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall ")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fopenmp")	#TODO: remove these and at least switch to add_definitions, though openmp should really only be enabled on target that needs it
 
+
+add_library(robot_model_interface src/hallucinated_robot_model_interface.cpp)
+
 ## Declare the collision_checker library
 add_library(collision_checker src/collision_checker.cpp)
 
 add_library(pips_collision_checker src/pips_collision_checker.cpp)
 
-add_library(robot_model_interface src/hallucinated_robot_model_interface.cpp)
+add_library(depth_image_collision_checker src/depth_image_collision_checker.cpp)
+
 
 
 #message([WARN] "project Exported: ${${PROJECT_NAME}_EXPORTED_TARGETS}\n catkin exported: ${catkin_EXPORTED_TARGETS} \n gencfg: ${PROJECT_NAME}_gencfg")
@@ -98,7 +102,16 @@ add_dependencies(collision_checker
 add_dependencies(pips_collision_checker
    ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
    )
+   
+add_dependencies(depth_image_collision_checker
+   ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+   )
 
+   
+   
+
+   
+   
 #add_library (dense_model 
 #  src/dense_model.cpp
 #  )
@@ -183,6 +196,10 @@ SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model_t)
 
 MESSAGE(STATUS "ROBOT MODELS " ${ROBOT_MODEL_LIBS})
    
+   
+   
+   
+
 target_link_libraries(robot_model_interface
   ${ROBOT_MODEL_LIBS}
   ${catkin_LIBRARIES}
@@ -199,6 +216,14 @@ target_link_libraries(pips_collision_checker
   ${OpenCV_LIBRARIES}
   )
 
+target_link_libraries(depth_image_collision_checker
+  pips_collision_checker
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  )
+ 
+ 
+ 
 
 if(OpenCV_VERSION VERSION_LESS "3.0")
   MESSAGE(STATUS "Your OpenCV version is less than 3.0, OpenCL benchmarker will not be built")
