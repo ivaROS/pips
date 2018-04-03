@@ -12,8 +12,6 @@ typedef boost::shared_mutex Mutex;
 typedef boost::unique_lock< Mutex > WriteLock;
 typedef boost::shared_lock< Mutex > ReadLock;
 
-
-
 class HallucinatedRobotModelInterface
 {
 public:
@@ -22,6 +20,8 @@ public:
   
   void configCB(pips::HallucinatedRobotModelConfig &config, uint32_t level);
   void init();
+  
+  void setCameraModel(std::shared_ptr<pips::utils::AbstractCameraModel> cam_model);
   
   template <typename T>
   CCResult testCollision(const T pose, CCOptions options)
@@ -37,12 +37,13 @@ public:
     return model_->generateHallucinatedRobot(pose);
   }
   
-  void updateModel(const cv_bridge::CvImage::ConstPtr& cv_image_ref, const sensor_msgs::CameraInfoConstPtr& info_msg, double scale);
+  void updateModel(const cv_bridge::CvImage::ConstPtr& cv_image_ref, double scale);
   void setTransform(const geometry_msgs::TransformStamped& base_optical_transform);
+  
   
 private:
   
-  std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_; // Note: I could get rid of the pointer and pass a reference to the implementation constructor. That would require making sure that cam_model_ was not destructed before model_. I think I've already arranged things properly for that to work, but not worth worrying about
+  std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_; // Note: I could get rid of the pointer and pass a reference to the implementation constructor. That would require making sure that cam_model_ was not destructed before model_. I think I've already arranged things properly for that to work, but not worth worrying about
   std::shared_ptr<HallucinatedRobotModelBase> model_;
 
   double scale_;

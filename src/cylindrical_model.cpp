@@ -1,5 +1,5 @@
 
-#include "pips/collision_testing/robot_models/cylindrical_model.h"
+#include <pips/collision_testing/robot_models/cylindrical_model.h>
 #include <pips/utils/image_comparison_implementations.h>
 //#include <sensor_msgs/Image.h>
 //#include <geometry_msgs/TransformStamped.h>
@@ -117,6 +117,8 @@
 
   bool CylindricalModel::inFrame(const cv::Point3d& pt)
   {
+    // TODO: consolidate repeated code into functions
+    
     double h_squared = pt.x*pt.x + pt.z*pt.z;
     double h = std::sqrt(h_squared);
   
@@ -244,7 +246,7 @@
       %L(2) = 0;
       */
       
-      cv::Point3d ray = cam_model_->projectPixelTo3dRay(cv::Point2d(p_x,pt.y));
+      cv::Point3d ray = cam_model_->projectPixelTo3dRay(cv::Point2d(p_x,pt.y)); //I think that the pt.y can be 0 without effect
       //ray.y = 0;
       
       
@@ -337,6 +339,7 @@
   
   ComparisonResult CylindricalModel::isLessThanDetails(const cv::Mat& col, float depth)
   {
+    // TODO: replace 'show_im_' with more accurate variable name (ex: 'full_details' or something)
     if(show_im_)
     {
       ROS_INFO_STREAM("FULL details!");

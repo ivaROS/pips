@@ -26,10 +26,14 @@
   HallucinatedRobotModelInterface::HallucinatedRobotModelInterface(ros::NodeHandle nh, ros::NodeHandle pnh) :
     nh_(nh), pnh_(pnh, name_)
   {
-    cam_model_ = std::make_shared<image_geometry::PinholeCameraModel>();
     reconfigure_server_ = std::make_shared<ReconfigureServer>(pnh_);
     //pnh_ = ros::NodeHandle(nh_, name_);
     
+  }
+  
+  void HallucinatedRobotModelInterface::setCameraModel(std::shared_ptr<pips::utils::AbstractCameraModel> cam_model)
+  {
+    cam_model_ = cam_model;
   }
   
   void HallucinatedRobotModelInterface::init()
@@ -48,7 +52,7 @@
     {
       if(config.model_type == pips::HallucinatedRobotModel_rectangular)
       {
-	ROS_INFO_STREAM_NAMED(name_, "New model type = Rectangular");
+        ROS_INFO_STREAM_NAMED(name_, "New model type = Rectangular");
         model_ = std::make_shared<RectangularModel>();
       }
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ocl)
@@ -61,7 +65,7 @@
       }
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_ss)
       {
-	ROS_INFO_STREAM_NAMED(name_, "New model type = RectangularSS");
+        ROS_INFO_STREAM_NAMED(name_, "New model type = RectangularSS");
         model_ = std::make_shared<RectangularModelSS>();
       }
       else if(config.model_type == pips::HallucinatedRobotModel_cylindrical_t_vect)
@@ -70,8 +74,8 @@
       }
       else if(config.model_type == pips::HallucinatedRobotModel_rectangular_pf)
       {
-	ROS_INFO_STREAM_NAMED(name_, "New model type = ParallelFor");
-	model_ = std::make_shared<RectangularModelPF>();
+        ROS_INFO_STREAM_NAMED(name_, "New model type = ParallelFor");
+        model_ = std::make_shared<RectangularModelPF>();
       }
       else if (config.model_type == pips::HallucinatedRobotModel_cylindrical)
       {
@@ -120,8 +124,7 @@
 
   }
   
-  
-  void HallucinatedRobotModelInterface::updateModel(const cv_bridge::CvImage::ConstPtr& cv_image_ref, const sensor_msgs::CameraInfoConstPtr& info_msg, double scale)
+  void HallucinatedRobotModelInterface::updateModel(const cv_bridge::CvImage::ConstPtr& cv_image_ref, double scale)
   {
     cv_image_ref_ = cv_image_ref;
     scale_ = scale;
@@ -129,8 +132,8 @@
     {
       WriteLock lock(model_mutex_);
       model_->updateModel(cv_image_ref_, scale);
-      cam_model_->fromCameraInfo(info_msg); //We are only updating the contents of cam_model_, rather than the object it points to, so no need to pass it to the model again
-
+      cam_model_->update(); //We are only updating the contents of cam_model_, rather than the object it points to, so no need to pass it to the model again
+      
     }
   }
   

@@ -63,9 +63,13 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   
 
   PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : CollisionChecker(nh,pnh),
-    nh_(nh, name_), pnh_(pnh, name_), robot_model_(nh_, pnh_)
+    nh_(nh, name_), pnh_(pnh, name_), robot_model_(nh_, pnh_), setup_durations_(name_, "pips_construction")
   {
       ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
+      
+      cam_model_ = std::make_shared<pips::utils::DepthCameraModel>();
+      
+      robot_model_.setCameraModel(cam_model_);
   }
 
   void PipsCollisionChecker::initImpl()
@@ -115,8 +119,15 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
       //Make a copy of depth image and set all 0's (unknowns) in image to some large value.
       //Better idea: set them to Nan!
       image_ref_ = input_bridge_ref_->image;
-      image_ref_.setTo(MAX_RANGE * scale_, image_ref_==0);
       
+      auto t1 = ros::WallTime::now();
+      image_ref_.setTo(MAX_RANGE * scale_, image_ref_==0);
+      auto t2 = ros::WallTime::now();
+      
+      int64_t duration = (t2-t1).toNSec();
+      setup_durations_.addDuration(t1,t2);
+    
+      ROS_DEBUG_STREAM_NAMED("CollisionChecker.current_duration", "[CollisionChecker]: Setup Duration = " << duration << ", size=" << image_ref_.cols*image_ref_.rows);
       
       //image_ref_.setTo(MAX_RANGE * scale_, image_ref_!=image_ref_);
 
@@ -131,7 +142,9 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
     //Reinitialize camera model with each image in case resolution has changed
 
-    robot_model_.updateModel(input_bridge_ref_, info_msg, scale_);
+    cam_model_->setInfo(info_msg);
+    
+    robot_model_.updateModel(input_bridge_ref_, scale_);
     return;
   }
 

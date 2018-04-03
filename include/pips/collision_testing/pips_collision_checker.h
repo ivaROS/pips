@@ -2,6 +2,7 @@
 #define PIPS_COLLISION_CHECKER_H
 
 #include <pips/collision_testing/collision_checker.h>
+#include <pips/utils/depth_camera_model.h>
 
 #include "pips/collision_testing/hallucinated_robot_model_interface.h"
 #include <pips/GenerateDepthImage.h>
@@ -56,6 +57,9 @@ typedef std::shared_ptr<DepthData> DepthDataPtr;
 
 */
 
+
+// TODO: remove the depth image specific stuff and put it in a derived class
+
 class PipsCollisionChecker : public CollisionChecker
 {
 
@@ -107,7 +111,7 @@ private :
 
 
     //image_transport::Publisher depthpub_;
-    std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_;
+    std::shared_ptr<pips::utils::DepthCameraModel> cam_model_;
     ros::NodeHandle nh_, pnh_;
 
     //image_transport::ImageTransport it_; // Needs to be after node handles to ensure they are initialized first
@@ -127,7 +131,7 @@ private :
     cv_bridge::CvImagePtr input_bridge_ref_;
     
     cv_bridge::CvImagePtr input_bridge_, output_bridge_;
-    
+    pips::utils::DurationAccumulator setup_durations_;
 
 
     

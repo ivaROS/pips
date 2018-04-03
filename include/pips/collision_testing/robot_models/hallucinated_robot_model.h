@@ -5,11 +5,12 @@
 #include <pips/collision_testing/collision_checking_options.h>
 #include <pips/collision_testing/collision_checking_result.h>
 #include <pips/utils/image_comparison_result.h>
+#include <pips/utils/abstract_camera_model.h>
+
 
 //#include <dynamic_reconfigure/server.h>
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/TransformStamped.h>
-#include <image_geometry/pinhole_camera_model.h>
 #include <cv_bridge/cv_bridge.h>
 
 #include <tf2_eigen/tf2_eigen.h>
@@ -102,7 +103,7 @@ class HallucinatedRobotModelBase
     }
     
 
-    void init(std::shared_ptr<image_geometry::PinholeCameraModel>& cam_model, const geometry_msgs::TransformStamped& base_optical_transform)
+    void init(std::shared_ptr<pips::utils::AbstractCameraModel>& cam_model, const geometry_msgs::TransformStamped& base_optical_transform)
     {
       cam_model_ = cam_model;
       base_optical_transform_ = base_optical_transform;
@@ -135,7 +136,7 @@ class HallucinatedRobotModelBase
     }
    
   protected:
-    std::shared_ptr<image_geometry::PinholeCameraModel> cam_model_;
+    std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_;
     cv_bridge::CvImage::ConstPtr cv_image_ref_; //Allows access to original data and msg info
     double robot_radius_, robot_height_, floor_tolerance_;
     double scale_;
