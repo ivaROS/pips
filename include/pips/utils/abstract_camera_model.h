@@ -19,6 +19,8 @@ namespace pips
         virtual std::vector<int> getColumnRange(int left, int right)=0;
         
         virtual void update()=0;
+        
+        virtual float getPixelValue(const cv::Point3d& point)=0;
     };
   
   }

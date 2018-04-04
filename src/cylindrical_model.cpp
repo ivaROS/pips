@@ -219,7 +219,9 @@
       if(p_lb.x > 0)
       {
         left = p_lb_ind.x + 1;
-        float depth = Xt_lb.z*scale_;
+        //float depth = Xt_lb.z*scale_;
+        float depth = cam_model_->getPixelValue(Xt_lb) * scale_;
+        
         cols.push_back(getColumn(p_lt,p_lb,depth));
 
       }
@@ -229,7 +231,9 @@
       if(p_rb.x < img_width-1)
       {
         right = p_rb_ind.x;
-        float depth = Xt_rb.z*scale_;
+        //float depth = Xt_rb.z*scale_;
+        float depth = cam_model_->getPixelValue(Xt_rb) * scale_;
+        
         cols.push_back(getColumn(p_rt,p_rb,depth));
 
       }
@@ -283,7 +287,8 @@
       cv::Point2d p_xhb =  cam_model_->project3dToPixel(X_hb);
       cv::Point2d p_xht =  cam_model_->project3dToPixel(X_ht);
 
-      float depth = X_h.z*scale_;      
+      //float depth = X_h.z*scale_;     
+      float depth = cam_model_->getPixelValue(X_h) * scale_;
       cols.push_back(getColumn(p_xht,p_xhb,depth));
       
     }

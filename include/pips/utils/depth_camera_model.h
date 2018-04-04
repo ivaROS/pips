@@ -54,6 +54,11 @@ namespace pips
           
           return cols;
         }
+        
+        float getPixelValue(const cv::Point3d& point)
+        {
+          return point.z;
+        }
       
       
     };
