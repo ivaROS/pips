@@ -43,11 +43,11 @@ namespace pips
         
         std::vector<int> getColumnRange(int left, int right)
         {
-          ROS_ASSERT(left < right);
+          ROS_ASSERT(left <= right);
           
           std::vector<int> cols;
           
-          for(int i = left; left < right; ++i)
+          for(int i = left; i < right; ++i)
           {
             cols.push_back(i);
           }

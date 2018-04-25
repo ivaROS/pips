@@ -44,6 +44,9 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
     virtual cv::Rect getColumnRect(int x, int y, int width, int height);
 
     virtual cv::Rect getROIImpl(const cv::Point3d pt);
+    
+    void getIntersection(cv::Point3d pt, double r0, cv::Point3d& left, cv::Point3d& right);
+    
 
 };
 

@@ -136,7 +136,7 @@ add_library(rectangular_model_ss
   
 #For verbose vectorizing output on gcc 4.6: -ftree-vectorizer-verbose=7
 #For verbose vectorizing output on gcc 5.4: -fopt-info-vec-all
-target_compile_options(rectangular_model_ss PRIVATE -march=native ${OpenMP_CXX_FLAGS} -ftree-vectorize -fassociative-math -fno-signed-zeros -fno-trapping-math  -ffast-math  ) # -freciprocal-math #-funsafe-math-optimizations #-fno-math-errno -ffinite-math-only -fno-rounding-math -fno-signaling-nans -fcx-limited-range -fexcess-precision=fast
+target_compile_options(rectangular_model_ss PRIVATE -march=native ${OpenMP_CXX_FLAGS} -ftree-vectorize -fassociative-math -fno-signed-zeros -fno-trapping-math  -ffast-math -fopt-info-vec-optimized ) # -freciprocal-math #-funsafe-math-optimizations #-fno-math-errno -ffinite-math-only -fno-rounding-math -fno-signaling-nans -fcx-limited-range -fexcess-precision=fast
 target_compile_options(rectangular_model_ss PUBLIC  -std=c++11)
 target_link_libraries(rectangular_model_ss
   ${catkin_LIBRARIES}
@@ -147,7 +147,7 @@ SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} rectangular_model_ss)
 add_library(cylindrical_model_t_vect
   src/cylindrical_model_t_vect.cpp
   )
-target_compile_options(cylindrical_model_t_vect PRIVATE -march=native -ffast-math -ftree-vectorize ) #-ftree-vectorizer-verbose=7 -fopt-info-vec-all
+target_compile_options(cylindrical_model_t_vect PRIVATE -march=native -ffast-math -ftree-vectorize -fopt-info-vec-optimized) #-ftree-vectorizer-verbose=7 -fopt-info-vec-all
 target_compile_options(cylindrical_model_t_vect PUBLIC  -std=c++11)
 target_link_libraries(cylindrical_model_t_vect
   ${catkin_LIBRARIES}

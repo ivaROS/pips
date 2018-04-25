@@ -151,6 +151,49 @@
       return false;
     }
   }
+  
+  
+  void CylindricalModel::getIntersection(cv::Point3d pt, double r, cv::Point3d& left, cv::Point3d& right)
+  {
+    //Based on solution here: https://www.wolframalpha.com/input/?i=solve(+(x-0)%5E2+%2B+(y-0)%5E2%3Dr%5E2,+(x-c)%5E2%2B(y-d)%5E2%3Dr%5E2,+x,y)
+    //x = (c^3 + c d^2 + sqrt(-d^2 (c^2 + d^2) (c^2 + d^2 - 4 r^2)))/(2 (c^2 + d^2))
+    
+    double c = pt.x;
+    double d = pt.z;
+    
+    double a1 = c*c*c + c*d*d;
+    double a2 = std::sqrt(-d*d * (c*c + d*d) * (c*c + d*d - 4 * r*r));
+    double a3 = 2*(c*c + d*d);
+    double a4 = c*c*d*d + d*d*d*d;
+    
+    double x0 = (a1 - a2) / (a3);
+    double y0 = (a4 + c*a2)/(d*a3);
+    
+    double x1 = (a1 + a2) / (a3);
+    double y1 = (a4 - c*a2)/(d*a3);
+    
+    left.y = pt.y;
+    right.y = pt.y;
+    
+    if(pt.z > 0)    //This may not be correct...
+    {
+      left.x = x0;
+      left.z = y0;
+      
+      right.x = x1;
+      right.z = y1;
+    }
+    else
+    {
+      left.x = x1;
+      left.z = y1;
+      
+      right.x = x0;
+      right.z = y0;
+    }
+  }
+  
+  
 
   std::vector<COLUMN_TYPE> CylindricalModel::getColumns(const cv::Point3d pt)
   {
@@ -166,6 +209,8 @@
     double h_squared = pt.x*pt.x + pt.z*pt.z;
     double h = std::sqrt(h_squared);
     
+    cv::Point3d Xc_l, Xc_r;
+    
     // We only calculate the actual side borders of the robot if it is far enough away that they could be seen
     if(h > robot_radius_)
     {
@@ -174,9 +219,16 @@
       double theta_c = std::atan2(pt.x,pt.z);
       double theta_d = std::asin(robot_radius_/h);
       
-      cv::Point3d Xc_l(tangentDist*std::sin(theta_c - theta_d), pt.y, tangentDist*std::cos(theta_c - theta_d));
-      cv::Point3d Xc_r(tangentDist*std::sin(theta_c + theta_d), pt.y, tangentDist*std::cos(theta_c + theta_d));
-
+      Xc_l = cv::Point3d(tangentDist*std::sin(theta_c - theta_d), pt.y, tangentDist*std::cos(theta_c - theta_d));
+      Xc_r = cv::Point3d(tangentDist*std::sin(theta_c + theta_d), pt.y, tangentDist*std::cos(theta_c + theta_d));
+    }
+    else
+    {
+      return cols;
+      //getIntersection(pt, robot_radius_, Xc_l, Xc_r);
+    }
+    
+    {
       cv::Point3d Xt_lb = Xc_l + cv::Point3d(0,-floor_tolerance_,0);
       cv::Point3d Xt_rb = Xc_r + cv::Point3d(0,-floor_tolerance_,0);
 
@@ -206,7 +258,7 @@
       unsigned int p_rt_y = std::max(0,std::min((int)ceil(p_rt.y),img_height-1));
       cv::Point2i  p_rt_ind(p_rt_x, p_rt_y);
       
-      ROS_DEBUG_STREAM("pt= " << pt << "\nh_squared= " << h_squared << "\nh= " << h << "\ntheta_c= " << theta_c << "\ntheta_d= " << theta_d << "\nXt_lb= " << Xt_lb << "\nXt_rb= " << Xt_rb << "\nXt_lt= " << Xt_lt << "\nXt_rt= " << Xt_rt << "\np_lb= " << p_lb << "\np_rb= " << p_rb << "\np_lt= " << p_lt << "\np_rt= " << p_rt << "\np_lb_ind= " << p_lb_ind << "\np_rb_ind= " << p_rb_ind << "\np_lt_ind= " << p_lt_ind << "\np_rt_ind= " << p_rt_ind);
+      ROS_DEBUG_STREAM("pt= " << pt << "\nh_squared= " << h_squared << "\nh= " << h << /*"\ntheta_c= " << theta_c << "\ntheta_d= " << theta_d << */ "\nXc_l= " << Xc_l << "\nXc_r= " << Xc_r << "\nXt_lb= " << Xt_lb << "\nXt_rb= " << Xt_rb << "\nXt_lt= " << Xt_lt << "\nXt_rt= " << Xt_rt << "\np_lb= " << p_lb << "\np_rb= " << p_rb << "\np_lt= " << p_lt << "\np_rt= " << p_rt << "\np_lb_ind= " << p_lb_ind << "\np_rb_ind= " << p_rb_ind << "\np_lt_ind= " << p_lt_ind << "\np_rt_ind= " << p_rt_ind);
       
       
       //cv::Rect col = getColumn(image_ref_,p_lt,p_lb);
@@ -262,7 +314,12 @@
       if(b*b - 4*a*c <0)
       {
         ROS_ERROR_STREAM_NAMED(name_, "complex solution! Left=" << left << ", right=" << right << ", p_x="<< p_x << ", ray=" << ray << ", h_squared="<< h_squared );
-        ROS_BREAK();
+        continue;
+        //ROS_BREAK();
+      }
+      else
+      {
+        ROS_DEBUG_STREAM_NAMED(name_, "Left=" << left << ", right=" << right << ", p_x="<< p_x << ", ray=" << ray << ", h_squared="<< h_squared );
       }
       
       ROS_ASSERT_MSG(b*b - 4*a*c >=0, "Complex solution for ray-circle intersection!");
