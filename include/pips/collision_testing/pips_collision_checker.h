@@ -69,7 +69,7 @@ public :
     //Needed to ensure that eigen objects aligned
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh);
+    PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name=DEFAULT_NAME);
 
     void setImage(const sensor_msgs::ImageConstPtr& image_msg);
     CCResult testCollisionImpl(PoseType pose, CCOptions options=CCOptions());
@@ -79,6 +79,9 @@ public :
     
     
     void setTransform(const geometry_msgs::TransformStamped& base_optical_transform);
+    
+    static constexpr const char* DEFAULT_NAME="pips_collision_checker";
+
     
     //void generateImageCoord(const double xyz[], double * uv);
     /*

@@ -16,7 +16,7 @@ class HallucinatedRobotModelInterface
 {
 public:
   
-  HallucinatedRobotModelInterface(ros::NodeHandle nh, ros::NodeHandle pnh);
+  HallucinatedRobotModelInterface(ros::NodeHandle nh, ros::NodeHandle pnh, const std::string& name=DEFAULT_NAME);
   
   void configCB(pips::HallucinatedRobotModelConfig &config, uint32_t level);
   void init();
@@ -52,7 +52,7 @@ private:
   int model_type_ = -1;
   
   Mutex model_mutex_; // Allows simultaneous read operations; prevents anything else from happening while writing 
-  std::string name_ = "HallucinatedRobotModelInterface";
+  std::string name_;
   
   cv_bridge::CvImage::ConstPtr cv_image_ref_;
   
@@ -62,6 +62,9 @@ private:
   typedef dynamic_reconfigure::Server<pips::HallucinatedRobotModelConfig> ReconfigureServer;
   std::shared_ptr<ReconfigureServer> reconfigure_server_;
   
+public:
+  static constexpr const char* DEFAULT_NAME="hallucinated_robot_model_interface";
+
   
 };
 

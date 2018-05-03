@@ -23,8 +23,10 @@
 
 
   
-  HallucinatedRobotModelInterface::HallucinatedRobotModelInterface(ros::NodeHandle nh, ros::NodeHandle pnh) :
-    nh_(nh), pnh_(pnh, name_)
+  HallucinatedRobotModelInterface::HallucinatedRobotModelInterface(ros::NodeHandle nh, ros::NodeHandle pnh, const std::string& name) :
+    name_(name),
+    nh_(nh),
+    pnh_(pnh, name_)
   {
     reconfigure_server_ = std::make_shared<ReconfigureServer>(pnh_);
     //pnh_ = ros::NodeHandle(nh_, name_);

@@ -3,7 +3,7 @@
 #include <chrono>
 
  
- CollisionChecker::CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : nh_(nh, name_), pnh_(pnh, name_), durations_(name_, "checking")
+ CollisionChecker::CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : nh_(nh), pnh_(pnh, name_), durations_(name_, "checking")
  {
    
  }
@@ -21,7 +21,7 @@
   void CollisionChecker::init()
   {
       //TODO: is it possible for the service to be advertised and an attempt made to use it before initImpl finishes?
-      collision_testing_service_ = nh_.advertiseService("test_collision", &CollisionChecker::testCollisionSrv, this);
+      collision_testing_service_ = pnh_.advertiseService("test_collision", &CollisionChecker::testCollisionSrv, this);
       initImpl();
   }
   

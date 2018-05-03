@@ -62,8 +62,13 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   
   
 
-  PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : CollisionChecker(nh,pnh),
-    nh_(nh, name_), pnh_(pnh, name_), robot_model_(nh_, pnh_), setup_durations_(name_, "pips_construction")
+  PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name) : 
+    CollisionChecker(nh,pnh),
+    name_(name),
+    nh_(nh, name_),
+    pnh_(pnh, name_),
+    robot_model_(nh_, pnh_,""),
+    setup_durations_(name_, "pips_construction")
   {
       ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
 
@@ -81,10 +86,10 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
       
       //TODO: This should probably accept a CameraInfo message as an optional parameter, allowing it to be used without a camera
-      depth_generation_service_ = nh_.advertiseService("generate_depth_image", &PipsCollisionChecker::getDepthImageSrv, this);
-      posepub_ = nh_.advertise<geometry_msgs::PoseStamped>("collision_poses",100);
+      depth_generation_service_ = pnh_.advertiseService("generate_depth_image", &PipsCollisionChecker::getDepthImageSrv, this);
+      posepub_ = pnh_.advertise<geometry_msgs::PoseStamped>("collision_poses",100);
       
-      pointpub_ = nh_.advertise<PointCloud>("collisions",100);
+      pointpub_ = pnh_.advertise<PointCloud>("collisions",100);
 
   }
   
@@ -118,7 +123,8 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
       scale_ = (input_bridge_ref_->encoding == sensor_msgs::image_encodings::TYPE_32FC1) ? SCALE_METERS : SCALE_MM;
       
       //Make a copy of depth image and set all 0's (unknowns) in image to some large value.
-      //Better idea: set them to Nan!
+      //TODO: use max value of type rather than max range of kinect
+      //TODO: only perform this check if type is float
       image_ref_ = input_bridge_ref_->image;
       
       auto t1 = ros::WallTime::now();

@@ -8,8 +8,8 @@ namespace pips
   {
     
 
-    DepthImageCollisionChecker::DepthImageCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : 
-      PipsCollisionChecker(nh,pnh)
+    DepthImageCollisionChecker::DepthImageCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name) : 
+      PipsCollisionChecker(nh,pnh,name)
     {
       
     }
