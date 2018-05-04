@@ -70,10 +70,10 @@ class HallucinatedRobotModelBase
     {
     }
  
-
+    
     virtual CCResult testCollision(const geometry_msgs::Pose pose, CCOptions options)=0;
     virtual cv::Mat generateHallucinatedRobot(const geometry_msgs::Pose pose)=0;
-    virtual void setParameters(double robot_radius, double robot_height, double floor_tolerance, double safety_expansion, bool show_im)=0;
+    virtual void setParameters(double robot_radius, double robot_height, double safety_expansion, double floor_tolerance, bool show_im)=0;
     virtual bool inFrame(const cv::Point3d& pt){ return true;}
 
     

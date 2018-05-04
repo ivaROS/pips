@@ -39,7 +39,7 @@ public:
   
   void updateModel(const cv_bridge::CvImage::ConstPtr& cv_image_ref, double scale);
   void setTransform(const geometry_msgs::TransformStamped& base_optical_transform);
-  
+
   
 private:
   

@@ -121,7 +121,7 @@
       model_type_ = config.model_type;
     }
     
-    model_->setParameters(config.robot_radius, config.robot_height, config.floor_tolerance, config.safety_expansion, config.show_im);
+    model_->setParameters(config.robot_radius, config.robot_height, config.safety_expansion, config.floor_tolerance, config.show_im);
     
 
   }

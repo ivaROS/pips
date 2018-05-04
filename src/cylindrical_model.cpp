@@ -110,7 +110,7 @@
       rect |= cols[i].rect;
     }
     
-    ROS_INFO_STREAM_THROTTLE(1,"Pt = " << pt << ", rect = " << rect);
+    ROS_DEBUG_STREAM_THROTTLE(1,"Pt = " << pt << ", rect = " << rect);
     
     return rect;
   }
@@ -365,9 +365,9 @@
       float depth = cols[i].depth;
       
       ComparisonResult column_result = isLessThan(col, depth);
-
+      
       if(column_result && options)
-      {        
+      {
         if(!column_result.hasDetails())
         {
             column_result = isLessThanDetails(col,depth);
