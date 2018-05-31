@@ -3,12 +3,61 @@
 
 
 #include <opencv2/core/types.hpp>
+//#include <pcl/point_types.h>
+
+
+template <typename T>
+struct CollisionPoint_
+{
+  T x,y,z;
+  
+  template <typename S>
+  CollisionPoint_(const cv::Point3_<S> pt)
+  {
+    x = pt.x;
+    y = pt.y;
+    z = pt.z;
+  }
+  
+  CollisionPoint_(const pcl::_PointXYZ pt)
+  {
+    x = pt.x;
+    y = pt.y;
+    z = pt.z;
+  }
+  
+  operator pcl::PointXYZ() const 
+  {
+    return pcl::PointXYZ(x, y, z);
+  }
+  
+//   template <typename S>
+//   operator cv::Point3_<S>() const 
+//   {
+//     return cv::Point3_<S>(x, y, z);
+//   }
+  
+  operator cv::Point3_<float>() const 
+  {
+    return cv::Point3_<float>(x, y, z);
+  }
+  
+  operator cv::Point3_<double>() const 
+  {
+    return cv::Point3_<double>(x, y, z);
+  }
+  
+};
+
+typedef CollisionPoint_<float> CollisionPoint;
 
 struct CCResult
 {
   bool collides_=false;
   bool has_details_=false;
-  std::vector<cv::Point3d> collision_points_;
+
+  
+  std::vector<CollisionPoint> collision_points_;
   
   
   CCResult() {}
@@ -17,14 +66,14 @@ struct CCResult
       collides_(is_collision) 
       {}
   
-  CCResult(cv::Point3d collision_point) : 
+  CCResult(CollisionPoint collision_point) : 
       collides_(true),
       has_details_(true)
       {
 	collision_points_.push_back(collision_point);
       }
   
-  CCResult(std::vector<cv::Point3d> collision_points) : 
+  CCResult(std::vector<CollisionPoint> collision_points) : 
     collides_(true),
     has_details_(true),
     collision_points_(collision_points)
@@ -42,7 +91,7 @@ struct CCResult
     return collides_;
   }
   
-  std::vector<cv::Point3d> getCollisionPnts() const
+  std::vector<CollisionPoint> getCollisionPnts() const
   {
     return collision_points_;
   }

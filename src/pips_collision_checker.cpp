@@ -171,7 +171,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
       
 	if(collided.details())
 	{
-	    std::vector<cv::Point3d> worldPoints = collided.getCollisionPnts();
+	    std::vector<CollisionPoint> worldPoints = collided.getCollisionPnts();
 	    
 	    ROS_INFO_STREAM_NAMED(name_, "point depth: " << worldPoints[0].z);
 	    	    
@@ -182,9 +182,11 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 	    //msg->points.insert(std::end(msg->points), std::begin(worldPoints), std::end(worldPoints));
 	    msg->width = worldPoints.size();
 	    
+      msg->points = worldPoints;
+      
 	    for(auto point : worldPoints)
 	    {
-	      msg->points.push_back (pcl::PointXYZ(point.x, point.y, point.z));
+	      msg->points.push_back (ppoint);
 	    }
 	    
 	    pointpub_.publish(msg);
