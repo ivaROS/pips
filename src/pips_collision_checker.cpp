@@ -63,7 +63,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   
 
   PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name) : 
-    CollisionChecker(nh,pnh),
+    pips::collision_testing::TransformingCollisionChecker(nh,pnh),
     name_(name),
     nh_(nh, name_),
     pnh_(pnh, name_),
@@ -197,28 +197,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
       pose_stamped.header.frame_id = base_optical_transform_.child_frame_id;
       posepub_.publish(pose_stamped);
     }
-    /*
-    else if(false)
-    {
-      extended_local::ExtPose srv;
-      srv.request.pose = pose;
-      srv.request.radius.data = .2;
-      
-      
-      
-      if(checker_.call(srv))
-      {
-	//Service worked
-	ROS_DEBUG_STREAM_NAMED(name_, "service call worked!");
-      
-	if (srv.response.result)
-	{
-	    collided = true;
-	    ROS_INFO_STREAM_NAMED(name_, "Out of sight pose collided!");
-	}
-      }
-    }
-    */
+   
     
     return collided;
   }
@@ -244,41 +223,5 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     return true;
   }
 
-
-  // Incomplete and Not currently used
-  /*
-  void PipsCollisionChecker::generateImageCoord(const double xyz[], double * uv)
-  {
-    //Convert coordinates to Eigen Vector
-    Eigen::Map<const Eigen::Vector3d> origin_r(xyz);
-    
-    //Transform coordinates of robot base into camera's optical frame
-    Eigen::Vector3d origin_d = optical_transform_*origin_r;
-    //std::cout << "point (optical): " << origin_d << std::endl;
-
-    // convert into image coordinate
-
-    
-  }
-  */
-  
-  
-  
-  /*
-  PoseType getPose(geometry_msgs::Point point)
-  {
-    geometry_msgs::Pose pose;
-    pose.position = point;
-    
-    return getPose(pose);
-  }
-  
-  eigen::Affine3d getPose(geometry_msgs::Pose pose_out)
-  {
-    eigen::Affine3d pose_out;
-    tf2::fromMsg(pose_in, pose_out);
-  }
-  
-  */
 
 

@@ -1,7 +1,7 @@
 #ifndef PIPS_COLLISION_CHECKER_H
 #define PIPS_COLLISION_CHECKER_H
 
-#include <pips/collision_testing/collision_checker.h>
+#include <pips/collision_testing/transforming_collision_checker.h>
 #include <pips/utils/depth_camera_model.h>
 
 #include "pips/collision_testing/hallucinated_robot_model_interface.h"
@@ -24,43 +24,9 @@
 //class cv::Mat;
 
 
-/* This file currently is designed to work as though it were a generic interface but is specific to pips. 
-  The code will be separated into interface and implementation specific versions later   
-*/
-// Ex: this struct definition must be in the generic interface, which will be included by derived classes such as pips
-/*
-struct SensorData
-{
-  virtual const std_msgs::Header getHeader() = 0;
-};
-
-typedef std::shared_ptr<SensorData> SensorDataPtr;
-
-struct DepthData : public SensorData
-{
-  public:
-  const sensor_msgs::Image::ConstPtr image_msg;
-  const sensor_msgs::CameraInfo::ConstPtr info_msg;
-  
-  DepthData(const sensor_msgs::Image::ConstPtr& image_msg, const sensor_msgs::CameraInfo::ConstPtr& info_msg) :
-    image_msg(image_msg), info_msg(info_msg)
-  {}
-  
-  virtual const std_msgs::Header getHeader()
-  {
-    return info_msg->header;
-  }
-  
-};
-
-typedef std::shared_ptr<DepthData> DepthDataPtr;
-
-*/
 
 
-// TODO: remove the depth image specific stuff and put it in a derived class
-
-class PipsCollisionChecker : public CollisionChecker
+class PipsCollisionChecker : public pips::collision_testing::TransformingCollisionChecker
 {
 
 
