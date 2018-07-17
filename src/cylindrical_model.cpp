@@ -155,42 +155,22 @@
   
   void CylindricalModel::getIntersection(cv::Point3d pt, double r, cv::Point3d& left, cv::Point3d& right)
   {
-    //Based on solution here: https://www.wolframalpha.com/input/?i=solve(+(x-0)%5E2+%2B+(y-0)%5E2%3Dr%5E2,+(x-c)%5E2%2B(y-d)%5E2%3Dr%5E2,+x,y)
-    //x = (c^3 + c d^2 + sqrt(-d^2 (c^2 + d^2) (c^2 + d^2 - 4 r^2)))/(2 (c^2 + d^2))
+    cv::Point3d robot_origin;
     
-    double c = pt.x;
-    double d = pt.z;
+    //https://stackoverflow.com/a/42803692/2906021
+    double d = std::sqrt((pt.x - robot_origin.x)*(pt.x - robot_origin.x)  +  (pt.y - robot_origin.y)*(pt.y - robot_origin.y));
+    double a = (robot_radius_*robot_radius_ - r*r + d*d)/(2*d);
+    double h = std::sqrt(robot_radius_*robot_radius_ - a*a);
+    double x2 = robot_origin.x + a*(pt.x-robot_origin.x)/d;
+    double y2 = robot_origin.y + a*(pt.y-robot_origin.y)/d;
     
-    double a1 = c*c*c + c*d*d;
-    double a2 = std::sqrt(-d*d * (c*c + d*d) * (c*c + d*d - 4 * r*r));
-    double a3 = 2*(c*c + d*d);
-    double a4 = c*c*d*d + d*d*d*d;
+    right.x = x2 + h*(pt.y-robot_origin.y)/d;
+    right.y = y2 - h*(pt.x-robot_origin.x)/d;
     
-    double x0 = (a1 - a2) / (a3);
-    double y0 = (a4 + c*a2)/(d*a3);
+    left.x = x2 - h*(pt.y-robot_origin.y)/d;
+    left.y = y2 + h*(pt.x-robot_origin.x)/d;
     
-    double x1 = (a1 + a2) / (a3);
-    double y1 = (a4 - c*a2)/(d*a3);
     
-    left.y = pt.y;
-    right.y = pt.y;
-    
-    if(pt.z > 0)    //This may not be correct...
-    {
-      left.x = x0;
-      left.z = y0;
-      
-      right.x = x1;
-      right.z = y1;
-    }
-    else
-    {
-      left.x = x1;
-      left.z = y1;
-      
-      right.x = x0;
-      right.z = y0;
-    }
   }
   
   
@@ -224,8 +204,7 @@
     }
     else
     {
-      return cols;
-      //getIntersection(pt, robot_radius_, Xc_l, Xc_r);
+      getIntersection(pt, robot_radius_, Xc_l, Xc_r);
     }
     
     {
@@ -404,7 +383,7 @@
     // TODO: replace 'show_im_' with more accurate variable name (ex: 'full_details' or something)
     if(show_im_)
     {
-      ROS_INFO_STREAM("FULL details!");
+      ROS_DEBUG_STREAM("FULL details!");
       return utils::isLessThan::fulldetails(col, depth);
     }
     else

@@ -12,6 +12,51 @@ namespace pips
   namespace utils
   {
 
+    
+    struct Duration
+    {
+      double sec;
+      
+      Duration(double seconds) : sec(seconds) {}
+      
+      Duration(ros::WallDuration duration) : sec(duration.toSec()) {}
+      
+      operator double() {return sec;}
+      
+      operator std::string()
+      {
+        std::stringstream stream;
+        
+        stream << sec << "s";
+        
+        return stream.str();
+      }
+        
+      
+      std::string prettyPrint()
+      {
+        std::stringstream stream;
+        
+        if(sec < 1e-6)
+        {
+          stream << std::fixed << std::setprecision(2) << sec * 1e9 << "ns";
+        }
+        else if(sec < 1e-3)
+        {
+          stream << std::fixed << std::setprecision(2) << sec * 1e6 << "us";
+        }
+        else if(sec < 1)
+        {
+          stream << std::fixed << std::setprecision(2) << sec * 1e3<< "ms";
+        }
+        else
+        {
+          stream << std::fixed << std::setprecision(2) << sec<< "s";
+        }
+        
+        return stream.str();
+      }
+    };
 
 struct DurationAccumulator
 {
@@ -25,7 +70,7 @@ private:
 
 
 public:
-  DurationAccumulator(std::string logger, std::string name) : logger(logger), name(name)
+  DurationAccumulator()
   {
   }
   
@@ -43,17 +88,17 @@ public:
     num_samples++;
   }
   
-  std::string averageDuration()
+  Duration averageDuration()
   {
     if(num_samples > 0)
     {
-      double sec = total_duration.toSec()/((double)num_samples);
+      Duration sec = total_duration.toSec()/((double)num_samples);
       
-      return toString(sec);
+      return sec;
       
     }
     else
-      return "N/A";
+      return Duration(0);
   }
   
   int64_t getLastDuration()
@@ -61,29 +106,6 @@ public:
     return last_duration.toNSec();
   }
   
-  std::string toString(double sec)
-  {      
-      std::stringstream stream;
-      
-      if(sec < 1e-6)
-      {
-	stream << std::fixed << std::setprecision(2) << sec * 1e9 << "ns";
-      }
-      else if(sec < 1e-3)
-      {
-	stream << std::fixed << std::setprecision(2) << sec * 1e6 << "us";
-      }
-      else if(sec < 1)
-      {
-	stream << std::fixed << std::setprecision(2) << sec * 1e3<< "ms";
-      }
-      else
-      {
-	stream << std::fixed << std::setprecision(2) << sec<< "s";
-      }
-      
-      return stream.str();
-  }
 
 };
 

@@ -68,7 +68,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     nh_(nh, name_),
     pnh_(pnh, name_),
     robot_model_(nh_, pnh_,""),
-    setup_durations_(name_, "pips_construction")
+    setup_durations_()
   {
       ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
 
@@ -131,10 +131,10 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
       image_ref_.setTo(MAX_RANGE * scale_, image_ref_==0);
       auto t2 = ros::WallTime::now();
       
-      int64_t duration = (t2-t1).toNSec();
+      //int64_t duration = (t2-t1).toNSec();
       setup_durations_.addDuration(t1,t2);
     
-      ROS_DEBUG_STREAM_NAMED("CollisionChecker.current_duration", "[CollisionChecker]: Setup Duration = " << duration << ", size=" << image_ref_.cols*image_ref_.rows);
+      ROS_DEBUG_STREAM_NAMED(name_ + ".setup_duration", "[CollisionChecker]: Current Setup Duration = " << setup_durations_.getLastDuration() << ", average setup duration = " << setup_durations_.averageDuration() << ", size=" << image_ref_.cols*image_ref_.rows);
       
       //image_ref_.setTo(MAX_RANGE * scale_, image_ref_!=image_ref_);
 
@@ -173,20 +173,21 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 	{
 	    std::vector<CollisionPoint> worldPoints = collided.getCollisionPnts();
 	    
-	    ROS_INFO_STREAM_NAMED(name_, "point depth: " << worldPoints[0].z);
+	    //ROS_INFO_STREAM_NAMED(name_, "point depth: " << worldPoints[0].z);
 	    	    
 	    PointCloud::Ptr msg (new PointCloud);
 	    msg->header.stamp = input_bridge_ref_->header.stamp.toNSec()/1e3; // ros::Time::now().toNSec()/1e3;	//https://answers.ros.org/question/172241/pcl-and-rostime/
 	    msg->header.frame_id = input_bridge_ref_->header.frame_id;// "camera_depth_optical_frame";
-	    msg->height = 1;
 	    //msg->points.insert(std::end(msg->points), std::begin(worldPoints), std::end(worldPoints));
-	    msg->width = worldPoints.size();
 	    
-      msg->points = worldPoints;
+      //This will be done automatically if I don't
+      msg->width = worldPoints.size();
+      msg->height = 1;
       
+	          
 	    for(auto point : worldPoints)
 	    {
-	      msg->points.push_back (ppoint);
+	      msg->points.push_back (point);
 	    }
 	    
 	    pointpub_.publish(msg);
@@ -221,6 +222,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     out_msg.image = generateDepthImage(req.pose);
     
     res.image = *out_msg.toImageMsg();
+    res.image.header = input_bridge_ref_->header;
     
     return true;
   }

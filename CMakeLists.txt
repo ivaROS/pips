@@ -197,7 +197,8 @@ SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model_t)
 MESSAGE(STATUS "ROBOT MODELS " ${ROBOT_MODEL_LIBS})
    
    
-   
+target_compile_options(robot_model_interface PUBLIC  -std=c++11)
+
    
 
 target_link_libraries(robot_model_interface
