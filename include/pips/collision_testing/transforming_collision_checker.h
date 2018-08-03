@@ -19,8 +19,8 @@ namespace pips
 
         public :
             
-            TransformingCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh) : 
-                CollisionChecker(nh, pnh)
+            TransformingCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, std::string name="TransformingCollisionChecker") : 
+                CollisionChecker(nh, pnh, name)
             {}
             
 

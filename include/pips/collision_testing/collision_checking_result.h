@@ -2,7 +2,7 @@
 #define COLLISION_CHECKING_RESULT_H
 
 
-#include <opencv2/core/types.hpp>
+#include <opencv2/core/types.hpp> //TODO: I believe that this is now unnecessary
 //#include <pcl/point_types.h>
 
 

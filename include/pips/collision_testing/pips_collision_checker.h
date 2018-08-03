@@ -101,7 +101,7 @@ private :
     
     cv::Mat image_,image_ref_;
     
-    cv_bridge::CvImagePtr input_bridge_ref_;
+    cv_bridge::CvImageConstPtr input_bridge_ref_;
     
     cv_bridge::CvImagePtr input_bridge_, output_bridge_;
     pips::utils::DurationAccumulator setup_durations_;

@@ -22,7 +22,7 @@ public :
   //EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   typedef geometry_msgs::Pose PoseType;
 
-    CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh);
+    CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, std::string sub_name="CollisionChecker");
 
     CCResult testCollision(PoseType pose, CCOptions options = CCOptions());
     
@@ -60,10 +60,15 @@ protected:
    
 private :
     std::string name_ = "CollisionChecker";
+    
     ros::NodeHandle nh_, pnh_;	// For now, separate node handles for base and derived
     ros::ServiceServer collision_testing_service_;
 
+    std::string sub_name_;
+    
+    
     pips::utils::DurationAccumulator durations_;
+    bool inited_;
                               
 } ;
 /*

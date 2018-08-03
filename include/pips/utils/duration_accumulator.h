@@ -106,6 +106,11 @@ public:
     return last_duration.toNSec();
   }
   
+  size_t getNumSamples()
+  {
+    return num_samples;
+  }
+  
 
 };
 

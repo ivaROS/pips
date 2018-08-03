@@ -21,7 +21,7 @@
 #include <sensor_msgs/image_encodings.h>
 
 #include <climits>
-
+#include <limits>
 
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
@@ -63,7 +63,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   
 
   PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name) : 
-    pips::collision_testing::TransformingCollisionChecker(nh,pnh),
+    pips::collision_testing::TransformingCollisionChecker(nh,pnh,name),
     name_(name),
     nh_(nh, name_),
     pnh_(pnh, name_),
@@ -108,48 +108,62 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   Description: Sets the PipsCollisionChecker's depth image and camera model. Called whenever there is a new image.
   Name: PipsCollisionChecker::setImage
   Inputs:
-    image_msg: The depth image. Either the image_raw (16bit unsigned) or image (32 bit float) topics may be used, but the raw topic is preferred (the reason being that the conversion nodelet is not needed and in theory we save some computation. More importantly, 16u types can be vectorized more than 32f).
+    image_msg: The depth image. Either the image_raw (16bit unsigned) or image (32 bit float) topics may be used, but the raw topic is preferred (the reason being that the conversion nodelet is not needed and in theory we save some computation. More importantly, 16u types can be vectorized more than 32f). *Vectorization amount depends on platform. With some versions of SSE, the pipeline width is twice as large for floats, effectively canceling any gains from using ints. On others, they are the same width, and ints win.
     info_msgs: The CameraInfo msg accompanying the image msg. It is necessary to update the camera model each time in order to permit changing the camera's resolution during operation.
   */ 
   void PipsCollisionChecker::setImage(const sensor_msgs::ImageConstPtr& image_msg)
   {
     ROS_DEBUG_STREAM_NAMED(name_, "Setting new image" << std::endl);
     
+    auto t1 = ros::WallTime::now();
+    
     try {
       
-      input_bridge_ref_ = cv_bridge::toCvCopy(image_msg);
+      if(image_msg->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
+      {
+        input_bridge_ref_ = cv_bridge::toCvShare(image_msg);
+        scale_ = SCALE_METERS;
+      }
+      else if(image_msg->encoding == sensor_msgs::image_encodings::TYPE_16UC1)
+      {
+        //Make a copy of depth image and set all 0's (unknowns) in image to some large value.
+        cv_bridge::CvImagePtr cv_im = cv_bridge::toCvCopy(image_msg);
+        scale_ = SCALE_MM;
+        
+        //TODO: maybe use the max value of the type rather than arbitrary large value?
+        image_ref_ = cv_im->image;
+        image_ref_.setTo(std::numeric_limits<uint16_t>::max(), image_ref_==0);
+        
+        input_bridge_ref_ = cv_im;
+      }
       
       //If data type 32bit float, unit is m; else mm
-      scale_ = (input_bridge_ref_->encoding == sensor_msgs::image_encodings::TYPE_32FC1) ? SCALE_METERS : SCALE_MM;
+      //scale_ = (input_bridge_ref_->encoding == sensor_msgs::image_encodings::TYPE_32FC1) ? SCALE_METERS : SCALE_MM;
+
       
-      //Make a copy of depth image and set all 0's (unknowns) in image to some large value.
-      //TODO: use max value of type rather than max range of kinect
-      //TODO: only perform this check if type is float
-      image_ref_ = input_bridge_ref_->image;
-      
-      auto t1 = ros::WallTime::now();
-      image_ref_.setTo(MAX_RANGE * scale_, image_ref_==0);
-      auto t2 = ros::WallTime::now();
-      
-      //int64_t duration = (t2-t1).toNSec();
-      setup_durations_.addDuration(t1,t2);
-    
-      ROS_DEBUG_STREAM_NAMED(name_ + ".setup_duration", "[CollisionChecker]: Current Setup Duration = " << setup_durations_.getLastDuration() << ", average setup duration = " << setup_durations_.averageDuration() << ", size=" << image_ref_.cols*image_ref_.rows);
       
       //image_ref_.setTo(MAX_RANGE * scale_, image_ref_!=image_ref_);
 
       //A gazebo difference: unknown values are given as 'nan' rather than 0. However, comparison of a Nan with a number will always return false, so it won't trigger a collision
       //That also means that a simulation-only version could skip the data copy and 0 replacement. Futhermore, the driver could be customized to use Nans too
-
+      //Update: No point customizing the driver, the driver publishes 16UC1 images; the conversion nodelet already converts the 0s to NaNs.
     }
     catch (cv_bridge::Exception& ex){
       ROS_ERROR_NAMED(name_, "Failed to convert image");
       return;
     }
-
-    //Reinitialize camera model with each image in case resolution has changed
     
     robot_model_.updateModel(input_bridge_ref_, scale_);
+    
+    
+    auto t2 = ros::WallTime::now();
+    
+    //int64_t duration = (t2-t1).toNSec();
+    setup_durations_.addDuration(t1,t2);
+    
+    ROS_DEBUG_STREAM_NAMED(name_ + ".setup_timing", "[" + name_ + "]: Setup Duration = " << setup_durations_.getLastDuration() << ", size=" << input_bridge_ref_->image.cols*input_bridge_ref_->image.rows << ", average setup duration = " << setup_durations_.averageDuration() );
+    
+    
     return;
   }
 
