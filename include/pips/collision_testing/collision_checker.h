@@ -26,6 +26,9 @@ public :
 
     CCResult testCollision(PoseType pose, CCOptions options = CCOptions());
     
+    //This used to be private, which made more sense from an inheritance perspective. However, I now have reason to use it directly, at least for now
+    virtual CCResult testCollisionImpl(PoseType pose, CCOptions options)=0;
+    
     void init();
 
     
@@ -50,13 +53,12 @@ public :
 private:
    bool testCollisionSrv(pips::TestCollision::Request &req, pips::TestCollision::Response &res);
    
-   virtual CCResult testCollisionImpl(PoseType pose, CCOptions options)=0;
 
    virtual void initImpl() {}
 
 protected:
     //ros::Publisher posepub_;
-
+  
    
 private :
     std::string name_ = "CollisionChecker";

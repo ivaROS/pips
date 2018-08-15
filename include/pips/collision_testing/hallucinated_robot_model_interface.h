@@ -8,12 +8,15 @@
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/locks.hpp>
 
-typedef boost::shared_mutex Mutex;
-typedef boost::unique_lock< Mutex > WriteLock;
-typedef boost::shared_lock< Mutex > ReadLock;
+
 
 class HallucinatedRobotModelInterface
 {
+private:
+  typedef boost::shared_mutex Mutex;
+  typedef boost::unique_lock< Mutex > WriteLock;
+  typedef boost::shared_lock< Mutex > ReadLock;
+  
 public:
   
   HallucinatedRobotModelInterface(ros::NodeHandle nh, ros::NodeHandle pnh, const std::string& name=DEFAULT_NAME);

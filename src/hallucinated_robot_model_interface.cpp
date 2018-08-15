@@ -28,7 +28,7 @@
     nh_(nh),
     pnh_(pnh, name_)
   {
-    reconfigure_server_ = std::make_shared<ReconfigureServer>(pnh_);
+    //reconfigure_server_ = std::make_shared<ReconfigureServer>(pnh_);
     //pnh_ = ros::NodeHandle(nh_, name_);
     
   }
@@ -40,6 +40,9 @@
   
   void HallucinatedRobotModelInterface::init()
   {
+    //It turns out that the current configuration is loaded from the parameter server when the reconfigure server is constructed
+    //Since ros-related functionality should be setup in init, moved from constructor to here.
+    reconfigure_server_ = std::make_shared<ReconfigureServer>(pnh_);
     reconfigure_server_->setCallback(boost::bind(&HallucinatedRobotModelInterface::configCB, this, _1, _2));
   }
   
