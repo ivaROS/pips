@@ -194,6 +194,14 @@ target_link_libraries(cylindrical_model_t
   )
 SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} cylindrical_model_t)
 
+add_library(box_model
+  src/box_model.cpp
+  )
+target_link_libraries(box_model
+  ${catkin_LIBRARIES}
+  )
+SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} box_model)
+
 MESSAGE(STATUS "ROBOT MODELS " ${ROBOT_MODEL_LIBS})
    
    

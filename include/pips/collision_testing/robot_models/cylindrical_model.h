@@ -2,14 +2,15 @@
 #define CYLINDRICAL_MODEL_H
 
 #include <pips/collision_testing/robot_models/hallucinated_robot_model.h>
+#include <pips/collision_testing/robot_models/box_model.h>
 
 // May be able to template this for 32F or 16U and have the other functions templated based on the type of this that is passed in
-struct COLUMN_TYPE
-{
-  cv::Rect rect;
-  //cv::Mat image;
-  float depth;
-};
+// struct COLUMN_TYPE
+// {
+//   cv::Rect rect;
+//   //cv::Mat image;
+//   float depth;
+// };
 
 class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
 {
