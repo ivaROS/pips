@@ -3,6 +3,7 @@
 
 #include <pips/collision_testing/robot_models/hallucinated_robot_model.h>
 #include <pips/collision_testing/robot_models/column_type.h>
+#include <pips/collision_testing/geometry_models/cylinder.h>
 
 // May be able to template this for 32F or 16U and have the other functions templated based on the type of this that is passed in
 // struct COLUMN_TYPE
@@ -43,12 +44,13 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
     virtual cv::Mat generateHallucinatedRobotImpl(const cv::Point3d pt);
     
     virtual cv::Rect getColumnRect(int x, int y, int width, int height);
-
+    virtual cv::Rect getColumnRect(const cv::Rect& rect);
+    
     virtual cv::Rect getROIImpl(const cv::Point3d pt);
     
     void getIntersection(cv::Point3d pt, double r0, cv::Point3d& left, cv::Point3d& right);
     
-
+    pips::collision_testing::geometry_models::Cylinder cylinder_;
 };
 
 

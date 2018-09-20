@@ -33,6 +33,9 @@
       floor_tolerance_ = floor_tolerance;
       
       show_im_ = show_im;
+      
+      cylinder_ = pips::collision_testing::geometry_models::Cylinder(robot_radius_, robot_height_);
+      cylinder_.cam_model_ = cam_model_;
   }
   
 
@@ -54,7 +57,6 @@
     
     return viz;
   }
-
 
 
   COLUMN_TYPE CylindricalModel::getColumn(const cv::Point2d top, const cv::Point2d bottom, const float depth)
@@ -90,6 +92,11 @@
       return cv::Rect(x,y,width,height);
   }
 
+  cv::Rect CylindricalModel::getColumnRect(const cv::Rect& rect)
+  {
+      return cv::Rect(rect.tl().x,rect.tl().y,rect.width,rect.height);
+  }
+  
   /*
   void doPrecomputation(cv_bridge::CvImage::ConstPtr& cv_image_ref) 
   {
@@ -177,6 +184,10 @@
 
   std::vector<COLUMN_TYPE> CylindricalModel::getColumns(const cv::Point3d pt)
   {
+    return cylinder_.getColumns(pt,image_ref_.cols,image_ref_.rows);
+    
+    
+    
     ROS_DEBUG_STREAM_NAMED(name_, "Get columns for " << pt);
     std::vector<COLUMN_TYPE> cols;
     
@@ -340,6 +351,8 @@
     ComparisonResult result;
     for(unsigned int i = 0; i < cols.size(); ++i)
     {
+      //TODO: limit rect to image size
+      cv::Rect roi = getColumnRect(cols[i].rect);
       cv::Mat col = cv::Mat(this->image_ref_,cols[i].rect); //cols[i].image;
       float depth = cols[i].depth;
       

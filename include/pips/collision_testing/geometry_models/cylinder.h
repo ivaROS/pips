@@ -33,9 +33,13 @@ namespace pips
 
 class Cylinder : public GeometryModel
 {
-    double radius_, length_;
+    double radius_=-1, length_=-1;
     
 public:
+    Cylinder()
+    {
+      name_ = "Cylinder";
+    }
   
     Cylinder(double radius, double length):
       radius_(radius),
@@ -45,7 +49,7 @@ public:
     }
 
 
-  COLUMN_TYPE getColumn(const cv::Point2d top, const cv::Point2d bottom, const float depth)
+  COLUMN_TYPE getColumn(const cv::Point2d top, const cv::Point2d bottom, const float depth, int img_width, int img_height)
   {
     //By forming a Rect in this way, doesn't matter which point is the top and which is the bottom.
     cv::Rect_<double> r(top,bottom);
@@ -57,10 +61,12 @@ public:
     
   //The only changes needed to use a transposed image are swapping the x and y as well as width and height
     cv::Rect column = cv::Rect(x,y,width,height);
-
+    cv::Rect imageBounds(0,0,img_width, img_height);
+    cv::Rect bounded = column & imageBounds;
+    
     COLUMN_TYPE col;
     
-    col.rect = column;
+    col.rect = bounded;
     col.depth = depth;
      
     //std::cout << std::setprecision(16) << "top = " << top << ", bottom = " << bottom << ", Col = " << r << "tl: " << r.tl() << " br: " << r.br() << ", rect=" << column << ", bounded= " << bounded << "\n"; // Debugging printout to troubleshoot incorrect x values for columns. The 'magic number' added above resolved the problem.
@@ -68,11 +74,16 @@ public:
     return col;
   }
   
-
   std::vector<COLUMN_TYPE> getColumns(const geometry_msgs::Pose& pose, int img_width, int img_height)
   {
+    ROS_ASSERT(radius_>0 && length_ > 0);
     const cv::Point3d pt(pose.position.x, pose.position.y, pose.position.z);
     
+    return getColumns(pt, img_width, img_height);
+  }
+
+  std::vector<COLUMN_TYPE> getColumns(const cv::Point3d pt, int img_width, int img_height)
+  {    
     ROS_DEBUG_STREAM_NAMED(name_, "Get columns for " << pt);
     std::vector<COLUMN_TYPE> cols;
     
@@ -143,7 +154,7 @@ public:
         //float depth = Xt_lb.z*scale_;
         float depth = cam_model_->getPixelValue(Xt_lb);
         
-        cols.push_back(getColumn(p_lt,p_lb,depth));
+        cols.push_back(getColumn(p_lt,p_lb,depth,img_width, img_height));
 
       }
       
@@ -155,7 +166,7 @@ public:
         //float depth = Xt_rb.z*scale_;
         float depth = cam_model_->getPixelValue(Xt_rb);
         
-        cols.push_back(getColumn(p_rt,p_rb,depth));
+        cols.push_back(getColumn(p_rt,p_rb,depth,img_width, img_height));
 
       }
     }
@@ -215,7 +226,7 @@ public:
 
       //float depth = X_h.z*scale_;     
       float depth = cam_model_->getPixelValue(X_h);
-      cols.push_back(getColumn(p_xht,p_xhb,depth));
+      cols.push_back(getColumn(p_xht,p_xhb,depth,img_width, img_height));
       
     }
     
