@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   dynamic_reconfigure
    pcl_ros
+   urdf
 #  dense_depth_projection
 #  extended_local
 )
@@ -231,7 +232,12 @@ target_link_libraries(depth_image_collision_checker
   ${OpenCV_LIBRARIES}
   )
  
- 
+
+ add_executable(composite_model src/composite_model.cpp)
+ target_link_libraries( composite_model
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  )
  
 
 if(OpenCV_VERSION VERSION_LESS "3.0")

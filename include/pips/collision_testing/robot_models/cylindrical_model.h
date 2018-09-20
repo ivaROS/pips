@@ -2,7 +2,7 @@
 #define CYLINDRICAL_MODEL_H
 
 #include <pips/collision_testing/robot_models/hallucinated_robot_model.h>
-#include <pips/collision_testing/robot_models/box_model.h>
+#include <pips/collision_testing/robot_models/column_type.h>
 
 // May be able to template this for 32F or 16U and have the other functions templated based on the type of this that is passed in
 // struct COLUMN_TYPE
