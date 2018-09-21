@@ -25,6 +25,8 @@ class GeometryModel
     std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_;
     std::string name_;
     urdf::Pose origin_;
+    geometry_msgs::TransformStamped origin_transform_;
+    geometry_msgs::TransformStamped current_transform_;
     
     
     virtual std::vector<COLUMN_TYPE> getColumns(const geometry_msgs::Pose& pose, int img_width, int img_height)=0;

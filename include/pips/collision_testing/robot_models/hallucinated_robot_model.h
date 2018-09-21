@@ -243,6 +243,9 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
       geometry_msgs::Pose pose_t;
       convertPose(pose_eig_t, pose_t);
       
+      //Is there some reason I'm not simply doing this?:
+      //tf2::doTransform(pose, pose_t, base_optical_transform_);
+      
       ROS_DEBUG_STREAM_NAMED(name_, "Pose " << toString(pose) << " transformed to " << toString(pose_t) );
       
       return pose_t;

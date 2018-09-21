@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   tf2
   tf2_eigen
+  tf2_geometry_msgs
   message_generation
   geometry_msgs
   dynamic_reconfigure
