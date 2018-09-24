@@ -44,19 +44,6 @@
     ComparisonResult result = CylindricalModel::testCollisionImpl(pt, options);
     
     result.transpose();
-    /*
-    if(result)
-    {
-      ComparisonResult transposed_result;
-      for(auto point : result.points())
-      {
-        cv::Point pnt_t(point.pt.y, point.pt.x);
-        float depth = point.depth;
-        transposed_result.addPoint(pnt_t,depth);
-      }
-      return transposed_result;
-    }
-    */
     
     return result;
   }
