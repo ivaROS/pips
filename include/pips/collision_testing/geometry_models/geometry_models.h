@@ -29,6 +29,28 @@ class GeometryModel
     geometry_msgs::TransformStamped current_transform_;
     
     
+    void setOrigin(const geometry_msgs::TransformStamped& transform)
+    {
+      origin_transform_ = transform;
+    }
+    
+    void setOrigin(const urdf::Pose& origin)
+    {
+      origin_ = origin;
+      geometry_msgs::TransformStamped transform;
+      
+      geometry_msgs::Vector3& t = transform.transform.translation;
+      geometry_msgs::Quaternion& rot = transform.transform.rotation;
+      
+      t.x=origin.position.x;
+      t.y=origin.position.y;
+      t.z=origin.position.z;
+      
+      origin.rotation.getQuaternion(rot.x,rot.y,rot.z,rot.w);
+      
+      origin_transform_ = transform; 
+    }
+    
     virtual std::vector<COLUMN_TYPE> getColumns(const geometry_msgs::Pose& pose, int img_width, int img_height)=0;
 
 };

@@ -280,20 +280,9 @@ namespace pips
           
           if(model)
           {
-            model->origin_ = origin;
+            model->setOrigin(origin);
             
-            geometry_msgs::TransformStamped transform;
             
-            geometry_msgs::Vector3& t = transform.transform.translation;
-            geometry_msgs::Quaternion& rot = transform.transform.rotation;
-            
-            t.x=origin.position.x;
-            t.y=origin.position.y;
-            t.z=origin.position.z;
-            
-            origin.rotation.getQuaternion(rot.x,rot.y,rot.z,rot.w);
-            
-            model->origin_transform_ = transform;
           }
           
           return model;

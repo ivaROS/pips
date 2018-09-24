@@ -10,6 +10,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 //#include "opencv2/highgui/highgui.hpp"
 
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 //#include <Eigen/Eigen>
 //#include <image_transport/image_transport.h>
@@ -29,16 +30,41 @@
   void CylindricalModel::setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im)
   {   
       robot_radius_ = radius + safety_expansion;
-      robot_height_ = height;
+      robot_height_ = height-floor_tolerance;
       floor_tolerance_ = floor_tolerance;
       
       show_im_ = show_im;
       
+      geometry_msgs::TransformStamped origin;
+      origin.transform.translation.z = robot_height_/2 + floor_tolerance;
+      origin.transform.rotation.w = 1;
+      
       cylinder_ = pips::collision_testing::geometry_models::Cylinder(robot_radius_, robot_height_);
       cylinder_.cam_model_ = cam_model_;
+      cylinder_.setOrigin(origin);
+      tf2::doTransform(cylinder_.origin_transform_, cylinder_.current_transform_, base_optical_transform_); //TODO: don't make so many assumptions
+      
   }
   
 
+  geometry_msgs::Pose CylindricalModel::transformPose(const geometry_msgs::Pose& pose)
+  {
+    Eigen::Affine3d pose_eig;
+    tf2::fromMsg(pose, pose_eig);
+    
+    //Transform coordinates of robot base into camera's optical frame
+    Eigen::Affine3d pose_eig_t;
+    
+    tf2::doTransform(pose_eig, pose_eig_t, cylinder_.current_transform_);
+    
+    geometry_msgs::Pose pose_t;
+    convertPose(pose_eig_t, pose_t);
+
+    
+    ROS_DEBUG_STREAM_NAMED(name_, "Pose " << toString(pose) << " transformed to " << toString(pose_t) );
+    
+    return pose_t;
+  }
 
 
   cv::Mat CylindricalModel::generateHallucinatedRobotImpl(const cv::Point3d pt)
