@@ -360,10 +360,10 @@ private:
         intersection.y = p1.y;
         
         //for top:
-        cv::Point3d X_ht = intersection + cv::Point3d(0,-height_/2,0);
+        cv::Point3d X_ht = intersection + cv::Point3d(0,-height_,0);
         
         //for bottom:
-        cv::Point3d X_hb = intersection + cv::Point3d(0,height_/2,0);
+        cv::Point3d X_hb = intersection;// + cv::Point3d(0,height_/2,0);
     
         //project back to pixels to get y coordinate
         cv::Point2d p_xhb =  cam_model_->project3dToPixel(X_hb);
