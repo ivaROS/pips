@@ -60,8 +60,8 @@ public:
     unsigned int left = 0;
     unsigned int right = img_width;
     
-     cv::Point3d pt;
-     convertPose(pose, pt);//TODO do I have the neccessary include files.
+    cv::Point3d pt;
+    convertPose(pose, pt);
      
     double h_squared = pt.x*pt.x + pt.z*pt.z;
     
@@ -75,6 +75,9 @@ public:
     
     double theta1 = std::atan2(fd,hrw); 
     double theta2 = std::atan2(rd,hrw); 
+    
+    //double theta1 = std::atan2(hrw,fd); 
+    //double theta2 = std::atan2(hrw,rd); 
     
     double t1, t2, t3, t4, t5, hd1, hd2;
     
