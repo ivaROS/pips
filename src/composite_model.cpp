@@ -44,6 +44,7 @@
 #include <urdf_parser/urdf_parser.h>
 #include <pips/collision_testing/geometry_models/geometry_models.h>
 #include <pips/collision_testing/geometry_models/cylinder.h>
+#include <pips/collision_testing/geometry_models/box.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -263,7 +264,7 @@ namespace pips
           }
           else if (urdf::dynamic_pointer_cast<urdf::Box>(geom))
           {
-            //addBox((*(urdf::dynamic_pointer_cast<urdf::Box>(geom).get())));
+            model = getGeometry((*(urdf::dynamic_pointer_cast<urdf::Box>(geom).get())));
           }
           else if (urdf::dynamic_pointer_cast<urdf::Cylinder>(geom))
           {
@@ -295,7 +296,12 @@ namespace pips
           return model;
         }
         
-        
+        std::shared_ptr<geometry_models::GeometryModel> getGeometry(const urdf::Box& box)
+        {
+          ROS_INFO_STREAM("Adding Box primitive. Length=" << box.dim.x << ", Width=" << box.dim.y << ", Height=" << box.dim.z);
+          std::shared_ptr<geometry_models::Box> model = std::make_shared<geometry_models::Box>(box.dim.x, box.dim.y, box.dim.z);
+          return model;
+        }
         
         
         
