@@ -33,7 +33,7 @@ namespace pips
 
 class Cylinder : public GeometryModel
 {
-    double radius_=-1, length_=-1;
+    double radius_=-1, height_=-1;
     
 public:
     Cylinder()
@@ -41,9 +41,9 @@ public:
       name_ = "Cylinder";
     }
   
-    Cylinder(double radius, double length):
+    Cylinder(double radius, double height):
       radius_(radius),
-      length_(length)
+      height_(height)
     {
       name_ = "Cylinder";
     }
@@ -76,7 +76,7 @@ public:
   
   std::vector<COLUMN_TYPE> getColumns(const geometry_msgs::Pose& pose, int img_width, int img_height)
   {
-    ROS_ASSERT(radius_>0 && length_ > 0);
+    ROS_ASSERT(radius_>0 && height_ > 0);
     const cv::Point3d pt(pose.position.x, pose.position.y, pose.position.z);
     
     return getColumns(pt, img_width, img_height);
@@ -109,11 +109,11 @@ public:
 
     
     {
-      cv::Point3d Xt_lb = Xc_l + cv::Point3d(0,length_/2,0);
-      cv::Point3d Xt_rb = Xc_r + cv::Point3d(0,length_/2,0);
+      cv::Point3d Xt_lb = Xc_l + cv::Point3d(0,height_/2,0);
+      cv::Point3d Xt_rb = Xc_r + cv::Point3d(0,height_/2,0);
 
-      cv::Point3d Xt_lt = Xc_l + cv::Point3d(0,-length_/2,0);
-      cv::Point3d Xt_rt = Xc_r + cv::Point3d(0,-length_/2,0);
+      cv::Point3d Xt_lt = Xc_l + cv::Point3d(0,-height_/2,0);
+      cv::Point3d Xt_rt = Xc_r + cv::Point3d(0,-height_/2,0);
 
       cv::Point2d p_lb = cam_model_->project3dToPixel(Xt_lb);
       cv::Point2d p_rb = cam_model_->project3dToPixel(Xt_rb);
@@ -215,10 +215,10 @@ public:
       X_h.y = pt.y;
       
       //for bottom:
-      cv::Point3d X_hb = X_h + cv::Point3d(0,length_/2,0);
+      cv::Point3d X_hb = X_h + cv::Point3d(0,height_/2,0);
       
       //for top:
-      cv::Point3d X_ht = X_h + cv::Point3d(0,-length_/2,0);
+      cv::Point3d X_ht = X_h + cv::Point3d(0,-height_/2,0);
       
       //project back to pixels to get y coordinate
       cv::Point2d p_xhb =  cam_model_->project3dToPixel(X_hb);

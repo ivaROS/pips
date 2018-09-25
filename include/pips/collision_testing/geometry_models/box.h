@@ -41,7 +41,7 @@ public:
   
   std::vector<COLUMN_TYPE> getColumns(const geometry_msgs::Pose& pose, int img_width, int img_height)
   {
-    ROS_ASSERT(radius_>0 && length_ > 0);
+    ROS_ASSERT(length_>0 && width_ > 0 && height_>0);
     
     ROS_DEBUG_STREAM_NAMED(name_, "Get columns for " << pose);
     std::vector<COLUMN_TYPE> cols;
@@ -71,7 +71,7 @@ public:
     cv::Point3d pt2 = quaternionToRPY(pose.orientation);
     double ang = pt2.y; //TODO the pitch is what is needed(check for correctness)
     
-    ROS_DEBUG_STREAM("raw, pithc, and yaw" << pt2);
+    ROS_DEBUG_STREAM("roll, pitch, and yaw" << pt2);
     
     double theta1 = std::atan2(fd,hrw); 
     double theta2 = std::atan2(rd,hrw); 

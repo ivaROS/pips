@@ -86,34 +86,6 @@
   }
 
 
-  COLUMN_TYPE CylindricalModel::getColumn(const cv::Point2d top, const cv::Point2d bottom, const float depth)
-  {
-    //By forming a Rect in this way, doesn't matter which point is the top and which is the bottom.
-    cv::Rect_<double> r(top,bottom);
-    
-    int x = r.tl().x + .00000000001;  // Add a tiny number to handle cases where the process of projecting to ray, finding intersection, and projecting back to the image plane introduces a tiny numerical error, apparently only with smaller values that are odd. The added value will never push the number to the next integer value but is much larger than any error seen so far
-    int y = std::floor(r.tl().y);
-    int width = 1;
-    int height = std::ceil(r.br().y)-y + 1; //ROI's from rectangles are noninclusive on the right/bottom sides, so need to add 1 to include the bottom row
-    
-  //The only changes needed to use a transposed image are swapping the x and y as well as width and height
-    cv::Rect column = getColumnRect(x,y,width,height);
-    cv::Rect imageBounds(0,0,image_ref_.cols,image_ref_.rows);
-    cv::Rect bounded = column & imageBounds;
-
-    COLUMN_TYPE col;
-    
-    col.rect = bounded;
-    //col.image = cv::Mat(image_ref_,bounded);
-    col.depth = depth;
-
-     ROS_DEBUG_STREAM_NAMED(name_, "Input rect: " << r << ", bounded: " << bounded << ", depth: " << depth);
-     
-    //std::cout << std::setprecision(16) << "top = " << top << ", bottom = " << bottom << ", Col = " << r << "tl: " << r.tl() << " br: " << r.br() << ", rect=" << column << ", bounded= " << bounded << "\n"; // Debugging printout to troubleshoot incorrect x values for columns. The 'magic number' added above resolved the problem.
-    
-    return col;
-  }
-
   cv::Rect CylindricalModel::getColumnRect(const int x, const int y, const int width, const int height)
   {
       return cv::Rect(x,y,width,height);
@@ -186,27 +158,7 @@
     }
   }
   
-  
-  void CylindricalModel::getIntersection(cv::Point3d pt, double r, cv::Point3d& left, cv::Point3d& right)
-  {
-    cv::Point3d robot_origin;
-    
-    //https://stackoverflow.com/a/42803692/2906021
-    double d = std::sqrt((pt.x - robot_origin.x)*(pt.x - robot_origin.x)  +  (pt.y - robot_origin.y)*(pt.y - robot_origin.y));
-    double a = (robot_radius_*robot_radius_ - r*r + d*d)/(2*d);
-    double h = std::sqrt(robot_radius_*robot_radius_ - a*a);
-    double x2 = robot_origin.x + a*(pt.x-robot_origin.x)/d;
-    double y2 = robot_origin.y + a*(pt.y-robot_origin.y)/d;
-    
-    right.x = x2 + h*(pt.y-robot_origin.y)/d;
-    right.y = y2 - h*(pt.x-robot_origin.x)/d;
-    
-    left.x = x2 - h*(pt.y-robot_origin.y)/d;
-    left.y = y2 + h*(pt.x-robot_origin.x)/d;
-    
-    
-  }
-  
+
   
 
   std::vector<COLUMN_TYPE> CylindricalModel::getColumns(const cv::Point3d pt)

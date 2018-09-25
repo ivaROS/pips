@@ -3,13 +3,14 @@
 
 #include <pips/collision_testing/robot_models/hallucinated_robot_model.h>
 #include <pips/collision_testing/robot_models/column_type.h>
+#include <pips/collision_testing/geometry_models/box.h>
 #include <math.h>
 
 
 class BoxModel : public HallucinatedRobotModelImpl<geometry_msgs::Pose>
 {
   private:
-
+    pips::collision_testing::geometry_models::Box box_;
     
   public:
   
@@ -28,16 +29,13 @@ class BoxModel : public HallucinatedRobotModelImpl<geometry_msgs::Pose>
     virtual ComparisonResult isLessThan(const cv::Mat& col, float depth);
     virtual ComparisonResult isLessThanDetails(const cv::Mat& col, float depth);
 
-    
-    virtual COLUMN_TYPE getColumn(const cv::Point2d top, const cv::Point2d bottom, const float depth);
-    
+        
     std::vector<COLUMN_TYPE> getColumns(const geometry_msgs::Pose pose);
-    
-    COLUMN_TYPE getIntersection(cv::Point3d p1, cv::Point3d p2, cv::Point3d p3, cv::Point2d pix);
-    
+        
     virtual cv::Mat generateHallucinatedRobotImpl(const geometry_msgs::Pose pt);
     
-    cv::Point3d quaternionToRPY(const geometry_msgs::Quaternion& quaternion);
+    geometry_msgs::Pose transformPose(const geometry_msgs::Pose& pose);
+    
     /*
     virtual cv::Rect getColumnRect(int x, int y, int width, int height);
 
