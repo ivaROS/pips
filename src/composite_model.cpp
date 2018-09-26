@@ -1,43 +1,8 @@
-//   GeometrySharedPtr geom
-// Sphere s
-// s.type = Geometry::SPHERE;
-// s.radius
-// 
-// Box b
-// type = BOX
-//     b.dim.init(c->Attribute("size"));
-// dim.x,y,z
-// 
-// Cylinder y
-//   y.type = Geometry::CYLINDER;
-// y.length
-// y.radius
-// 
-// 
-// Collision col 
-// col.geometry = geom
-// 
-// Link link
-// link.collision=col
-// link.collision_array
-// link.name
-// 
-// model->links_: std__pair(link->name, link)
-// 
-// for (std::map<std::string, LinkSharedPtr>::const_iterator l=model.links_.begin(); l!=model.links_.end(); l++)  
-// 
-// 
-//   
-//   
-//   
-//   
-//   
-//   
-//   
-  
-  
-  
-//#include <pips/collision_testing/robot_models/hallucinated_robot_model.h>
+#include <pips/collision_testing/robot_models/composite_model.h>
+
+#include <pips/collision_testing/robot_models/hallucinated_robot_model.h>
+#include <pips/utils/image_comparison_implementations.h>
+
 #include <ros/ros.h>
 #include <std_msgs/Header.h>
 #include <urdf/model.h>
@@ -57,41 +22,40 @@ namespace pips
     namespace robot_models
     {
 
-      class CompositeModel //: HallucinatedRobotModelImpl<geometry_msgs::Pose>
-      {
-      private:
-        ros::NodeHandle nh_, pnh_;
-        std::vector<std::shared_ptr<geometry_models::GeometryModel> > models_;
-        tf2_ros::Buffer tf_buffer_;
-        tf2_ros::TransformListener tf_listener_;
-        
-        
-      public:
-        CompositeModel(ros::NodeHandle nh, ros::NodeHandle pnh):
+      
+        CompositeModel::CompositeModel(ros::NodeHandle nh, ros::NodeHandle pnh):
+          HallucinatedRobotModelImpl<geometry_msgs::Pose>(),
           nh_(nh),
           pnh_(pnh),
+          //tf_buffer_(),
           tf_listener_(tf_buffer_)
         {
+          this->name_ = "CompositeModel";
+        }
+        
+        //This is only called after the transform, scale, and cam_model_ have been assigned
+        void CompositeModel::setParameters(double radius, double height, double safety_expansion, double floor_tolerance, bool show_im)
+        {
+          if(!inited_)
+          {
+            init();
+            inited_ = true;
+          }
         }
         
         
-        bool init()
+        bool CompositeModel::init()
         {
           
           std::string xml_string;
           std::string tf_prefix="";
-          //TODO: load description & tf_prefix from parameter server
-//           if( !pnh_.getParam("robot_description", xml_string) )
-//           {
-//             ROS_ERROR("No robot description provided!");
-//             return false;
-//           }
+
           
-          std::string param_name;
+          std::string param_name = "/robot_description";
           if( !pnh_.getParam("param_name", param_name) )
           {
             ROS_ERROR("No robot description parameter name provided!");
-            return false;
+            //return false;
           }
           
           if( !nh_.getParam(param_name, xml_string) )
@@ -134,6 +98,7 @@ namespace pips
                 if(model)
                 {
                   model->frame_id_ = tf_prefix + link_name;
+                  model->cam_model_ = cam_model_;
                   models_.push_back(model);
                 }
               }
@@ -158,72 +123,141 @@ namespace pips
           //TODO: Precompute all relevant transforms between links and camera
         }
 
-//         cv::Mat generateHallucinatedRobotImpl(const geometry_msgs::Pose& pose)
+//         void doPrecomputation(const cv_bridge::CvImage::ConstPtr& cv_image_ref)
 //         {
-//           cv::Mat viz = HallucinatedRobotModelImpl::generateHallucinatedRobotImpl(pose);
 //           
-//           
-//           for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
-//           {
-//             geometry_msgs::Pose model_pose;
-//             tf2::doTransform(pose, model_pose, model->current_transform_);
-//             
-//             
-//           }
-//           
-//           return viz;
 //         }
-//         
-//         
-//         ComparisonResult CylindricalModel::testCollisionImpl(const cv::Point3d pt, CCOptions options)
-//         {
-//           std::vector<COLUMN_TYPE> cols = getColumns(pt);
-//           
-//           ComparisonResult result;
-//           for(unsigned int i = 0; i < cols.size(); ++i)
-//           {
-//             //TODO: limit rect to image size
-//             cv::Rect roi = getColumnRect(cols[i].rect);
-//             cv::Mat col = cv::Mat(this->image_ref_,cols[i].rect); //cols[i].image;
-//             float depth = cols[i].depth;
-//             
-//             ComparisonResult column_result = isLessThan(col, depth);
-//             
-//             if(column_result && options)
-//             {
-//               if(!column_result.hasDetails())
-//               {
-//                 column_result = isLessThanDetails(col,depth);
-//               }
-//               cv::Point offset;
-//               cv::Size size;
-//               col.locateROI(size, offset);
-//               
-//               column_result.addOffset(offset);	
-//               
-//               if(show_im_)
-//               {
-//                 result.addResult(column_result);
-//               }
-//               else
-//               {
-//                 return column_result;
-//               }
-//             }
-//           }
-//           
-//           
-//           
-//           return result;
-//         }
-//         
         
         
+        cv::Rect CompositeModel::getColumnRect(const int x, const int y, const int width, const int height)
+        {
+          return cv::Rect(x,y,width,height);
+        }
         
-      private:
+        cv::Rect CompositeModel::getColumnRect(const cv::Rect& rect)
+        {
+          return getColumnRect(rect.tl().x,rect.tl().y,rect.width,rect.height);
+        }
+        
+        cv::Mat CompositeModel::generateHallucinatedRobotImpl(const geometry_msgs::Pose pose)
+        {
+          cv::Mat viz = HallucinatedRobotModelImpl::generateHallucinatedRobotImpl(pose);
+          
+          int img_width = cv_image_ref_->image.cols;
+          int img_height = cv_image_ref_->image.rows;
+          
+          geometry_msgs::PoseStamped pose_stamped;
+          pose_stamped.pose = pose;
+          
+          for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
+          {
+            const geometry_msgs::Vector3& translation = model->current_transform_.transform.translation;
+            
+            //geometry_msgs::PoseStamped model_pose_stamped;
+            geometry_msgs::Pose model_pose = pose;
+            model_pose.position.x += translation.x;
+            model_pose.position.y += translation.y;
+            model_pose.position.z += translation.z;
+            
+            //tf2::doTransform(pose_stamped, model_pose_stamped, model->current_transform_);
+            //model_pose = model_pose_stamped.pose;
+            
+            std::vector<COLUMN_TYPE> cols = model->getColumns(model_pose, img_width, img_height);
+            
+            for(unsigned int i = 0; i < cols.size(); ++i)
+            {
+              cv::Rect roi = getColumnRect(cols[i].rect);
+              cv::Mat col = cv::Mat(viz, roi); //cols[i].image;
+              float depth = cols[i].depth * scale_;
+              col.setTo(depth);
+              //col = cv::max(col,depth);
+            }
+            
+          }
+          
+          return viz;
+        }
+        
+        
+        ComparisonResult CompositeModel::testCollisionImpl(const geometry_msgs::Pose pose, CCOptions options)
+        {
+          int img_width = cv_image_ref_->image.cols;
+          int img_height = cv_image_ref_->image.rows;
+          
+          geometry_msgs::PoseStamped pose_stamped;
+          pose_stamped.pose = pose;
+          
+          ComparisonResult result;
+          
+          for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
+          {
+            geometry_msgs::PoseStamped model_pose_stamped;
+            geometry_msgs::Pose model_pose;
+            tf2::doTransform(pose_stamped, model_pose_stamped, model->current_transform_);
+            
+            model_pose = model_pose_stamped.pose;
+            
+            std::vector<COLUMN_TYPE> cols = model->getColumns(model_pose, img_width, img_height);
+          
+            for(unsigned int i = 0; i < cols.size(); ++i)
+            {
+              //TODO: limit rect to image size
+              cv::Rect roi = getColumnRect(cols[i].rect);
+              cv::Mat col = cv::Mat(this->image_ref_,roi); //cols[i].image;
+              float depth = cols[i].depth * scale_;
+              
+              ComparisonResult column_result = isLessThan(col, depth);
+              
+              if(column_result && options)
+              {
+                if(!column_result.hasDetails())
+                {
+                  column_result = isLessThanDetails(col,depth);
+                }
+                cv::Point offset;
+                cv::Size size;
+                col.locateROI(size, offset);
+                
+                column_result.addOffset(offset);	
+                
+                if(show_im_)
+                {
+                  result.addResult(column_result);
+                }
+                else
+                {
+                  return column_result;
+                }
+              }
+            }
+          }
+          
+          return result;
+        }
+        
+        
+        ComparisonResult CompositeModel::isLessThan(const cv::Mat& col, float depth)
+        {
+          return ::utils::isLessThan::stock(col, depth);
+        }
+        
+        ComparisonResult CompositeModel::isLessThanDetails(const cv::Mat& col, float depth)
+        {
+          // TODO: replace 'show_im_' with more accurate variable name (ex: 'full_details' or something)
+          if(show_im_)
+          {
+            ROS_DEBUG_STREAM_NAMED(name_,"FULL details!");
+            return ::utils::isLessThan::fulldetails(col, depth);
+          }
+          else
+          {
+            return ::utils::isLessThan::details(col, depth);
+          }
+        }
+        
         
         // Header contains the frame to which transforms must be computed, subject to change
-        bool updateTransforms(std_msgs::Header target_header)
+        bool CompositeModel::updateTransforms(std_msgs::Header target_header)
         {
           bool all_good = true;
           for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
@@ -249,7 +283,7 @@ namespace pips
           return all_good;
         }
         
-        std::shared_ptr<geometry_models::GeometryModel> getGeometry(const urdf::Collision& collision)
+        std::shared_ptr<geometry_models::GeometryModel> CompositeModel::getGeometry(const urdf::Collision& collision)
         {
           const urdf::GeometrySharedPtr& geom = collision.geometry;
           const urdf::Pose& origin = collision.origin;
@@ -289,14 +323,14 @@ namespace pips
           return model;
         }
         
-        std::shared_ptr<geometry_models::GeometryModel> getGeometry(const urdf::Cylinder& cylinder)
+        std::shared_ptr<geometry_models::GeometryModel> CompositeModel::getGeometry(const urdf::Cylinder& cylinder)
         {
           ROS_INFO_STREAM("Adding Cylinder primitive. Radius=" << cylinder.radius << ", length=" << cylinder.length);
           std::shared_ptr<geometry_models::Cylinder> model = std::make_shared<geometry_models::Cylinder>(cylinder.radius, cylinder.length);
           return model;
         }
         
-        std::shared_ptr<geometry_models::GeometryModel> getGeometry(const urdf::Box& box)
+        std::shared_ptr<geometry_models::GeometryModel> CompositeModel::getGeometry(const urdf::Box& box)
         {
           ROS_INFO_STREAM("Adding Box primitive. Length=" << box.dim.x << ", Width=" << box.dim.y << ", Height=" << box.dim.z);
           std::shared_ptr<geometry_models::Box> model = std::make_shared<geometry_models::Box>(box.dim.x, box.dim.y, box.dim.z);
@@ -304,8 +338,6 @@ namespace pips
         }
         
         
-        
-      };
 
     }
     
@@ -314,14 +346,14 @@ namespace pips
 }
 
 
-int main(int argc, char** argv)
-{
-  ros::init(argc, argv, "composite_model");
-  ros::NodeHandle nh;
-  ros::NodeHandle pnh("~");
-  pips::collision_testing::robot_models::CompositeModel model(nh,pnh);
-  model.init();
-  
-  ros::spin();
-  
-}
+// int main(int argc, char** argv)
+// {
+//   ros::init(argc, argv, "composite_model");
+//   ros::NodeHandle nh;
+//   ros::NodeHandle pnh("~");
+//   pips::collision_testing::robot_models::CompositeModel model(nh,pnh);
+//   model.init();
+//   
+//   ros::spin();
+//   
+// }

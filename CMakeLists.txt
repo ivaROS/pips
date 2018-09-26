@@ -204,6 +204,14 @@ target_link_libraries(box_model
   )
 SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} box_model)
 
+add_library(composite_model src/composite_model.cpp
+  )
+target_link_libraries(composite_model
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  )
+SET(ROBOT_MODEL_LIBS ${ROBOT_MODEL_LIBS} composite_model)
+
 MESSAGE(STATUS "ROBOT MODELS " ${ROBOT_MODEL_LIBS})
    
    
@@ -234,11 +242,6 @@ target_link_libraries(depth_image_collision_checker
   )
  
 
- add_executable(composite_model src/composite_model.cpp)
- target_link_libraries( composite_model
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-  )
  
 
 if(OpenCV_VERSION VERSION_LESS "3.0")

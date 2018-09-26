@@ -9,7 +9,7 @@
 #include <pips/collision_testing/robot_models/cylindrical_model_t.h>
 #include <pips/collision_testing/robot_models/cylindrical_model_t_vect.h>
 #include <pips/collision_testing/robot_models/box_model.h>
-
+#include <pips/collision_testing/robot_models/composite_model.h>
 
 
 #include <pips/HallucinatedRobotModelConfig.h>
@@ -98,6 +98,10 @@
       else if (config.model_type == pips::HallucinatedRobotModel_cylindrical_c)
       {
         //model_ = std::make_shared<HallucinatedRobotModelCacheWrapper<CylindricalModel> >();
+      }
+      else if (config.model_type == pips::HallucinatedRobotModel_composite)
+      {
+        model_ = std::make_shared<pips::collision_testing::robot_models::CompositeModel>(nh_,pnh_);
       }
       
       /*
