@@ -332,6 +332,15 @@ namespace pips
                                           
               ROS_INFO_STREAM("Origin:Camera = (" << model_name << ":" << target_frame_id << ")= " << toString(origin_camera_transform));
               
+              geometry_msgs::PoseStamped test_pose, transformed_pose;
+              test_pose.pose.position.x = 1.2;
+              test_pose.pose.orientation.w = 1;
+              
+              tf2::doTransform(test_pose, transformed_pose, origin_camera_transform);
+              
+              ROS_INFO_STREAM("Transformed " << toString(test_pose.pose) << " to " << toString(transformed_pose.pose));
+              
+              
             } catch ( tf2::TransformException &ex ) {
               ROS_WARN_STREAM ("Problem finding transform:\n" <<ex.what() );
               all_good = false;
