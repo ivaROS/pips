@@ -24,6 +24,7 @@ class GeometryModel
     std::string frame_id_;
     std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_;
     std::string name_;
+    std::string type_;
     urdf::Pose origin_;
     geometry_msgs::TransformStamped origin_transform_;
     geometry_msgs::TransformStamped current_transform_;
@@ -34,22 +35,22 @@ class GeometryModel
       origin_transform_ = transform;
     }
     
-    void setOrigin(const urdf::Pose& origin)
-    {
-      origin_ = origin;
-      geometry_msgs::TransformStamped transform;
-      
-      geometry_msgs::Vector3& t = transform.transform.translation;
-      geometry_msgs::Quaternion& rot = transform.transform.rotation;
-      
-      t.x=origin.position.x;
-      t.y=origin.position.y;
-      t.z=origin.position.z;
-      
-      origin.rotation.getQuaternion(rot.x,rot.y,rot.z,rot.w);
-      
-      origin_transform_ = transform; 
-    }
+//     void setOrigin(const urdf::Pose& origin)
+//     {
+//       origin_ = origin;
+//       geometry_msgs::TransformStamped transform;
+//       
+//       geometry_msgs::Vector3& t = transform.transform.translation;
+//       geometry_msgs::Quaternion& rot = transform.transform.rotation;
+//       
+//       t.x=origin.position.x;
+//       t.y=origin.position.y;
+//       t.z=origin.position.z;
+//       
+//       origin.rotation.getQuaternion(rot.x,rot.y,rot.z,rot.w);
+//       
+//       origin_transform_ = transform; 
+//     }
     
     virtual std::vector<COLUMN_TYPE> getColumns(const geometry_msgs::Pose& pose, int img_width, int img_height)=0;
 

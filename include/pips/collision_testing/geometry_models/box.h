@@ -26,7 +26,7 @@ class Box : public GeometryModel
 public:
     Box()
     {
-      name_ = "Box";
+      type_ = "Box";
     }
   
     Box(double length, double width, double height):
@@ -34,7 +34,7 @@ public:
       width_(width),
       height_(height)
     {
-      name_ = "Box";
+      type_ = "Box";
     }
     
 
@@ -43,7 +43,7 @@ public:
   {
     ROS_ASSERT(length_>0 && width_ > 0 && height_>0);
     
-    ROS_DEBUG_STREAM_NAMED(name_, "Get columns for " << pose);
+    ROS_DEBUG_STREAM_NAMED(type_, "Get columns for " << pose);
     std::vector<COLUMN_TYPE> cols;
         
     //TODO make it work without this or using class parameters
@@ -347,11 +347,11 @@ private:
         double t;
          if (denom > 1e-6)
         {
-           t = numera/denom;
+            t = numera/denom;
         }
         else
         {
-            ROS_DEBUG_STREAM_NAMED(name_, "Very small denominator!"<< "p_x="<< pix.x << "ray=" << ray);
+            ROS_DEBUG_STREAM_NAMED(type_, "Very small denominator!"<< "p_x="<< pix.x << "ray=" << ray);
             //TODO find a better way. 
             //can I skipp this column?
             //small t means the palne and the ray are close to being parallel 

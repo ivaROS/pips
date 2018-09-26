@@ -50,14 +50,19 @@ namespace pips
         
         virtual ComparisonResult isLessThanDetails(const cv::Mat& col, float depth);
         
+        virtual geometry_msgs::Pose transformPose(const geometry_msgs::Pose& pose)
+        {
+          return pose;
+        }
+        
       private:
         bool init();
         
         // Header contains the frame to which transforms must be computed, subject to change
         bool updateTransforms(std_msgs::Header target_header);
 
-        std::shared_ptr<geometry_models::GeometryModel> getGeometry(const urdf::Collision& collision);
-
+        std::shared_ptr<geometry_models::GeometryModel> getGeometry(const std::string& tf_prefix, std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_, const urdf::Link& link, const urdf::Collision& collision, unsigned int collision_ind);
+        
         std::shared_ptr<geometry_models::GeometryModel> getGeometry(const urdf::Cylinder& cylinder);
 
         std::shared_ptr<geometry_models::GeometryModel> getGeometry(const urdf::Box& box);

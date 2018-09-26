@@ -3,6 +3,8 @@
 #include <pips/collision_testing/robot_models/hallucinated_robot_model.h>
 #include <pips/utils/image_comparison_implementations.h>
 
+#include <pips/utils/pose_conversions.h>
+
 #include <ros/ros.h>
 #include <std_msgs/Header.h>
 #include <urdf/model.h>
@@ -12,6 +14,8 @@
 #include <pips/collision_testing/geometry_models/box.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
+#include <string> //needed for converting numbers to string
 
 namespace pips
 {
@@ -86,19 +90,18 @@ namespace pips
             const urdf::LinkConstSharedPtr& link = l->second;
             const std::string link_name = l->first;
             
+            unsigned int num_collisions = link->collision_array.size();
+            unsigned int collision_ind = 0;
             //https://github.com/ros-visualization/rviz/blob/87742e4b8f40d8fe7e2a6952065651266faf73ba/src/rviz/robot/robot_link.cpp#L698
-            for(std::vector<urdf::CollisionSharedPtr >::const_iterator vi = link->collision_array.begin(); vi != link->collision_array.end(); vi++ )
+            for(std::vector<urdf::CollisionSharedPtr >::const_iterator vi = link->collision_array.begin(); vi != link->collision_array.end(); vi++, collision_ind++ )
             {
               urdf::CollisionConstSharedPtr collision = *vi;
               if( collision && collision->geometry )
               {
-                std::shared_ptr<geometry_models::GeometryModel> model = getGeometry(*collision);
+                std::shared_ptr<geometry_models::GeometryModel> model = getGeometry(tf_prefix, cam_model_, *link, *collision, collision_ind);
                 
-                //TODO: I may move all assignments to lower levels so I don't have to perform these checks
                 if(model)
                 {
-                  model->frame_id_ = tf_prefix + link_name;
-                  model->cam_model_ = cam_model_;
                   models_.push_back(model);
                 }
               }
@@ -149,18 +152,35 @@ namespace pips
           geometry_msgs::PoseStamped pose_stamped;
           pose_stamped.pose = pose;
           
+          ROS_WARN_STREAM("Pose: " << toString(pose));
+          
+          
           for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
           {
-            const geometry_msgs::Vector3& translation = model->current_transform_.transform.translation;
+//             const geometry_msgs::Vector3& translation = model->current_transform_.transform.translation;
             
-            //geometry_msgs::PoseStamped model_pose_stamped;
-            geometry_msgs::Pose model_pose = pose;
-            model_pose.position.x += translation.x;
-            model_pose.position.y += translation.y;
-            model_pose.position.z += translation.z;
+//             geometry_msgs::Pose model_pose = pose;
+//             model_pose.position.x += translation.x;
+//             model_pose.position.y += translation.y;
+//             model_pose.position.z += translation.z;
             
-            //tf2::doTransform(pose_stamped, model_pose_stamped, model->current_transform_);
-            //model_pose = model_pose_stamped.pose;
+            
+            geometry_msgs::PoseStamped model_pose_stamped;
+            
+            tf2::doTransform(pose_stamped, model_pose_stamped, model->current_transform_);
+//            geometry_msgs::Pose model_pose = pose;
+            
+            
+            ROS_INFO_STREAM("Model Pose in Base frame: " << toString(model_pose_stamped.pose));
+            
+            geometry_msgs::PoseStamped model_pose_camera_stamped;
+            
+            tf2::doTransform(model_pose_stamped, model_pose_camera_stamped, base_optical_transform_);
+            
+            ROS_INFO_STREAM("Model Pose in Camera frame: " << toString(model_pose_camera_stamped.pose));
+            
+            
+            geometry_msgs::Pose model_pose = model_pose_camera_stamped.pose;
             
             std::vector<COLUMN_TYPE> cols = model->getColumns(model_pose, img_width, img_height);
             
@@ -178,7 +198,6 @@ namespace pips
           return viz;
         }
         
-        
         ComparisonResult CompositeModel::testCollisionImpl(const geometry_msgs::Pose pose, CCOptions options)
         {
           int img_width = cv_image_ref_->image.cols;
@@ -188,7 +207,7 @@ namespace pips
           pose_stamped.pose = pose;
           
           ComparisonResult result;
-          
+                    
           for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
           {
             geometry_msgs::PoseStamped model_pose_stamped;
@@ -234,8 +253,7 @@ namespace pips
           
           return result;
         }
-        
-        
+          
         ComparisonResult CompositeModel::isLessThan(const cv::Mat& col, float depth)
         {
           return ::utils::isLessThan::stock(col, depth);
@@ -259,20 +277,60 @@ namespace pips
         // Header contains the frame to which transforms must be computed, subject to change
         bool CompositeModel::updateTransforms(std_msgs::Header target_header)
         {
+          const std::string& target_frame_id = base_optical_transform_.header.frame_id;
+          const std::string& base_frame_id = base_optical_transform_.child_frame_id;
+          
+          geometry_msgs::TransformStamped base_camera_rotation = base_optical_transform_;
+          geometry_msgs::Vector3 empty_translation;
+          base_camera_rotation.transform.translation = empty_translation;
+          
           bool all_good = true;
           for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
           {
+            const std::string& model_frame_id = model->frame_id_;
+            const std::string& model_name = model->name_;
+            const geometry_msgs::TransformStamped& origin_link_transform = model->origin_transform_;
+            geometry_msgs::TransformStamped& current_transform = model->current_transform_;
+            
+            
             try
             {
-              geometry_msgs::TransformStamped link_transform = tf_buffer_.lookupTransform ( target_header.frame_id, model->frame_id_, ros::Time(0));
+              geometry_msgs::TransformStamped origin_base_transform = tf_buffer_.lookupTransform ( base_frame_id, model_frame_id, ros::Time(0));
+                            
+              //geometry_msgs::Vector3 offset = link_base_transform.transform.translation;
               
-              tf2::doTransform(model->origin_transform_, model->current_transform_, link_transform);
+              //geometry_msgs::TransformStamped origin_base_transform;
+              //tf2::doTransform(origin_link_transform, origin_base_transform, link_base_transform);
               
-              ROS_INFO_STREAM("Link transform = (" << link_transform.transform.translation.x << ", " << link_transform.transform.translation.y << ", " << link_transform.transform.translation.z << ") [" << link_transform.transform.rotation.x << ", " << link_transform.transform.rotation.y << ", " << link_transform.transform.rotation.z << ", " << link_transform.transform.rotation.w << "]");
+//               tf2::Stamped<tf2::Transform> tf_origin_base_transform;
+//               tf2::fromMsg(origin_base_transform, tf_origin_base_transform);
+//               
+//               tf2::Transform tf_base_origin_transform = tf_origin_base_transform.inverse();
+//               
+//               geometry_msgs::TransformStamped base_origin_transform;
+//               base_origin_transform.transform = tf2::toMsg(tf_base_origin_transform);
               
-              ROS_INFO_STREAM("Origin transform = (" << model->origin_transform_.transform.translation.x << ", " << model->origin_transform_.transform.translation.y << ", " << model->origin_transform_.transform.translation.z << ") [" << model->origin_transform_.transform.rotation.x << ", " << model->origin_transform_.transform.rotation.y << ", " << model->origin_transform_.transform.rotation.z << ", " << model->origin_transform_.transform.rotation.w << "]");
+              current_transform = origin_base_transform;
               
-              ROS_INFO_STREAM("Combined transform = (" << model->current_transform_.transform.translation.x << ", " << model->current_transform_.transform.translation.y << ", " << model->current_transform_.transform.translation.z << ") [" << model->current_transform_.transform.rotation.x << ", " << model->current_transform_.transform.rotation.y << ", " << model->current_transform_.transform.rotation.z << ", " << model->current_transform_.transform.rotation.w << "]");
+              geometry_msgs::TransformStamped origin_camera_transform;
+              
+              tf2::doTransform(origin_base_transform, origin_camera_transform, base_optical_transform_);
+              
+              
+//               offset_transform.transform.translation.x += offset.x;
+//               offset_transform.transform.translation.y += offset.y;
+//               offset_transform.transform.translation.z += offset.z;
+              
+              //geometry_msgs::Quaternion& quat = link_transform.transform.rotation;
+              //quat.x=quat.y=quat.z=0;
+              //quat.w=1;
+              
+              
+              //tf2::doTransform(model->origin_transform_, model->current_transform_, link_transform);
+                            
+              ROS_INFO_STREAM("Origin:Base = (" << model_frame_id << ":" << base_frame_id << ")= " << toString(origin_base_transform));
+                                          
+              ROS_INFO_STREAM("Origin:Camera = (" << model_name << ":" << target_frame_id << ")= " << toString(origin_camera_transform));
               
             } catch ( tf2::TransformException &ex ) {
               ROS_WARN_STREAM ("Problem finding transform:\n" <<ex.what() );
@@ -283,11 +341,24 @@ namespace pips
           return all_good;
         }
         
-        std::shared_ptr<geometry_models::GeometryModel> CompositeModel::getGeometry(const urdf::Collision& collision)
+        std::shared_ptr<geometry_models::GeometryModel> CompositeModel::getGeometry(const std::string& tf_prefix, std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_, const urdf::Link& link, const urdf::Collision& collision, unsigned int collision_ind)
         {
+          const std::string& link_name = link.name;
+          
           const urdf::GeometrySharedPtr& geom = collision.geometry;
           const urdf::Pose& origin = collision.origin;
-          const std::string& name = collision.name;
+          std::string name = collision.name;
+          
+          if(name == "")
+          {
+            name = std::to_string(collision_ind);
+          }
+          
+          const std::string link_frame_id = tf_prefix + link_name;
+          
+          
+          
+          
           
           std::shared_ptr<geometry_models::GeometryModel> model;
           
@@ -315,9 +386,49 @@ namespace pips
           
           if(model)
           {
-            model->setOrigin(origin);
+            //TODO: Move a lot of this somewhere else, possibly into geometry_models or some factory class
+            
+            //Assign things that always need to be assigned
+            model->name_ = name;
+            model->cam_model_ = cam_model_;
             
             
+//             const urdf::Pose tmp;
+//             if(origin == tmp) //no offset, so just use link's frame
+//             {
+//               model->frame_id_ = link_frame_id;
+//             }
+//             else
+            {
+              model->origin_ = origin;
+              model->frame_id_ = link_frame_id + "/" + name;
+              
+              geometry_msgs::TransformStamped origin_pose;
+              
+              geometry_msgs::Vector3& t = origin_pose.transform.translation;
+              geometry_msgs::Quaternion& rot = origin_pose.transform.rotation;
+              
+              t.x=origin.position.x;
+              t.y=origin.position.y;
+              t.z=origin.position.z;
+              
+              origin.rotation.getQuaternion(rot.x,rot.y,rot.z,rot.w);
+              
+              tf2::Stamped<tf2::Transform> tf_origin_pose;
+              tf2::fromMsg(origin_pose, tf_origin_pose);
+              
+              tf2::Transform tf_origin_transform = tf_origin_pose.inverse();
+              
+              geometry_msgs::TransformStamped transform;
+              transform.transform = tf2::toMsg(tf_origin_transform);
+              
+              transform.child_frame_id = model->frame_id_;
+              transform.header.frame_id = link_frame_id;
+              
+              model->origin_transform_ = transform;
+
+              tf_buffer_.setTransform(transform, "urdf", true); //Add static transform for origin of collision model
+            }
           }
           
           return model;
