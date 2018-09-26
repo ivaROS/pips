@@ -189,8 +189,8 @@ namespace pips
               cv::Rect roi = getColumnRect(cols[i].rect);
               cv::Mat col = cv::Mat(viz, roi); //cols[i].image;
               float depth = cols[i].depth * scale_;
-              col.setTo(depth);
-              //col = cv::max(col,depth);
+              //col.setTo(depth);
+              col = cv::max(col,depth);
             }
             
           }
@@ -369,7 +369,8 @@ namespace pips
           }
           else if (urdf::dynamic_pointer_cast<urdf::Box>(geom))
           {
-            model = getGeometry((*(urdf::dynamic_pointer_cast<urdf::Box>(geom).get())));
+            //model = getGeometry((*(urdf::dynamic_pointer_cast<urdf::Box>(geom).get())));
+            ROS_ERROR_STREAM("Box type not currently correct, ignoring!");
           }
           else if (urdf::dynamic_pointer_cast<urdf::Cylinder>(geom))
           {
@@ -419,8 +420,8 @@ namespace pips
               
               tf2::Transform tf_origin_transform = tf_origin_pose.inverse();
               
-              geometry_msgs::TransformStamped transform;
-              transform.transform = tf2::toMsg(tf_origin_transform);
+              geometry_msgs::TransformStamped transform = origin_pose;
+              //transform.transform = tf2::toMsg(tf_origin_transform);
               
               transform.child_frame_id = model->frame_id_;
               transform.header.frame_id = link_frame_id;
