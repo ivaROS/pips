@@ -157,37 +157,22 @@ namespace pips
           
           for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
           {
-//             const geometry_msgs::Vector3& translation = model->current_transform_.transform.translation;
-            
-//             geometry_msgs::Pose model_pose = pose;
-//             model_pose.position.x += translation.x;
-//             model_pose.position.y += translation.y;
-//             model_pose.position.z += translation.z;
-            
+
             
             geometry_msgs::PoseStamped model_pose_stamped;
             
-            tf2::doTransform(pose_stamped, model_pose_stamped, model->current_transform_);
-//            geometry_msgs::Pose model_pose = pose;
+            tf2::doTransform(pose_stamped, model_pose_stamped, model->current_transform_);            
             
-            
-            ROS_INFO_STREAM("Model Pose in Base frame: " << toString(model_pose_stamped.pose));
-            
-            geometry_msgs::PoseStamped model_pose_camera_stamped;
-            
-            tf2::doTransform(model_pose_stamped, model_pose_camera_stamped, base_optical_transform_);
-            
-            ROS_INFO_STREAM("Model Pose in Camera frame: " << toString(model_pose_camera_stamped.pose));
-            
-            
-            geometry_msgs::Pose model_pose = model_pose_camera_stamped.pose;
+            ROS_INFO_STREAM("Model Pose in Camera frame: " << toString(model_pose_stamped.pose));
+
+            geometry_msgs::Pose model_pose = model_pose_stamped.pose;
             
             std::vector<COLUMN_TYPE> cols = model->getColumns(model_pose, img_width, img_height);
             
             for(unsigned int i = 0; i < cols.size(); ++i)
             {
               cv::Rect roi = getColumnRect(cols[i].rect);
-              cv::Mat col = cv::Mat(viz, roi); //cols[i].image;
+              cv::Mat col = cv::Mat(viz, roi); 
               float depth = cols[i].depth * scale_;
               //col.setTo(depth);
               col = cv::max(col,depth);
@@ -310,12 +295,13 @@ namespace pips
 //               geometry_msgs::TransformStamped base_origin_transform;
 //               base_origin_transform.transform = tf2::toMsg(tf_base_origin_transform);
               
-              current_transform = origin_base_transform;
+              //current_transform = origin_base_transform;
               
               geometry_msgs::TransformStamped origin_camera_transform;
               
               tf2::doTransform(origin_base_transform, origin_camera_transform, base_optical_transform_);
               
+              current_transform = origin_camera_transform;
               
 //               offset_transform.transform.translation.x += offset.x;
 //               offset_transform.transform.translation.y += offset.y;
@@ -328,9 +314,9 @@ namespace pips
               
               //tf2::doTransform(model->origin_transform_, model->current_transform_, link_transform);
                             
-              ROS_INFO_STREAM("Origin:Base = (" << model_frame_id << ":" << base_frame_id << ")= " << toString(origin_base_transform));
+              ROS_DEBUG_STREAM("Origin:Base = (" << model_frame_id << ":" << base_frame_id << ")= " << toString(origin_base_transform));
                                           
-              ROS_INFO_STREAM("Origin:Camera = (" << model_name << ":" << target_frame_id << ")= " << toString(origin_camera_transform));
+              ROS_DEBUG_STREAM("Origin:Camera = (" << model_name << ":" << target_frame_id << ")= " << toString(origin_camera_transform));
               
               geometry_msgs::PoseStamped test_pose, transformed_pose;
               test_pose.pose.position.x = 1.2;
@@ -338,7 +324,7 @@ namespace pips
               
               tf2::doTransform(test_pose, transformed_pose, origin_camera_transform);
               
-              ROS_INFO_STREAM("Transformed " << toString(test_pose.pose) << " to " << toString(transformed_pose.pose));
+              ROS_DEBUG_STREAM("Transformed " << toString(test_pose.pose) << " to " << toString(transformed_pose.pose));
               
               
             } catch ( tf2::TransformException &ex ) {
