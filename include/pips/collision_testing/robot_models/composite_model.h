@@ -30,6 +30,7 @@ namespace pips
         tf2_ros::Buffer tf_buffer_;
         tf2_ros::TransformListener tf_listener_;
         bool inited_ = false;
+        bool transpose = true;
         
       public:        
         CompositeModel(ros::NodeHandle nh, ros::NodeHandle pnh);
@@ -53,6 +54,16 @@ namespace pips
         virtual geometry_msgs::Pose transformPose(const geometry_msgs::Pose& pose)
         {
           return pose;
+        }
+        
+        cv::Mat getImageImpl(const cv::Mat& image)
+        { 
+          if(transpose)
+          {
+            cv::Mat transposed = image.t();
+            return transposed;
+          }
+          return image;
         }
         
       private:

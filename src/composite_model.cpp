@@ -134,6 +134,10 @@ namespace pips
         
         cv::Rect CompositeModel::getColumnRect(const int x, const int y, const int width, const int height)
         {
+          if(transpose)
+          {
+            return cv::Rect(y,x,height,width);
+          }
           return cv::Rect(x,y,width,height);
         }
         
@@ -152,7 +156,7 @@ namespace pips
           geometry_msgs::PoseStamped pose_stamped;
           pose_stamped.pose = pose;
           
-          ROS_WARN_STREAM("Pose: " << toString(pose));
+          ROS_DEBUG_STREAM("Pose: " << toString(pose));
           
           
           for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
@@ -163,7 +167,7 @@ namespace pips
             
             tf2::doTransform(pose_stamped, model_pose_stamped, model->current_transform_);            
             
-            ROS_INFO_STREAM("Model Pose in Camera frame: " << toString(model_pose_stamped.pose));
+            ROS_DEBUG_STREAM("Model Pose in Camera frame: " << toString(model_pose_stamped.pose));
 
             geometry_msgs::Pose model_pose = model_pose_stamped.pose;
             
@@ -178,6 +182,13 @@ namespace pips
               col = cv::max(col,depth);
             }
             
+          }
+          
+          if(transpose)
+          {
+            cv::Mat viz_t = viz.t();
+          
+            return viz_t;
           }
           
           return viz;
@@ -196,10 +207,9 @@ namespace pips
           for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
           {
             geometry_msgs::PoseStamped model_pose_stamped;
-            geometry_msgs::Pose model_pose;
             tf2::doTransform(pose_stamped, model_pose_stamped, model->current_transform_);
             
-            model_pose = model_pose_stamped.pose;
+            geometry_msgs::Pose model_pose = model_pose_stamped.pose;
             
             std::vector<COLUMN_TYPE> cols = model->getColumns(model_pose, img_width, img_height);
           
@@ -236,11 +246,18 @@ namespace pips
             }
           }
           
+          if(transpose)
+          {
+            result.transpose();
+          }
+          
           return result;
         }
           
         ComparisonResult CompositeModel::isLessThan(const cv::Mat& col, float depth)
-        {
+        {    
+          return ::utils::isLessThan::vectorized(col, depth);
+          
           return ::utils::isLessThan::stock(col, depth);
         }
         

@@ -174,7 +174,7 @@ public:
 
       if(left >= right)
       {
-        ROS_ERROR_STREAM_NAMED(name_, "somethings wrong! " << pt);
+        ROS_DEBUG_STREAM_NAMED(name_, "somethings wrong! " << pt);
       }
     
     for(int p_x : cam_model_->getColumnRange(left,right))
