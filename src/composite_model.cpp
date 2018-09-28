@@ -162,6 +162,9 @@ namespace pips
             {
               geometry_msgs::TransformStamped origin_base_transform = tf_buffer_.lookupTransform ( base_frame_id, model_frame_id, ros::Time(0));
               
+              current_transform = origin_base_transform;
+              
+              
               //geometry_msgs::Vector3 offset = link_base_transform.transform.translation;
               
               //geometry_msgs::TransformStamped origin_base_transform;
@@ -177,12 +180,12 @@ namespace pips
               
               //current_transform = origin_base_transform;
               
-              geometry_msgs::TransformStamped origin_camera_transform;
+              //geometry_msgs::TransformStamped origin_camera_transform;
               
-              tf2::doTransform(origin_base_transform, origin_camera_transform, base_optical_transform_);
+              //tf2::doTransform(origin_base_transform, origin_camera_transform, base_optical_transform_);
               
-              current_transform = origin_camera_transform;
-              
+              //current_transform = origin_camera_transform;
+                
               //               offset_transform.transform.translation.x += offset.x;
               //               offset_transform.transform.translation.y += offset.y;
               //               offset_transform.transform.translation.z += offset.z;
@@ -196,15 +199,15 @@ namespace pips
               
               ROS_INFO_STREAM("Origin:Base = (" << model_frame_id << ":" << base_frame_id << ")= " << toString(origin_base_transform));
               
-              ROS_INFO_STREAM("Origin:Camera = (" << model_name << ":" << target_frame_id << ")= " << toString(origin_camera_transform));
+              //ROS_INFO_STREAM("Origin:Camera = (" << model_name << ":" << target_frame_id << ")= " << toString(origin_camera_transform));
               
-              geometry_msgs::PoseStamped test_pose, transformed_pose;
-              test_pose.pose.position.x = 1.2;
-              test_pose.pose.orientation.w = 1;
-              
-              tf2::doTransform(test_pose, transformed_pose, origin_camera_transform);
-              
-              ROS_INFO_STREAM("Transformed " << toString(test_pose.pose) << " to " << toString(transformed_pose.pose));
+//               geometry_msgs::PoseStamped test_pose, transformed_pose;
+//               test_pose.pose.position.x = 1.2;
+//               test_pose.pose.orientation.w = 1;
+//               
+//               tf2::doTransform(test_pose, transformed_pose, origin_camera_transform);
+//               
+//               ROS_INFO_STREAM("Transformed " << toString(test_pose.pose) << " to " << toString(transformed_pose.pose));
               
               
             } catch ( tf2::TransformException &ex ) {
@@ -240,6 +243,12 @@ namespace pips
           const std_msgs::Header header = base_optical_transform_.header;
           
           
+          geometry_msgs::TransformStamped origin_trans;
+          origin_trans.transform.rotation = pose.orientation;
+          origin_trans.transform.translation.x = pose.position.x;
+          origin_trans.transform.translation.y = pose.position.y;
+          origin_trans.transform.translation.z = pose.position.z;
+          
           geometry_msgs::PoseStamped pose_stamped;
           pose_stamped.pose = pose;
           
@@ -251,13 +260,24 @@ namespace pips
           {
 
             
-            geometry_msgs::PoseStamped model_pose_stamped;
+            geometry_msgs::TransformStamped model_pose_stamped;
             
-            tf2::doTransform(pose_stamped, model_pose_stamped, model->current_transform_);            
+            tf2::doTransform(model->current_transform_, model_pose_stamped, origin_trans);            
             
-            ROS_INFO_STREAM("Pose of [" << model->frame_id_ << "] in Camera frame: " << toString(model_pose_stamped.pose));
+            ROS_INFO_STREAM("Pose of [" << model->frame_id_ << "] in Base frame: " << toString(model_pose_stamped));
+            
+            geometry_msgs::TransformStamped camera_pose_stamped;
+            
+            tf2::doTransform(model_pose_stamped, camera_pose_stamped, base_optical_transform_);
+            
+            
+            ROS_INFO_STREAM("Pose of [" << model->frame_id_ << "] in Camera frame: " << toString(camera_pose_stamped));
 
-            geometry_msgs::Pose model_pose = model_pose_stamped.pose;
+            geometry_msgs::Pose model_pose;
+            model_pose.position.x = camera_pose_stamped.transform.translation.x;
+            model_pose.position.y = camera_pose_stamped.transform.translation.y;
+            model_pose.position.z = camera_pose_stamped.transform.translation.z;
+            model_pose.orientation = camera_pose_stamped.transform.rotation;
             
             addMarker(markers, model_pose, *model, header, "hallucinated");
             
