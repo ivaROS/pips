@@ -5,6 +5,7 @@
 #include <urdf/model.h>
 #include <pips/collision_testing/robot_models/column_type.h>
 
+#include <visualization_msgs/Marker.h>
 
 //this is just included to include a bunch of other stuff until I figure out exactly what is needed
 #include <pips/collision_testing/robot_models/hallucinated_robot_model.h>
@@ -28,6 +29,7 @@ class GeometryModel
     urdf::Pose origin_;
     geometry_msgs::TransformStamped origin_transform_;
     geometry_msgs::TransformStamped current_transform_;
+    visualization_msgs::Marker marker_;
     
     
     void setOrigin(const geometry_msgs::TransformStamped& transform)

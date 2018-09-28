@@ -13,6 +13,9 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+#include <visualization_msgs/MarkerArray.h>
+
+
 namespace pips
 {
   
@@ -31,6 +34,8 @@ namespace pips
         tf2_ros::TransformListener tf_listener_;
         bool inited_ = false;
         bool transpose = true;
+        ros::Publisher visualization_pub_;
+        
         
       public:        
         CompositeModel(ros::NodeHandle nh, ros::NodeHandle pnh);
@@ -55,6 +60,11 @@ namespace pips
         {
           return pose;
         }
+        
+        visualization_msgs::MarkerArray::Ptr initMarkers(const std_msgs::Header& header, std::string ns);
+        
+        void addMarker(visualization_msgs::MarkerArray::Ptr& markers, const geometry_msgs::Pose& pose, const geometry_models::GeometryModel& model, const std_msgs::Header& header, std::string ns);
+        
         
         cv::Mat getImageImpl(const cv::Mat& image)
         { 

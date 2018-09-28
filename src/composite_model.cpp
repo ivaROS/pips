@@ -15,6 +15,10 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
+
+
 #include <string> //needed for converting numbers to string
 
 namespace pips
@@ -120,7 +124,9 @@ namespace pips
           {
             d.sleep();
           }
-            
+          
+          visualization_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("markers",5);
+          
           
           return true;
           //TODO: Precompute all relevant transforms between links and camera
@@ -131,6 +137,84 @@ namespace pips
 //           
 //         }
         
+        
+        
+        // Header contains the frame to which transforms must be computed, subject to change
+        bool CompositeModel::updateTransforms(std_msgs::Header target_header)
+        {
+          const std::string& target_frame_id = base_optical_transform_.header.frame_id;
+          const std::string& base_frame_id = base_optical_transform_.child_frame_id;
+          
+          geometry_msgs::TransformStamped base_camera_rotation = base_optical_transform_;
+          geometry_msgs::Vector3 empty_translation;
+          base_camera_rotation.transform.translation = empty_translation;
+          
+          bool all_good = true;
+          for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
+          {
+            const std::string& model_frame_id = model->frame_id_;
+            const std::string& model_name = model->name_;
+            const geometry_msgs::TransformStamped& origin_link_transform = model->origin_transform_;
+            geometry_msgs::TransformStamped& current_transform = model->current_transform_;
+            
+            
+            try
+            {
+              geometry_msgs::TransformStamped origin_base_transform = tf_buffer_.lookupTransform ( base_frame_id, model_frame_id, ros::Time(0));
+              
+              //geometry_msgs::Vector3 offset = link_base_transform.transform.translation;
+              
+              //geometry_msgs::TransformStamped origin_base_transform;
+              //tf2::doTransform(origin_link_transform, origin_base_transform, link_base_transform);
+              
+              //               tf2::Stamped<tf2::Transform> tf_origin_base_transform;
+              //               tf2::fromMsg(origin_base_transform, tf_origin_base_transform);
+              //               
+              //               tf2::Transform tf_base_origin_transform = tf_origin_base_transform.inverse();
+              //               
+              //               geometry_msgs::TransformStamped base_origin_transform;
+              //               base_origin_transform.transform = tf2::toMsg(tf_base_origin_transform);
+              
+              //current_transform = origin_base_transform;
+              
+              geometry_msgs::TransformStamped origin_camera_transform;
+              
+              tf2::doTransform(origin_base_transform, origin_camera_transform, base_optical_transform_);
+              
+              current_transform = origin_camera_transform;
+              
+              //               offset_transform.transform.translation.x += offset.x;
+              //               offset_transform.transform.translation.y += offset.y;
+              //               offset_transform.transform.translation.z += offset.z;
+              
+              //geometry_msgs::Quaternion& quat = link_transform.transform.rotation;
+              //quat.x=quat.y=quat.z=0;
+              //quat.w=1;
+              
+              
+              //tf2::doTransform(model->origin_transform_, model->current_transform_, link_transform);
+              
+              ROS_INFO_STREAM("Origin:Base = (" << model_frame_id << ":" << base_frame_id << ")= " << toString(origin_base_transform));
+              
+              ROS_INFO_STREAM("Origin:Camera = (" << model_name << ":" << target_frame_id << ")= " << toString(origin_camera_transform));
+              
+              geometry_msgs::PoseStamped test_pose, transformed_pose;
+              test_pose.pose.position.x = 1.2;
+              test_pose.pose.orientation.w = 1;
+              
+              tf2::doTransform(test_pose, transformed_pose, origin_camera_transform);
+              
+              ROS_INFO_STREAM("Transformed " << toString(test_pose.pose) << " to " << toString(transformed_pose.pose));
+              
+              
+            } catch ( tf2::TransformException &ex ) {
+              ROS_WARN_STREAM ("Problem finding transform:\n" <<ex.what() );
+              all_good = false;
+            }
+            
+          }
+          return all_good;
+        }
         
         cv::Rect CompositeModel::getColumnRect(const int x, const int y, const int width, const int height)
         {
@@ -153,11 +237,15 @@ namespace pips
           int img_width = cv_image_ref_->image.cols;
           int img_height = cv_image_ref_->image.rows;
           
+          const std_msgs::Header header = base_optical_transform_.header;
+          
+          
           geometry_msgs::PoseStamped pose_stamped;
           pose_stamped.pose = pose;
           
-          ROS_DEBUG_STREAM("Pose: " << toString(pose));
+          ROS_INFO_STREAM("Pose: " << toString(pose));
           
+          visualization_msgs::MarkerArray::Ptr markers = initMarkers(header, "hallucinated");
           
           for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
           {
@@ -167,9 +255,11 @@ namespace pips
             
             tf2::doTransform(pose_stamped, model_pose_stamped, model->current_transform_);            
             
-            ROS_DEBUG_STREAM("Model Pose in Camera frame: " << toString(model_pose_stamped.pose));
+            ROS_INFO_STREAM("Pose of [" << model->frame_id_ << "] in Camera frame: " << toString(model_pose_stamped.pose));
 
             geometry_msgs::Pose model_pose = model_pose_stamped.pose;
+            
+            addMarker(markers, model_pose, *model, header, "hallucinated");
             
             std::vector<COLUMN_TYPE> cols = model->getColumns(model_pose, img_width, img_height);
             
@@ -183,6 +273,8 @@ namespace pips
             }
             
           }
+          
+          visualization_pub_.publish(markers);
           
           if(transpose)
           {
@@ -276,82 +368,6 @@ namespace pips
         }
         
         
-        // Header contains the frame to which transforms must be computed, subject to change
-        bool CompositeModel::updateTransforms(std_msgs::Header target_header)
-        {
-          const std::string& target_frame_id = base_optical_transform_.header.frame_id;
-          const std::string& base_frame_id = base_optical_transform_.child_frame_id;
-          
-          geometry_msgs::TransformStamped base_camera_rotation = base_optical_transform_;
-          geometry_msgs::Vector3 empty_translation;
-          base_camera_rotation.transform.translation = empty_translation;
-          
-          bool all_good = true;
-          for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
-          {
-            const std::string& model_frame_id = model->frame_id_;
-            const std::string& model_name = model->name_;
-            const geometry_msgs::TransformStamped& origin_link_transform = model->origin_transform_;
-            geometry_msgs::TransformStamped& current_transform = model->current_transform_;
-            
-            
-            try
-            {
-              geometry_msgs::TransformStamped origin_base_transform = tf_buffer_.lookupTransform ( base_frame_id, model_frame_id, ros::Time(0));
-                            
-              //geometry_msgs::Vector3 offset = link_base_transform.transform.translation;
-              
-              //geometry_msgs::TransformStamped origin_base_transform;
-              //tf2::doTransform(origin_link_transform, origin_base_transform, link_base_transform);
-              
-//               tf2::Stamped<tf2::Transform> tf_origin_base_transform;
-//               tf2::fromMsg(origin_base_transform, tf_origin_base_transform);
-//               
-//               tf2::Transform tf_base_origin_transform = tf_origin_base_transform.inverse();
-//               
-//               geometry_msgs::TransformStamped base_origin_transform;
-//               base_origin_transform.transform = tf2::toMsg(tf_base_origin_transform);
-              
-              //current_transform = origin_base_transform;
-              
-              geometry_msgs::TransformStamped origin_camera_transform;
-              
-              tf2::doTransform(origin_base_transform, origin_camera_transform, base_optical_transform_);
-              
-              current_transform = origin_camera_transform;
-              
-//               offset_transform.transform.translation.x += offset.x;
-//               offset_transform.transform.translation.y += offset.y;
-//               offset_transform.transform.translation.z += offset.z;
-              
-              //geometry_msgs::Quaternion& quat = link_transform.transform.rotation;
-              //quat.x=quat.y=quat.z=0;
-              //quat.w=1;
-              
-              
-              //tf2::doTransform(model->origin_transform_, model->current_transform_, link_transform);
-                            
-              ROS_DEBUG_STREAM("Origin:Base = (" << model_frame_id << ":" << base_frame_id << ")= " << toString(origin_base_transform));
-                                          
-              ROS_DEBUG_STREAM("Origin:Camera = (" << model_name << ":" << target_frame_id << ")= " << toString(origin_camera_transform));
-              
-              geometry_msgs::PoseStamped test_pose, transformed_pose;
-              test_pose.pose.position.x = 1.2;
-              test_pose.pose.orientation.w = 1;
-              
-              tf2::doTransform(test_pose, transformed_pose, origin_camera_transform);
-              
-              ROS_DEBUG_STREAM("Transformed " << toString(test_pose.pose) << " to " << toString(transformed_pose.pose));
-              
-              
-            } catch ( tf2::TransformException &ex ) {
-              ROS_WARN_STREAM ("Problem finding transform:\n" <<ex.what() );
-              all_good = false;
-            }
-            
-          }
-          return all_good;
-        }
         
         std::shared_ptr<geometry_models::GeometryModel> CompositeModel::getGeometry(const std::string& tf_prefix, std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_, const urdf::Link& link, const urdf::Collision& collision, unsigned int collision_ind)
         {
@@ -461,6 +477,45 @@ namespace pips
           return model;
         }
         
+        
+        
+        
+        visualization_msgs::MarkerArray::Ptr CompositeModel::initMarkers(const std_msgs::Header& header, std::string ns)
+        {
+          visualization_msgs::MarkerArray::Ptr markers = boost::make_shared<visualization_msgs::MarkerArray>();
+        
+          visualization_msgs::Marker marker;
+          marker.ns = ns;
+          marker.header = header;
+          marker.action = visualization_msgs::Marker::DELETEALL;
+          
+          markers->markers.push_back(marker);
+          return markers;
+          
+          //        visualization_pub_.publish(markers);
+          
+        }
+
+        void CompositeModel::addMarker(visualization_msgs::MarkerArray::Ptr& markers, const geometry_msgs::Pose& pose, const geometry_models::GeometryModel& model, const std_msgs::Header& header, std::string ns)
+        {
+          if(markers)
+          {
+            visualization_msgs::Marker marker = model.marker_;
+            
+            marker.action = visualization_msgs::Marker::ADD;
+            marker.color.a = .25;
+            marker.color.r = 1;
+            marker.ns = ns;
+            
+            marker.pose=pose;
+            marker.header = header;
+            
+            marker.id = markers->markers.size();
+          
+            markers->markers.push_back(marker);
+          }
+        }
+
         
 
     }

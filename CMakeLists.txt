@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
    pcl_ros
    urdf
+   visualization_msgs #just for debugging
 #  dense_depth_projection
 #  extended_local
 )

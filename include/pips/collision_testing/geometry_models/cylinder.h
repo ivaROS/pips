@@ -46,6 +46,12 @@ public:
       height_(height)
     {
       type_ = "Cylinder";
+      
+      marker_.scale.x = radius_*2;
+      marker_.scale.y = radius_*2;
+      marker_.scale.z = height_;
+
+      marker_.type = visualization_msgs::Marker::CYLINDER;
     }
 
 
