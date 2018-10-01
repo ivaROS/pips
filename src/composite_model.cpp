@@ -49,12 +49,12 @@ namespace pips
             init();
             inited_ = true;
           }
+          show_im_ = show_im;
         }
         
         
         bool CompositeModel::init()
-        {
-          
+        {          
           std::string xml_string;
           std::string tf_prefix="";
 
@@ -307,20 +307,52 @@ namespace pips
         
         ComparisonResult CompositeModel::testCollisionImpl(const geometry_msgs::Pose pose, CCOptions options)
         {
+          ROS_INFO_STREAM("Options: " << (bool)options << ", show_im = " << show_im_);
+          
           int img_width = cv_image_ref_->image.cols;
           int img_height = cv_image_ref_->image.rows;
+          
+          const std_msgs::Header header = base_optical_transform_.header;
+          
+          ComparisonResult result;
+          
+          geometry_msgs::TransformStamped origin_trans;
+          origin_trans.transform.rotation = pose.orientation;
+          origin_trans.transform.translation.x = pose.position.x;
+          origin_trans.transform.translation.y = pose.position.y;
+          origin_trans.transform.translation.z = pose.position.z;
           
           geometry_msgs::PoseStamped pose_stamped;
           pose_stamped.pose = pose;
           
-          ComparisonResult result;
-                    
+          ROS_DEBUG_STREAM("Pose: " << toString(pose));
+          
+          visualization_msgs::MarkerArray::Ptr markers = initMarkers(header, "tested");
+          
           for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
           {
-            geometry_msgs::PoseStamped model_pose_stamped;
-            tf2::doTransform(pose_stamped, model_pose_stamped, model->current_transform_);
+
             
-            geometry_msgs::Pose model_pose = model_pose_stamped.pose;
+            geometry_msgs::TransformStamped model_pose_stamped;
+            
+            tf2::doTransform(model->current_transform_, model_pose_stamped, origin_trans);            
+            
+            ROS_DEBUG_STREAM("Pose of [" << model->frame_id_ << "] in Base frame: " << toString(model_pose_stamped));
+            
+            geometry_msgs::TransformStamped camera_pose_stamped;
+            
+            tf2::doTransform(model_pose_stamped, camera_pose_stamped, base_optical_transform_);
+            
+            
+            ROS_DEBUG_STREAM("Pose of [" << model->frame_id_ << "] in Camera frame: " << toString(camera_pose_stamped));
+
+            geometry_msgs::Pose model_pose;
+            model_pose.position.x = camera_pose_stamped.transform.translation.x;
+            model_pose.position.y = camera_pose_stamped.transform.translation.y;
+            model_pose.position.z = camera_pose_stamped.transform.translation.z;
+            
+            //NOTE: Currently, only the position (not orientation) is transformed
+            model_pose.orientation = pose.orientation; //camera_pose_stamped.transform.rotation;
             
             std::vector<COLUMN_TYPE> cols = model->getColumns(model_pose, img_width, img_height);
           
@@ -335,6 +367,8 @@ namespace pips
               
               if(column_result && options)
               {
+                ROS_INFO_STREAM("hasDetails: " << column_result.hasDetails() );
+                
                 if(!column_result.hasDetails())
                 {
                   column_result = isLessThanDetails(col,depth);
