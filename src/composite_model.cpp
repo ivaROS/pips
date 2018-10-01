@@ -62,6 +62,7 @@ namespace pips
           std::string param_name = "/robot_description";
           if( !pnh_.getParam("param_name", param_name) )
           {
+            pnh_.setParam("param_name", param_name);
             ROS_WARN_STREAM("No robot description parameter name provided. Using default '" << param_name << "'");
             //return false;
           }
@@ -307,7 +308,6 @@ namespace pips
         
         ComparisonResult CompositeModel::testCollisionImpl(const geometry_msgs::Pose pose, CCOptions options)
         {
-          ROS_INFO_STREAM("Options: " << (bool)options << ", show_im = " << show_im_);
           
           int img_width = cv_image_ref_->image.cols;
           int img_height = cv_image_ref_->image.rows;
@@ -367,7 +367,6 @@ namespace pips
               
               if(column_result && options)
               {
-                ROS_INFO_STREAM("hasDetails: " << column_result.hasDetails() );
                 
                 if(!column_result.hasDetails())
                 {
