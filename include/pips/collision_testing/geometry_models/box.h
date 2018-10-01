@@ -69,12 +69,14 @@ public:
     
    
     cv::Point3d pt2 = quaternionToRPY(pose.orientation);
-    double ang = pt2.y; //TODO the pitch is what is needed(check for correctness)
+    double ang = pt2.z; //Accessing yaw value since orientation is expected to not be transformed
     
     ROS_DEBUG_STREAM("roll, pitch, and yaw" << pt2);
     
     double theta1 = std::atan2(fd,hrw); 
     double theta2 = std::atan2(rd,hrw); 
+    
+    ROS_DEBUG_STREAM("theta1: " << theta1 << ", theta2: " << theta2);
     
     //double theta1 = std::atan2(hrw,fd); 
     //double theta2 = std::atan2(hrw,rd); 
@@ -328,6 +330,7 @@ private:
   
   COLUMN_TYPE getIntersection(cv::Point3d p1, cv::Point3d p2, cv::Point3d p3, cv::Point2d pix, int img_width, int img_height)
   {
+        //TODO: finding the normal and passing it might be faster
         cv::Point3d normal, p12, p13;
         p12 = p1 - p2;
         p13 = p1 - p3;

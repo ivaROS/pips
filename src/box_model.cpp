@@ -58,6 +58,7 @@
         setParameters(radius, height, robo_length, dist_from_rare, safety_expansion, floor_tolerance, show_im);
     }
 
+    //Don't transform orientation
     geometry_msgs::Pose BoxModel::transformPose(const geometry_msgs::Pose& pose)
     {
       Eigen::Affine3d pose_eig;
@@ -71,8 +72,11 @@
       geometry_msgs::Pose pose_t;
       convertPose(pose_eig_t, pose_t);
       
-      
       ROS_DEBUG_STREAM_NAMED(name_, "Pose " << toString(pose) << " transformed to " << toString(pose_t) );
+      
+      pose_t.orientation = pose.orientation;
+      
+      //ROS_DEBUG_STREAM_NAMED(name_, "Pose " << toString(pose) << " transformed to " << toString(pose_t) );
       
       return pose_t;
     }

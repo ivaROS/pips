@@ -62,7 +62,7 @@ namespace pips
           std::string param_name = "/robot_description";
           if( !pnh_.getParam("param_name", param_name) )
           {
-            ROS_ERROR("No robot description parameter name provided!");
+            ROS_WARN_STREAM("No robot description parameter name provided. Using default '" << param_name << "'");
             //return false;
           }
           
@@ -115,12 +115,9 @@ namespace pips
             
 
           }
-          
-          std_msgs::Header header;
-          header.frame_id = "camera_depth_optical_frame";
-          
+
           ros::Duration d(.1);
-          while(!updateTransforms(header))
+          while(!updateTransforms())
           {
             d.sleep();
           }
@@ -140,7 +137,7 @@ namespace pips
         
         
         // Header contains the frame to which transforms must be computed, subject to change
-        bool CompositeModel::updateTransforms(std_msgs::Header target_header)
+        bool CompositeModel::updateTransforms()
         {
           const std::string& target_frame_id = base_optical_transform_.header.frame_id;
           const std::string& base_frame_id = base_optical_transform_.child_frame_id;
@@ -252,7 +249,7 @@ namespace pips
           geometry_msgs::PoseStamped pose_stamped;
           pose_stamped.pose = pose;
           
-          ROS_INFO_STREAM("Pose: " << toString(pose));
+          ROS_DEBUG_STREAM("Pose: " << toString(pose));
           
           visualization_msgs::MarkerArray::Ptr markers = initMarkers(header, "hallucinated");
           
@@ -264,20 +261,22 @@ namespace pips
             
             tf2::doTransform(model->current_transform_, model_pose_stamped, origin_trans);            
             
-            ROS_INFO_STREAM("Pose of [" << model->frame_id_ << "] in Base frame: " << toString(model_pose_stamped));
+            ROS_DEBUG_STREAM("Pose of [" << model->frame_id_ << "] in Base frame: " << toString(model_pose_stamped));
             
             geometry_msgs::TransformStamped camera_pose_stamped;
             
             tf2::doTransform(model_pose_stamped, camera_pose_stamped, base_optical_transform_);
             
             
-            ROS_INFO_STREAM("Pose of [" << model->frame_id_ << "] in Camera frame: " << toString(camera_pose_stamped));
+            ROS_DEBUG_STREAM("Pose of [" << model->frame_id_ << "] in Camera frame: " << toString(camera_pose_stamped));
 
             geometry_msgs::Pose model_pose;
             model_pose.position.x = camera_pose_stamped.transform.translation.x;
             model_pose.position.y = camera_pose_stamped.transform.translation.y;
             model_pose.position.z = camera_pose_stamped.transform.translation.z;
-            model_pose.orientation = camera_pose_stamped.transform.rotation;
+            
+            //NOTE: Currently, only the position (not orientation) is transformed
+            model_pose.orientation = pose.orientation; //camera_pose_stamped.transform.rotation;
             
             addMarker(markers, model_pose, *model, header, "hallucinated");
             
@@ -417,8 +416,8 @@ namespace pips
           }
           else if (urdf::dynamic_pointer_cast<urdf::Box>(geom))
           {
-            //model = getGeometry((*(urdf::dynamic_pointer_cast<urdf::Box>(geom).get())));
-            ROS_ERROR_STREAM("Box type not currently correct, ignoring!");
+            model = getGeometry((*(urdf::dynamic_pointer_cast<urdf::Box>(geom).get())));
+            //ROS_ERROR_STREAM("Box type not currently correct, ignoring!");
           }
           else if (urdf::dynamic_pointer_cast<urdf::Cylinder>(geom))
           {

@@ -80,7 +80,7 @@ namespace pips
         bool init();
         
         // Header contains the frame to which transforms must be computed, subject to change
-        bool updateTransforms(std_msgs::Header target_header);
+        bool updateTransforms();
 
         std::shared_ptr<geometry_models::GeometryModel> getGeometry(const std::string& tf_prefix, std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_, const urdf::Link& link, const urdf::Collision& collision, unsigned int collision_ind);
         
