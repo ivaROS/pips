@@ -42,6 +42,34 @@ namespace pips
 {
   namespace utils
   {
+    template<typename T>
+    struct Point2
+    {
+    public:
+      T x, y;
+      constexpr Point2() {}
+      
+      constexpr Point2(T x, T y) : 
+        x(x),
+        y(y)
+        {}
+    };
+    typedef Point2<double> Point2d;
+    
+    template<typename T>
+    struct Point3
+    {
+    public:
+      T x, y, z;
+      constexpr Point3(T x, T y, T z) : 
+      x(x),
+      y(y),
+      z(z)
+      {}
+    };
+    typedef Point3<double> Point3d;
+    
+    
     
     class ConstPinholeCameraModel
     {
@@ -80,6 +108,19 @@ namespace pips
       cv::Point3d projectPixelTo3dRay(const cv::Point2d& uv_rect) const
       {        
         return cv::Point3d((uv_rect.x - cx() - Tx()) / fx(), (uv_rect.y - cy() - Ty()) / fy(), 1.0);
+      }
+      
+      constexpr Point2d project3dToPixel(const Point3d& xyz) const
+      {
+        // [U V W]^T = P * [X Y Z 1]^T
+        // u = U/W
+        // v = V/W
+        return Point2d((fx()*xyz.x + Tx()) / xyz.z + cx(),(fy()*xyz.y + Ty()) / xyz.z + cy());
+      }
+      
+      constexpr Point3d projectPixelTo3dRay(const Point2d& uv_rect) const
+      {        
+        return Point3d((uv_rect.x - cx() - Tx()) / fx(), (uv_rect.y - cy() - Ty()) / fy(), 1.0);
       }
       
 //       constexpr cv::Point2d PinholeCameraModel::project3dToPixel(const cv::Point3d& xyz) const
