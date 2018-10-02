@@ -147,5 +147,59 @@ namespace pips
       
     };
     
+    class NonConstPinholeCameraModel
+    {
+      double p00,p11,p02,p12,p03,p13;
+      
+    private:
+      
+      inline double fx() const { return p00; }
+      inline double fy() const { return p11; }
+      inline double cx() const { return p02; }
+      inline double cy() const { return p12; }
+      inline double Tx() const { return p03; }
+      inline double Ty() const { return p13; }
+      
+    public:
+      
+      NonConstPinholeCameraModel(double p00, double p01, double p02, double p03, double p10, double p11, double p12,  double p13, double p20, double p21, double p22, double p23) :
+      p00(p00),
+      p11(p11),
+      p02(p02),
+      p12(p12),
+      p03(p03),
+      p13(p13)
+      {
+        
+      }
+      
+      cv::Point2d project3dToPixel(const cv::Point3d& xyz) const
+      {
+        // [U V W]^T = P * [X Y Z 1]^T
+        // u = U/W
+        // v = V/W
+        return cv::Point2d((fx()*xyz.x + Tx()) / xyz.z + cx(),(fy()*xyz.y + Ty()) / xyz.z + cy());
+      }
+      
+      cv::Point3d projectPixelTo3dRay(const cv::Point2d& uv_rect) const
+      {        
+        return cv::Point3d((uv_rect.x - cx() - Tx()) / fx(), (uv_rect.y - cy() - Ty()) / fy(), 1.0);
+      }
+      
+      Point2d project3dToPixel(const Point3d& xyz) const
+      {
+        // [U V W]^T = P * [X Y Z 1]^T
+        // u = U/W
+        // v = V/W
+        return Point2d((fx()*xyz.x + Tx()) / xyz.z + cx(),(fy()*xyz.y + Ty()) / xyz.z + cy());
+      }
+      
+      Point3d projectPixelTo3dRay(const Point2d& uv_rect) const
+      {        
+        return Point3d((uv_rect.x - cx() - Tx()) / fx(), (uv_rect.y - cy() - Ty()) / fy(), 1.0);
+      }
+      
+    };
+    
   }
 }
