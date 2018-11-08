@@ -35,6 +35,11 @@ public:
       height_(height)
     {
       type_ = "Box";
+      marker_.scale.x = length_;
+      marker_.scale.y = width_;
+      marker_.scale.z = height_;
+      
+      marker_.type = visualization_msgs::Marker::CUBE;
     }
     
 

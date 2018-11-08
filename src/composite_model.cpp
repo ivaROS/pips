@@ -63,13 +63,13 @@ namespace pips
           if( !pnh_.getParam("param_name", param_name) )
           {
             pnh_.setParam("param_name", param_name);
-            ROS_WARN_STREAM("No robot description parameter name provided. Using default '" << param_name << "'");
+            ROS_WARN_STREAM_NAMED(name_,"No robot description parameter name provided. Using default '" << param_name << "'");
             //return false;
           }
           
           if( !nh_.getParam(param_name, xml_string) )
           {
-            ROS_ERROR("No robot description found!");
+            ROS_ERROR_NAMED(name_,"No robot description found!");
             return false;
           }
           
@@ -195,7 +195,7 @@ namespace pips
               
               //tf2::doTransform(model->origin_transform_, model->current_transform_, link_transform);
               
-              ROS_INFO_STREAM("Origin:Base = (" << model_frame_id << ":" << base_frame_id << ")= " << toString(origin_base_transform));
+              ROS_INFO_STREAM_NAMED(name_,"Origin:Base = (" << model_frame_id << ":" << base_frame_id << ")= " << toString(origin_base_transform));
               
               //ROS_INFO_STREAM("Origin:Camera = (" << model_name << ":" << target_frame_id << ")= " << toString(origin_camera_transform));
               
@@ -250,7 +250,7 @@ namespace pips
           geometry_msgs::PoseStamped pose_stamped;
           pose_stamped.pose = pose;
           
-          ROS_DEBUG_STREAM("Pose: " << toString(pose));
+          ROS_DEBUG_STREAM_NAMED(name_,"Pose: " << toString(pose));
           
           visualization_msgs::MarkerArray::Ptr markers = initMarkers(header, "hallucinated");
           
@@ -262,24 +262,27 @@ namespace pips
             
             tf2::doTransform(model->current_transform_, model_pose_stamped, origin_trans);            
             
-            ROS_DEBUG_STREAM("Pose of [" << model->frame_id_ << "] in Base frame: " << toString(model_pose_stamped));
+            ROS_DEBUG_STREAM_NAMED(name_,"Pose of [" << model->frame_id_ << "] in Base frame: " << toString(model_pose_stamped));
             
             geometry_msgs::TransformStamped camera_pose_stamped;
             
             tf2::doTransform(model_pose_stamped, camera_pose_stamped, base_optical_transform_);
             
             
-            ROS_DEBUG_STREAM("Pose of [" << model->frame_id_ << "] in Camera frame: " << toString(camera_pose_stamped));
+            ROS_DEBUG_STREAM_NAMED(name_,"Pose of [" << model->frame_id_ << "] in Camera frame: " << toString(camera_pose_stamped));
 
             geometry_msgs::Pose model_pose;
             model_pose.position.x = camera_pose_stamped.transform.translation.x;
             model_pose.position.y = camera_pose_stamped.transform.translation.y;
             model_pose.position.z = camera_pose_stamped.transform.translation.z;
+            model_pose.orientation = camera_pose_stamped.transform.rotation;
+            
+            addMarker(markers, model_pose, *model, header, "hallucinated");
+            
             
             //NOTE: Currently, only the position (not orientation) is transformed
             model_pose.orientation = pose.orientation; //camera_pose_stamped.transform.rotation;
             
-            addMarker(markers, model_pose, *model, header, "hallucinated");
             
             std::vector<COLUMN_TYPE> cols = model->getColumns(model_pose, img_width, img_height);
             
@@ -325,7 +328,7 @@ namespace pips
           geometry_msgs::PoseStamped pose_stamped;
           pose_stamped.pose = pose;
           
-          ROS_DEBUG_STREAM("Pose: " << toString(pose));
+          ROS_DEBUG_STREAM_NAMED(name_,"Pose: " << toString(pose));
           
           visualization_msgs::MarkerArray::Ptr markers = initMarkers(header, "tested");
           
@@ -337,14 +340,14 @@ namespace pips
             
             tf2::doTransform(model->current_transform_, model_pose_stamped, origin_trans);            
             
-            ROS_DEBUG_STREAM("Pose of [" << model->frame_id_ << "] in Base frame: " << toString(model_pose_stamped));
+            ROS_DEBUG_STREAM_NAMED(name_,"Pose of [" << model->frame_id_ << "] in Base frame: " << toString(model_pose_stamped));
             
             geometry_msgs::TransformStamped camera_pose_stamped;
             
             tf2::doTransform(model_pose_stamped, camera_pose_stamped, base_optical_transform_);
             
             
-            ROS_DEBUG_STREAM("Pose of [" << model->frame_id_ << "] in Camera frame: " << toString(camera_pose_stamped));
+            ROS_DEBUG_STREAM_NAMED(name_,"Pose of [" << model->frame_id_ << "] in Camera frame: " << toString(camera_pose_stamped));
 
             geometry_msgs::Pose model_pose;
             model_pose.position.x = camera_pose_stamped.transform.translation.x;
