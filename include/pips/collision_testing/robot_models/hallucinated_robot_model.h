@@ -7,6 +7,8 @@
 #include <pips/utils/image_comparison_result.h>
 #include <pips/utils/abstract_camera_model.h>
 
+//#include <pips/utils/convert_points_cv2.h>
+
 
 //#include <dynamic_reconfigure/server.h>
 #include <sensor_msgs/Image.h>
@@ -176,8 +178,8 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
         {
           ROS_DEBUG_STREAM_NAMED(name_, "Collision pixel coordinates: (" << point.pt.x << "," << point.pt.y << ")");
           cv::Point3d ray = cam_model_->projectPixelTo3dRay(point.pt);
-          CollisionPoint worldPoint = ray * point.depth / scale_;
-          world_points.push_back(worldPoint);
+          cv::Point3d worldPoint = ray * point.depth / scale_;
+          world_points.push_back(pips::collision_testing::toCollisionPoint(worldPoint));
         }
 	
 	return CCResult(world_points);

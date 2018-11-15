@@ -238,6 +238,8 @@ namespace pips
           int img_width = cv_image_ref_->image.cols;
           int img_height = cv_image_ref_->image.rows;
           
+          ROS_DEBUG_STREAM_NAMED(name_, "Parent image dimensions: [" << viz.cols << "x" << viz.rows << "], image_ref dimensions: [" << img_width << "x" << img_height << "]");
+          
           const std_msgs::Header header = base_optical_transform_.header;
           
           
@@ -353,6 +355,10 @@ namespace pips
             model_pose.position.x = camera_pose_stamped.transform.translation.x;
             model_pose.position.y = camera_pose_stamped.transform.translation.y;
             model_pose.position.z = camera_pose_stamped.transform.translation.z;
+            model_pose.orientation = camera_pose_stamped.transform.rotation;
+            
+            addMarker(markers, model_pose, *model, header, "tested");
+            
             
             //NOTE: Currently, only the position (not orientation) is transformed
             model_pose.orientation = pose.orientation; //camera_pose_stamped.transform.rotation;
@@ -364,7 +370,7 @@ namespace pips
               //TODO: limit rect to image size
               cv::Rect roi = getColumnRect(cols[i].rect);
               cv::Mat col = cv::Mat(this->image_ref_,roi); //cols[i].image;
-              float depth = cols[i].depth * scale_;
+              float depth = std::max(cols[i].depth * scale_, 0.0);
               
               ComparisonResult column_result = isLessThan(col, depth);
               
@@ -397,6 +403,9 @@ namespace pips
           {
             result.transpose();
           }
+          
+          visualization_pub_.publish(markers);
+          
           
           return result;
         }

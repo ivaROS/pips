@@ -2,37 +2,27 @@
 #define COLLISION_CHECKING_RESULT_H
 
 
-#include <opencv2/core/types.hpp> //TODO: I believe that this is now unnecessary
+//#include <opencv2/core/types.hpp> //TODO: I believe that this is now unnecessary
 //#include <pcl/point_types.h>
 
+//TODO: Move all of this to a sensible namespace
 
-namespace pips
-{
-  namespace utils
-  {
 
-    template <typename S, typename T>
-    void convertPoint(const S pt, T& x, T& y, T& z)
-    {
-      x = pt.x;
-      y = pt.y;
-      z = pt.z;
-    }
-
-  }
-  
-}
 
 template <typename T>
 struct CollisionPoint_
 {
   T x,y,z;
   
-  template <typename S>
-  CollisionPoint_(const S pt)
-  {
-   pips::utils::convertPoint(pt, x, y, z);
-  }
+//   template <typename S>
+//   CollisionPoint_(const S pt)
+//   {
+//    pips::utils::convertPoint(pt, x, y, z);
+//   }
+  
+  CollisionPoint_(T x, T y, T z) :
+    x(x), y(y), z(z)
+    {}
   
 
   
@@ -68,6 +58,39 @@ struct CollisionPoint_
 
 typedef CollisionPoint_<float> CollisionPoint;
 
+
+
+namespace pips
+{
+  namespace collision_testing
+  {
+    
+//template <typename S, typename T>
+//void convertPoint(const S pt, T& x, T& y, T& z);
+
+    template <typename S>
+    CollisionPoint toCollisionPoint(const S pt)
+    {
+      CollisionPoint co(pt.x,pt.y,pt.z);
+      return co;
+    }
+
+  }
+
+//   namespace collision_testing
+//   {
+//     template <typename T, typename U>
+//     std::vector<U> getPoints(const T& result);
+// //     {
+// //       std::vector<U> points;
+// //       return points;
+// //     }
+//   }
+
+}
+
+
+
 struct CCResult
 {
   bool collides_=false;
@@ -95,8 +118,15 @@ struct CCResult
   {
   }
   
-  template <typename T>
-  CCResult(T result);
+//   template <typename T, typename U>
+//   CCResult(T result)
+//   {
+//     std::vector<U> points = pips::collision_testing::getPoints(result);
+//     for(U point : points)
+//     {
+//       addPoint(point);
+//     }
+//   }
   
   void addPoint(CollisionPoint collision_point)
   {

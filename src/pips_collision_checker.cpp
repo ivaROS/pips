@@ -130,7 +130,6 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
         cv_bridge::CvImagePtr cv_im = cv_bridge::toCvCopy(image_msg);
         scale_ = SCALE_MM;
         
-        //TODO: maybe use the max value of the type rather than arbitrary large value?
         image_ref_ = cv_im->image;
         image_ref_.setTo(std::numeric_limits<uint16_t>::max(), image_ref_==0);
         
@@ -145,8 +144,6 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
       //image_ref_.setTo(MAX_RANGE * scale_, image_ref_!=image_ref_);
 
       //A gazebo difference: unknown values are given as 'nan' rather than 0. However, comparison of a Nan with a number will always return false, so it won't trigger a collision
-      //That also means that a simulation-only version could skip the data copy and 0 replacement. Futhermore, the driver could be customized to use Nans too
-      //Update: No point customizing the driver, the driver publishes 16UC1 images; the conversion nodelet already converts the 0s to NaNs.
     }
     catch (cv_bridge::Exception& ex){
       ROS_ERROR_NAMED(name_, "Failed to convert image");
@@ -232,12 +229,13 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
     cv_bridge::CvImage out_msg;
     //out_msg.header   = ; // Same timestamp and tf frame as input image
-    out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;// (scale_ == SCALE_METERS) ? sensor_msgs::image_encodings::TYPE_32FC1 : sensor_msgs::image_encodings::TYPE_16UC1;
+    out_msg.encoding = input_bridge_ref_->encoding; // sensor_msgs::image_encodings::TYPE_32FC1;// (scale_ == SCALE_METERS) ? sensor_msgs::image_encodings::TYPE_32FC1 : sensor_msgs::image_encodings::TYPE_16UC1;
     out_msg.image = generateDepthImage(req.pose);
     
     res.image = *out_msg.toImageMsg();
     res.image.header = input_bridge_ref_->header;
     
+    ROS_INFO_STREAM_NAMED(name_, "Image dimensions: [" << res.image.width << "x" << res.image.height << "], data size = " << sizeof(res.image.data) << ", num_elements: " << res.image.data.size());    
     return true;
   }
 
