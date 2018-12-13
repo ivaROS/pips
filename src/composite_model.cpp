@@ -332,7 +332,12 @@ namespace pips
           
           ROS_DEBUG_STREAM_NAMED(name_,"Pose: " << toString(pose));
           
-          visualization_msgs::MarkerArray::Ptr markers = initMarkers(header, "tested");
+          visualization_msgs::MarkerArray::Ptr markers;
+          
+          if(visualization_pub_.getNumSubscribers() > 0)
+          {
+            markers = initMarkers(header, "tested");
+          }
           
           for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
           {
@@ -357,6 +362,7 @@ namespace pips
             model_pose.position.z = camera_pose_stamped.transform.translation.z;
             model_pose.orientation = camera_pose_stamped.transform.rotation;
             
+            //TODO: only create markers if subscriber exists
             addMarker(markers, model_pose, *model, header, "tested");
             
             
@@ -393,12 +399,14 @@ namespace pips
                 }
                 else
                 {
-                  return column_result;
+                  result= column_result;
+                  goto done;
                 }
               }
             }
           }
           
+          done:
           if(transpose)
           {
             result.transpose();

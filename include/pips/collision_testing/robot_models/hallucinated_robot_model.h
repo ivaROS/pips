@@ -176,9 +176,10 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
         std::vector<CollisionPoint> world_points;
         for(auto point : result.points())
         {
-          ROS_DEBUG_STREAM_NAMED(name_, "Collision pixel coordinates: (" << point.pt.x << "," << point.pt.y << ")");
           cv::Point3d ray = cam_model_->projectPixelTo3dRay(point.pt);
           cv::Point3d worldPoint = ray * point.depth / scale_;
+          ROS_DEBUG_STREAM_NAMED(name_, "Collision pixel coordinates: (" << point.pt.x << "," << point.pt.y << "), point: " << worldPoint.x << "," << worldPoint.y << "," << worldPoint.z);
+          
           world_points.push_back(pips::collision_testing::toCollisionPoint(worldPoint));
         }
 	
