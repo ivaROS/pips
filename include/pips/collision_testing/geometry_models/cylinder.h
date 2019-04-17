@@ -33,12 +33,14 @@ namespace pips
 
 class Cylinder : public GeometryModel
 {
+public:
     double radius_=-1, height_=-1;
     
 public:
     Cylinder()
     {
       type_ = "Cylinder";
+      type_id_ = 1;
     }
   
     Cylinder(double radius, double height):
@@ -46,6 +48,7 @@ public:
       height_(height)
     {
       type_ = "Cylinder";
+      type_id_ = 1;
       
       marker_.scale.x = radius_*2;
       marker_.scale.y = radius_*2;

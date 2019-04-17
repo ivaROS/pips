@@ -58,7 +58,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include ${OpenCV_INCLUDE_DIRS} #${EIGEN3_INCLUDE_DIR} 
   LIBRARIES collision_checker pips_collision_checker depth_image_collision_checker
-  CATKIN_DEPENDS image_geometry cv_bridge message_runtime #extended_local dense_depth_projection
+  CATKIN_DEPENDS image_geometry cv_bridge message_runtime urdf geometry_msgs#extended_local dense_depth_projection
   DEPENDS  OpenCV tf2_eigen #Eigen3
 )
 

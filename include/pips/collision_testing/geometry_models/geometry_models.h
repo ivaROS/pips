@@ -30,6 +30,7 @@ class GeometryModel
     geometry_msgs::TransformStamped origin_transform_;
     geometry_msgs::TransformStamped current_transform_;
     visualization_msgs::Marker marker_;
+    int type_id_;
     
     
     void setOrigin(const geometry_msgs::TransformStamped& transform)

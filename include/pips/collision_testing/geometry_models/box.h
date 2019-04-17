@@ -21,12 +21,14 @@ namespace pips
 
 class Box : public GeometryModel
 {
+public:
     double length_ = -1, width_ = -1, height_ = -1;
     
 public:
     Box()
     {
       type_ = "Box";
+      type_id_ = 0;
     }
   
     Box(double length, double width, double height):
@@ -35,6 +37,8 @@ public:
       height_(height)
     {
       type_ = "Box";
+      type_id_ = 0;
+      
       marker_.scale.x = length_;
       marker_.scale.y = width_;
       marker_.scale.z = height_;
