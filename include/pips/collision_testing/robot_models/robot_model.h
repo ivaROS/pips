@@ -7,7 +7,8 @@
 #include <std_msgs/Header.h>
 #include <urdf/model.h>
 #include <urdf_parser/urdf_parser.h>
-#include <pips/collision_testing/geometry_models/geometry_models.h>
+#include <pips/RobotModelConfig.h>
+#include <pips/collision_testing/geometry_models/generic_models.h>
 #include <pips/collision_testing/geometry_models/cylinder.h>
 #include <pips/collision_testing/geometry_models/box.h>
 #include <tf2_ros/transform_listener.h>
@@ -15,6 +16,8 @@
 
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
+
+#include <dynamic_reconfigure/server.h>
 
 
 #include <string> //needed for converting numbers to string
@@ -33,13 +36,16 @@ namespace pips
       private:
         std::string name_;
         ros::NodeHandle nh_, pnh_;
-        std::vector<std::shared_ptr<geometry_models::GeometryModel> > models_;
+        std::vector<std::shared_ptr<geometry_models::GenericGeometryModel> > models_;
         tf2_ros::Buffer tf_buffer_;
         tf2_ros::TransformListener tf_listener_;
         bool inited_ = false;
         bool transpose = true;
         ros::Publisher visualization_pub_;
         geometry_msgs::TransformStamped base_optical_transform_;
+        typedef dynamic_reconfigure::Server<pips::RobotModelConfig> ReconfigureServer;
+        std::shared_ptr<ReconfigureServer> reconfigure_server_;
+        std::string base_frame_id_="base_footprint";
         
       public:
         
@@ -51,31 +57,22 @@ namespace pips
           //tf_buffer_(),
           tf_listener_(tf_buffer_)
         {
+          reconfigure_server_ = std::make_shared<ReconfigureServer>(pnh_);
+          reconfigure_server_->setCallback(boost::bind(&RobotModel::reconfigureCB, this, _1, _2));
         }
         
-        //TODO: add dynamic reconfiguration
-        bool init()
+      private:
+        void reconfigureCB(const pips::RobotModelConfig& config, uint32_t level)
         {          
-          if(inited_)
-            return true;
-          
-          inited_=true;
+          ROS_INFO_STREAM("Reconfigure callback: param_name: " << config.param_name << ", inflation: " << config.safety_expansion << ", floor tolerance: " << config.floor_tolerance);
           std::string xml_string;
           std::string tf_prefix="";
 
           
-          std::string param_name = "/robot_description";
-          if( !pnh_.getParam("param_name", param_name) )
+          if( !nh_.getParam(config.param_name, xml_string) )
           {
-            pnh_.setParam("param_name", param_name);
-            ROS_WARN_STREAM_NAMED(name_,"No robot description parameter name provided. Using default '" << param_name << "'");
-            //return false;
-          }
-          
-          if( !nh_.getParam(param_name, xml_string) )
-          {
-            ROS_ERROR_NAMED(name_,"No robot description found!");
-            return false;
+            ROS_ERROR_STREAM_NAMED(name_,"No robot description found at [" << config.param_name << "]");
+            return;
           }
           
           if( pnh_.getParam("tf_prefix", tf_prefix) )
@@ -88,6 +85,9 @@ namespace pips
           {
             tf_prefix = "";
           }
+          
+          ROS_INFO_STREAM("Clearing the [" << models_.size() << "] old geometry primitives...");
+          models_.clear();
           
           //https://github.com/ros/urdfdom/blob/06f5f9bc34f09b530d9f3743cb0516934625da54/urdf_parser/src/model.cpp#L62
           urdf::ModelInterfaceConstSharedPtr model = urdf::parseURDF(xml_string);
@@ -108,7 +108,7 @@ namespace pips
               urdf::CollisionConstSharedPtr collision = *vi;
               if( collision && collision->geometry )
               {
-                std::shared_ptr<geometry_models::GeometryModel> model = getGeometry(tf_prefix, *link, *collision, collision_ind);
+                std::shared_ptr<geometry_models::GenericGeometryModel> model = getGeometry(tf_prefix, *link, *collision, collision_ind);
                 
                 if(model)
                 {
@@ -118,8 +118,6 @@ namespace pips
               
             }
 
-            
-
           }
 
           ros::Duration d(.1);
@@ -128,32 +126,36 @@ namespace pips
             d.sleep();
           }
           
-          visualization_pub_ = pnh_.advertise<visualization_msgs::MarkerArray>("markers",5);
+          for(std::shared_ptr<geometry_models::GenericGeometryModel> model : models_)
+          {
+            model->adjust(config.safety_expansion, config.floor_tolerance);
+          }
           
+          if(!inited_)
+          { 
+            inited_=true;
+          }
+        }
+        
+      public:
+        bool init()
+        {
+          if( !pnh_.getParam("base_frame_id", base_frame_id_) )
+          {
+            ROS_WARN_STREAM("No base_frame_id set! Using default: '" << base_frame_id_ << "'");
+            pnh_.setParam("base_frame_id", base_frame_id_);
+          }
           
-          return true;
-          //TODO: Precompute all relevant transforms between links and camera
+          reconfigure_server_->setCallback(boost::bind(&RobotModel::reconfigureCB, this, _1, _2));
+          visualization_pub_ = pnh_.advertise<visualization_msgs::MarkerArray>("markers",5);          
         }
 
-//         void doPrecomputation(const cv_bridge::CvImage::ConstPtr& cv_image_ref)
-//         {
-//           
-//         }
-        
-        
-        
+      private:
         // Header contains the frame to which transforms must be computed, subject to change
         bool updateTransforms()
         {
-          const std::string& target_frame_id = base_optical_transform_.header.frame_id;
-          const std::string& base_frame_id = base_optical_transform_.child_frame_id;
-          
-          geometry_msgs::TransformStamped base_camera_rotation = base_optical_transform_;
-          geometry_msgs::Vector3 empty_translation;
-          base_camera_rotation.transform.translation = empty_translation;
-          
           bool all_good = true;
-          for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
+          for(std::shared_ptr<geometry_models::GenericGeometryModel> model : models_)
           {
             const std::string& model_frame_id = model->frame_id_;
             const std::string& model_name = model->name_;
@@ -163,11 +165,11 @@ namespace pips
             
             try
             {
-              geometry_msgs::TransformStamped origin_base_transform = tf_buffer_.lookupTransform ( base_frame_id, model_frame_id, ros::Time(0));
+              geometry_msgs::TransformStamped origin_base_transform = tf_buffer_.lookupTransform ( base_frame_id_, model_frame_id, ros::Time(0));
               
               current_transform = origin_base_transform;
               
-              ROS_INFO_STREAM_NAMED(name_,"Origin:Base = (" << model_frame_id << ":" << base_frame_id << ")= " << toString(origin_base_transform));
+              ROS_INFO_STREAM_NAMED(name_,"Origin:Base = (" << model_frame_id << ":" << base_frame_id_ << ")= " << toString(origin_base_transform));
               
               
             } catch ( tf2::TransformException &ex ) {
@@ -179,12 +181,13 @@ namespace pips
           return all_good;
         }
         
+      public:
         void setTransform(const geometry_msgs::TransformStamped transform)
         {
           base_optical_transform_ = transform;
         }
 
-        template <typename R, typename T>
+        template <typename T, typename R=typename T::geometry_type>
         std::vector<R> getModel(const geometry_msgs::Pose pose)
         {
           
@@ -210,7 +213,7 @@ namespace pips
             markers = initMarkers(header, "tested");
           }
           
-          for(std::shared_ptr<geometry_models::GeometryModel> model : models_)
+          for(std::shared_ptr<geometry_models::GenericGeometryModel> model : models_)
           {
 
             
@@ -218,14 +221,14 @@ namespace pips
             
             tf2::doTransform(model->current_transform_, model_pose_stamped, origin_trans);            
             
-            ROS_DEBUG_STREAM_NAMED(name_,"Pose of [" << model->frame_id_ << "] in Base frame: " << toString(model_pose_stamped));
+            ROS_DEBUG_STREAM_NAMED(name_,"Pose of [" << model->frame_id_ << "] in robot base frame [" << base_optical_transform_.child_frame_id << "]: " << toString(model_pose_stamped));
             
             geometry_msgs::TransformStamped camera_pose_stamped;
             
             tf2::doTransform(model_pose_stamped, camera_pose_stamped, base_optical_transform_);
             
             
-            ROS_DEBUG_STREAM_NAMED(name_,"Pose of [" << model->frame_id_ << "] in Camera frame: " << toString(camera_pose_stamped));
+            ROS_DEBUG_STREAM_NAMED(name_,"Pose of [" << model->frame_id_ << "] in current sensor frame [" << header.frame_id << "]: " << toString(camera_pose_stamped));
 
             geometry_msgs::Pose model_pose;
             model_pose.position.x = camera_pose_stamped.transform.translation.x;
@@ -240,7 +243,7 @@ namespace pips
             //NOTE: Currently, only the position (not orientation) is transformed
             model_pose.orientation = pose.orientation; //camera_pose_stamped.transform.rotation;
             
-            R converted_model = T::convert(*model, model_pose);
+            auto converted_model = T::convert(model, model_pose);
             if(converted_model)
             {
               updated_models.push_back(converted_model);
@@ -253,10 +256,9 @@ namespace pips
           
           return updated_models;
         }
-          
         
-        
-        std::shared_ptr<geometry_models::GeometryModel> getGeometry(const std::string& tf_prefix, const urdf::Link& link, const urdf::Collision& collision, unsigned int collision_ind)
+      private:
+        std::shared_ptr<geometry_models::GenericGeometryModel> getGeometry(const std::string& tf_prefix, const urdf::Link& link, const urdf::Collision& collision, unsigned int collision_ind)
         {
           const std::string& link_name = link.name;
           
@@ -275,7 +277,7 @@ namespace pips
           
           
           
-          std::shared_ptr<geometry_models::GeometryModel> model;
+          std::shared_ptr<geometry_models::GenericGeometryModel> model;
           
           // https://github.com/ros/urdfdom/blob/06f5f9bc34f09b530d9f3743cb0516934625da54/urdf_parser/src/link.cpp#L547
           if (urdf::dynamic_pointer_cast<urdf::Sphere>(geom))
@@ -285,7 +287,6 @@ namespace pips
           else if (urdf::dynamic_pointer_cast<urdf::Box>(geom))
           {
             model = getGeometry((*(urdf::dynamic_pointer_cast<urdf::Box>(geom).get())));
-            //ROS_ERROR_STREAM("Box type not currently correct, ignoring!");
           }
           else if (urdf::dynamic_pointer_cast<urdf::Cylinder>(geom))
           {
@@ -348,14 +349,14 @@ namespace pips
           return model;
         }
         
-        std::shared_ptr<geometry_models::GeometryModel> getGeometry(const urdf::Cylinder& cylinder)
+        std::shared_ptr<geometry_models::GenericGeometryModel> getGeometry(const urdf::Cylinder& cylinder)
         {
           ROS_INFO_STREAM("Adding Cylinder primitive. Radius=" << cylinder.radius << ", length=" << cylinder.length);
           std::shared_ptr<geometry_models::Cylinder> model = std::make_shared<geometry_models::Cylinder>(cylinder.radius, cylinder.length);
           return model;
         }
         
-        std::shared_ptr<geometry_models::GeometryModel> getGeometry(const urdf::Box& box)
+        std::shared_ptr<geometry_models::GenericGeometryModel> getGeometry(const urdf::Box& box)
         {
           ROS_INFO_STREAM("Adding Box primitive. Length=" << box.dim.x << ", Width=" << box.dim.y << ", Height=" << box.dim.z);
           std::shared_ptr<geometry_models::Box> model = std::make_shared<geometry_models::Box>(box.dim.x, box.dim.y, box.dim.z);
@@ -381,7 +382,7 @@ namespace pips
           
         }
 
-        void addMarker(visualization_msgs::MarkerArray::Ptr& markers, const geometry_msgs::Pose& pose, const geometry_models::GeometryModel& model, const std_msgs::Header& header, std::string ns)
+        void addMarker(visualization_msgs::MarkerArray::Ptr& markers, const geometry_msgs::Pose& pose, const geometry_models::GenericGeometryModel& model, const std_msgs::Header& header, std::string ns)
         {
           if(markers)
           {

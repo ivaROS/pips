@@ -13,14 +13,12 @@ namespace pips
     class AbstractCameraModel
     {
       public:
-        virtual cv::Point2d project3dToPixel(const cv::Point3d& point)=0;
-        virtual cv::Point3d projectPixelTo3dRay(const cv::Point2d& point)=0;
-        
-        virtual std::vector<int> getColumnRange(int left, int right)=0;
-        
         virtual void update()=0;
         
-        virtual float getPixelValue(const cv::Point3d& point)=0;
+        virtual cv::Point2d project3dToPixel(const cv::Point3d& point) const = 0;
+        virtual cv::Point3d projectPixelTo3dRay(const cv::Point2d& point) const = 0;
+        virtual std::vector<int> getColumnRange(int left, int right) const = 0;
+        virtual float getPixelValue(const cv::Point3d& point) const = 0;
     };
   
   }

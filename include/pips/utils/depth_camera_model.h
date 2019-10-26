@@ -31,17 +31,17 @@ namespace pips
           model_.fromCameraInfo(info_msg_);
         }
         
-        cv::Point2d project3dToPixel(const cv::Point3d& point)
+        cv::Point2d project3dToPixel(const cv::Point3d& point) const
         {
           return model_.project3dToPixel(point);
         }
         
-        cv::Point3d projectPixelTo3dRay(const cv::Point2d& point)
+        cv::Point3d projectPixelTo3dRay(const cv::Point2d& point) const
         {
           return model_.projectPixelTo3dRay(point);
         }
         
-        std::vector<int> getColumnRange(int left, int right)
+        std::vector<int> getColumnRange(int left, int right) const
         {
           ROS_ASSERT(left <= right);
           
@@ -55,7 +55,7 @@ namespace pips
           return cols;
         }
         
-        float getPixelValue(const cv::Point3d& point)
+        float getPixelValue(const cv::Point3d& point) const
         {
           return point.z;
         }

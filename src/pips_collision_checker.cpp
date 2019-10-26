@@ -179,7 +179,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     
     if(collided)
     { 
-      
+      ROS_DEBUG_STREAM_NAMED(name_, "Pose " << toString(pose) << " collides!");
 	if(collided.details())
 	{
 	    std::vector<CollisionPoint> worldPoints = collided.getCollisionPnts();
