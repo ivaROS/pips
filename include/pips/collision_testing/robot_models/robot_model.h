@@ -11,7 +11,7 @@
 #include <pips/collision_testing/geometry_models/generic_models.h>
 #include <pips/collision_testing/geometry_models/cylinder.h>
 #include <pips/collision_testing/geometry_models/box.h>
-#include <tf2_ros/transform_listener.h>
+#include <tf2_utils/transform_manager.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <visualization_msgs/Marker.h>
@@ -37,8 +37,7 @@ namespace pips
         std::string name_;
         ros::NodeHandle nh_, pnh_;
         std::vector<std::shared_ptr<geometry_models::GenericGeometryModel> > models_;
-        tf2_ros::Buffer tf_buffer_;
-        tf2_ros::TransformListener tf_listener_;
+        tf2_utils::TransformManager tfm_;
         bool inited_ = false;
         bool transpose = true;
         ros::Publisher visualization_pub_;
@@ -49,13 +48,12 @@ namespace pips
         
       public:
         
-        RobotModel(ros::NodeHandle nh, ros::NodeHandle pnh):
+        RobotModel(ros::NodeHandle nh, ros::NodeHandle pnh, tf2_utils::TransformManager tfm=tf2_utils::TransformManager(false)):
           //RobotModelImpl<geometry_msgs::Pose>(),
           name_("robot_model"),
           nh_(nh),
           pnh_(pnh, name_),
-          //tf_buffer_(),
-          tf_listener_(tf_buffer_)
+          tfm_(tfm, nh)
         {
           reconfigure_server_ = std::make_shared<ReconfigureServer>(pnh_);
           reconfigure_server_->setCallback(boost::bind(&RobotModel::reconfigureCB, this, _1, _2));
@@ -147,7 +145,9 @@ namespace pips
           }
           
           reconfigure_server_->setCallback(boost::bind(&RobotModel::reconfigureCB, this, _1, _2));
-          visualization_pub_ = pnh_.advertise<visualization_msgs::MarkerArray>("markers",5);          
+          visualization_pub_ = pnh_.advertise<visualization_msgs::MarkerArray>("markers",5);  
+          
+          return true;
         }
 
       private:
@@ -165,7 +165,7 @@ namespace pips
             
             try
             {
-              geometry_msgs::TransformStamped origin_base_transform = tf_buffer_.lookupTransform ( base_frame_id_, model_frame_id, ros::Time(0));
+              geometry_msgs::TransformStamped origin_base_transform = tfm_.getBuffer()->lookupTransform ( base_frame_id_, model_frame_id, ros::Time(0));
               
               current_transform = origin_base_transform;
               
@@ -216,7 +216,7 @@ namespace pips
           for(std::shared_ptr<geometry_models::GenericGeometryModel> model : models_)
           {
 
-            
+            //TODO: Switch to native tf2::Transform type
             geometry_msgs::TransformStamped model_pose_stamped;
             
             tf2::doTransform(model->current_transform_, model_pose_stamped, origin_trans);            
@@ -236,8 +236,10 @@ namespace pips
             model_pose.position.z = camera_pose_stamped.transform.translation.z;
             model_pose.orientation = camera_pose_stamped.transform.rotation;
             
-            //TODO: only create markers if subscriber exists
-            addMarker(markers, model_pose, *model, header, "tested");
+            if(markers)
+            {
+              addMarker(markers, model_pose, *model, header, "tested");
+            }
             
             
             //NOTE: Currently, only the position (not orientation) is transformed
@@ -342,7 +344,7 @@ namespace pips
               
               model->origin_transform_ = transform;
 
-              tf_buffer_.setTransform(transform, "urdf", true); //Add static transform for origin of collision model
+              tfm_.getBuffer()->setTransform(transform, "urdf", true); //Add static transform for origin of collision model
             }
           }
           

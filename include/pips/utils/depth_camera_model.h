@@ -4,6 +4,8 @@
 
 #include <pips/utils/abstract_camera_model.h>
 #include <image_geometry/pinhole_camera_model.h>
+#include <ros/assert.h>
+
 //#include <opencv2/core/core.hpp>
 
 

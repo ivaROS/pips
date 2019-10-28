@@ -49,6 +49,7 @@ public:
   std::vector<COLUMN_TYPE> getColumns(const std::shared_ptr<const pips::utils::AbstractCameraModel>& cam_model_, int img_width, int img_height) const
   {    
     const cv::Point3d pt(pose_.position.x, pose_.position.y, pose_.position.z);
+    //const cv::Point3d pt(-pose_.position.y, -pose_.position.z, pose_.position.x);
     
     ROS_DEBUG_STREAM("Get columns for " << pt << ", with height=" << height_ << ", radius=" << radius_ <<", img_width=" << img_width << ", img_height=" << img_height);
     std::vector<COLUMN_TYPE> cols;
