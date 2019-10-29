@@ -114,6 +114,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
       if(image_msg->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
       {
         input_bridge_ref_ = cv_bridge::toCvShare(image_msg);
+        image_ref_ = input_bridge_ref_->image;
         scale_ = SCALE_METERS;
       }
       else if(image_msg->encoding == sensor_msgs::image_encodings::TYPE_16UC1)

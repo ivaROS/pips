@@ -49,6 +49,11 @@ public:
       }
     }
     
+    TransformManager(std::shared_ptr<tf2_ros::Buffer> buffer, std::shared_ptr<tf2_ros::TransformListener> listener):
+      buffer_(buffer),
+      listener_(listener)
+    {}
+    
     std::shared_ptr<tf2_ros::Buffer> getBuffer()
     {
       return buffer_;

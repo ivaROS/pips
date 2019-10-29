@@ -23,6 +23,7 @@ namespace pips
     void DepthImageCollisionChecker::setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
     {
       cam_model_->setInfo(info_msg);
+      cam_model_->update(); //Not sure if there was a reason for this additional step
       
       PipsCollisionChecker::setImage(image_msg);
     }
