@@ -57,11 +57,10 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   
 
   PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name, tf2_utils::TransformManager tfm) : 
-    pips::collision_testing::TransformingCollisionChecker(nh,pnh,name),
+    pips::collision_testing::GeneralCollisionChecker(nh,pnh,name,tfm),
     name_(name),
     nh_(nh, name_),
     pnh_(pnh, name_),
-    robot_model_(nh_, pnh_, tfm),
     setup_durations_()
   {
       ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
@@ -71,8 +70,8 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
   void PipsCollisionChecker::initImpl()
   {
+    pips::collision_testing::GeneralCollisionChecker::initImpl();
     cam_model_ = getCameraModel();
-    robot_model_.init();
       
       //checker_ = nh_.serviceClient<extended_local::ExtPose>("/ext_check");
 
@@ -84,17 +83,6 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
       //pointpub_ = pnh_.advertise<PointCloud>("collisions",100);
 
   }
-  
-  /*Currently, I don't use the 'optical_transform' anywhere. Everything happens within the robot model 
-  * (this was to enable optimized transformations of different representations, which really wasn't worth implementing)
-  */
-    void PipsCollisionChecker::setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
-    {
-      //Convert transform to Eigen
-      //optical_transform_ = tf2::transformToEigen(base_optical_transform);
-      base_optical_transform_ = base_optical_transform;
-      robot_model_.setTransform(base_optical_transform);
-    }
   
   /*
   Description: Sets the PipsCollisionChecker's depth image and camera model. Called whenever there is a new image.
@@ -208,7 +196,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     
     ROS_DEBUG_STREAM_NAMED(name_, "Parent image dimensions: [" << viz.cols << "x" << viz.rows << "], image_ref dimensions: [" << img_width << "x" << img_height << "]");
     
-    const std_msgs::Header header = base_optical_transform_.header;
+    const std_msgs::Header header = getCurrentHeader();
     
     
     ROS_DEBUG_STREAM_NAMED(name_,"Pose: " << toString(pose));
@@ -251,7 +239,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     int img_width = input_bridge_ref_->image.cols;
     int img_height = input_bridge_ref_->image.rows;
     
-    const std_msgs::Header header = base_optical_transform_.header;
+    const std_msgs::Header header = getCurrentHeader();
     
 
     

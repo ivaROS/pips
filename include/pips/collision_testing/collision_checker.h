@@ -6,7 +6,7 @@
 
 #include <pips/utils/pose_conversions.h>
 
-#include "ros/ros.h"
+#include <ros/ros.h>
 #include <memory>
 
 
@@ -39,6 +39,9 @@ public :
       convertPose(pose_in, pose_out);
       return testCollision(pose_out, options);
     }
+    
+    virtual std_msgs::Header getCurrentHeader();
+    
 
     /*
     template<typename T>
@@ -65,7 +68,7 @@ private :
     
     ros::NodeHandle nh_, pnh_;	// For now, separate node handles for base and derived
     ros::ServiceServer collision_testing_service_;
-
+    ros::Publisher collision_pub_;
     std::string sub_name_;
     
     

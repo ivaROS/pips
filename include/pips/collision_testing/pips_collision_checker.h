@@ -1,10 +1,9 @@
 #ifndef PIPS_COLLISION_CHECKER_H
 #define PIPS_COLLISION_CHECKER_H
 
-#include <pips/collision_testing/transforming_collision_checker.h>
+#include <pips/collision_testing/general_collision_checker.h>
 //#include <pips/utils/depth_camera_model.h>
 
-#include <pips/collision_testing/robot_models/robot_model.h>
 #include <pips/utils/abstract_camera_model.h>
 #include <pips/GenerateDepthImage.h>
 #include <pips/utils/image_comparison_result.h>
@@ -22,7 +21,7 @@
 
 
 
-class PipsCollisionChecker : public pips::collision_testing::TransformingCollisionChecker
+class PipsCollisionChecker : public pips::collision_testing::GeneralCollisionChecker
 {
 
 
@@ -38,9 +37,6 @@ public :
     cv::Mat generateDepthImage(PoseType pose);
     
     void initImpl();
-    
-    
-    void setTransform(const geometry_msgs::TransformStamped& base_optical_transform);
     
 protected:
     cv::Rect getColumnRect(const int x, const int y, const int width, const int height);
@@ -70,14 +66,12 @@ private :
     //image_transport::Publisher depthpub_;
     std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_;
     ros::NodeHandle nh_, pnh_;
-    pips::collision_testing::robot_models::RobotModel robot_model_;
     
 
     //image_transport::ImageTransport it_; // Needs to be after node handles to ensure they are initialized first
 
     bool show_im_, transpose_;
     //Eigen::Affine3d optical_transform_;
-    geometry_msgs::TransformStamped base_optical_transform_;
     
     ros::ServiceServer depth_generation_service_;
     
