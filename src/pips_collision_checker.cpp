@@ -56,16 +56,28 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   
   
 
-  PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name, tf2_utils::TransformManager tfm) : 
+  PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name, const tf2_utils::TransformManager& tfm) : 
     pips::collision_testing::GeneralCollisionChecker(nh,pnh,name,tfm),
     name_(name),
     nh_(nh, name_),
     pnh_(pnh, name_),
     setup_durations_()
   {
-      ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
-      show_im_=true;
-      transpose_=false;
+    ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
+    show_im_=true;
+    transpose_=false;
+  }
+  
+  PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const tf2_utils::TransformManager& tfm, const std::string& name) : 
+    pips::collision_testing::GeneralCollisionChecker(nh,pnh,name,tfm),
+    name_(name),
+    nh_(nh, name_),
+    pnh_(pnh, name_),
+    setup_durations_()
+  {
+    ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
+    show_im_=true;
+    transpose_=false;
   }
 
   void PipsCollisionChecker::initImpl()

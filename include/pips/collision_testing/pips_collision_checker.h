@@ -30,8 +30,9 @@ public :
     //Needed to ensure that eigen objects aligned
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name=DEFAULT_NAME, tf2_utils::TransformManager manager=tf2_utils::TransformManager(false));
-
+    PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name=DEFAULT_NAME, const tf2_utils::TransformManager& manager=tf2_utils::TransformManager(false));
+    PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const tf2_utils::TransformManager& manager, const std::string& name=DEFAULT_NAME);
+    
     void setImage(const sensor_msgs::ImageConstPtr& image_msg);
     CCResult testCollisionImpl(PoseType pose, CCOptions options=CCOptions());
     cv::Mat generateDepthImage(PoseType pose);
