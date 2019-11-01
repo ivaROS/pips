@@ -22,7 +22,7 @@ public :
   //EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   typedef geometry_msgs::Pose PoseType;
 
-    CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, std::string sub_name="CollisionChecker");
+    CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name=DEFAULT_NAME);
 
     CCResult testCollision(PoseType pose, CCOptions options = CCOptions());
     
@@ -52,27 +52,27 @@ public :
       return generateVisualization(pose_out);
     }
     */
-    
+public:
+  static constexpr const char* DEFAULT_NAME="abstract_collision_checker";
+  
 private:
    bool testCollisionSrv(pips::TestCollision::Request &req, pips::TestCollision::Response &res);
    
 
    virtual void initImpl() {}
 
-protected:
-    //ros::Publisher posepub_;
-  
-   
 private :
-    std::string name_ = "CollisionChecker";
-    
-    ros::NodeHandle nh_, pnh_;	// For now, separate node handles for base and derived
+  std::string name_;
+  
+protected:
+  ros::NodeHandle nh_, pnh_;	// For now, separate node handles for base and derived
+  pips::utils::DurationAccumulator setup_durations_;
+   
+private :    
     ros::ServiceServer collision_testing_service_;
-    ros::Publisher collision_pub_;
-    std::string sub_name_;
+    ros::Publisher collision_pub_;    
     
-    
-    pips::utils::DurationAccumulator durations_;
+    pips::utils::DurationAccumulator cc_durations_;
     bool inited_;
                               
 } ;

@@ -17,9 +17,9 @@ namespace pips
             
         public :
             
-            GeneralCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, std::string name="general_collision_checker", tf2_utils::TransformManager tfm=tf2_utils::TransformManager(false)) : 
+            GeneralCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name=DEFAULT_NAME, tf2_utils::TransformManager tfm=tf2_utils::TransformManager(false)) : 
               TransformingCollisionChecker(nh, pnh, name),
-              robot_model_(nh, pnh, tfm)
+              robot_model_(nh_, pnh_, tfm)
             {}
 
             virtual void setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
@@ -37,6 +37,10 @@ namespace pips
             {
               robot_model_.init();
             }
+            
+        public:
+          static constexpr const char* DEFAULT_NAME="abstract_general_collision_checker";
+          
         } ;
 
     }

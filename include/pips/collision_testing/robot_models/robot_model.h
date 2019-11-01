@@ -18,7 +18,7 @@
 #include <visualization_msgs/MarkerArray.h>
 
 #include <dynamic_reconfigure/server.h>
-
+#include <pips/utils/param_utils.h>
 
 #include <string> //needed for converting numbers to string
 
@@ -44,7 +44,7 @@ namespace pips
         geometry_msgs::TransformStamped base_optical_transform_;
         typedef dynamic_reconfigure::Server<pips::RobotModelConfig> ReconfigureServer;
         std::shared_ptr<ReconfigureServer> reconfigure_server_;
-        std::string base_frame_id_="base_footprint";
+        std::string base_frame_id_;
         
       public:
         
@@ -56,7 +56,6 @@ namespace pips
           tfm_(tfm, nh)
         {
           reconfigure_server_ = std::make_shared<ReconfigureServer>(pnh_);
-          reconfigure_server_->setCallback(boost::bind(&RobotModel::reconfigureCB, this, _1, _2));
         }
         
       private:
@@ -76,7 +75,6 @@ namespace pips
           if( pnh_.getParam("tf_prefix", tf_prefix) )
           {
             ROS_INFO_STREAM("tf_prefix =\"" << tf_prefix << "\"");
-            //return false;
             tf_prefix = tf_prefix + "/";
           }
           else
@@ -88,17 +86,16 @@ namespace pips
           models_.clear();
           
           //https://github.com/ros/urdfdom/blob/06f5f9bc34f09b530d9f3743cb0516934625da54/urdf_parser/src/model.cpp#L62
-          urdf::ModelInterfaceConstSharedPtr model = urdf::parseURDF(xml_string);
+          urdf::ModelInterfaceConstSharedPtr urdf_model = urdf::parseURDF(xml_string);
           
           //Iterate over links and add collision geometry
           //https://github.com/ros/urdfdom/blob/06f5f9bc34f09b530d9f3743cb0516934625da54/urdf_parser/src/model.cpp#L263
-          for (std::map<std::string, urdf::LinkSharedPtr>::const_iterator l=model->links_.begin(); l!=model->links_.end(); l++)  
+          for (std::map<std::string, urdf::LinkSharedPtr>::const_iterator l=urdf_model->links_.begin(); l!=urdf_model->links_.end(); l++)  
           {
             //https://github.com/ros-visualization/rviz/blob/87742e4b8f40d8fe7e2a6952065651266faf73ba/src/rviz/robot/robot.cpp#L273
             const urdf::LinkConstSharedPtr& link = l->second;
             const std::string link_name = l->first;
             
-            unsigned int num_collisions = link->collision_array.size();
             unsigned int collision_ind = 0;
             //https://github.com/ros-visualization/rviz/blob/87742e4b8f40d8fe7e2a6952065651266faf73ba/src/rviz/robot/robot_link.cpp#L698
             for(std::vector<urdf::CollisionSharedPtr >::const_iterator vi = link->collision_array.begin(); vi != link->collision_array.end(); vi++, collision_ind++ )
@@ -106,11 +103,11 @@ namespace pips
               urdf::CollisionConstSharedPtr collision = *vi;
               if( collision && collision->geometry )
               {
-                std::shared_ptr<geometry_models::GenericGeometryModel> model = getGeometry(tf_prefix, *link, *collision, collision_ind);
+                std::shared_ptr<geometry_models::GenericGeometryModel> geometry_model = getGeometry(tf_prefix, *link, *collision, collision_ind);
                 
-                if(model)
+                if(geometry_model)
                 {
-                  models_.push_back(model);
+                  models_.push_back(geometry_model);
                 }
               }
               
@@ -128,25 +125,20 @@ namespace pips
           {
             model->adjust(config.safety_expansion, config.floor_tolerance);
           }
-          
-          if(!inited_)
-          { 
-            inited_=true;
-          }
         }
         
       public:
         bool init()
         {
-          if( !pnh_.getParam("base_frame_id", base_frame_id_) )
-          {
-            ROS_WARN_STREAM("No base_frame_id set! Using default: '" << base_frame_id_ << "'");
-            pnh_.setParam("base_frame_id", base_frame_id_);
+          if(!inited_)
+          { 
+            pips::utils::searchParam(pnh_, "base_frame_id", base_frame_id_, "base_link");
+            
+            reconfigure_server_->setCallback(boost::bind(&RobotModel::reconfigureCB, this, _1, _2));
+            visualization_pub_ = pnh_.advertise<visualization_msgs::MarkerArray>("markers",5);  
+            
+            inited_=true;
           }
-          
-          reconfigure_server_->setCallback(boost::bind(&RobotModel::reconfigureCB, this, _1, _2));
-          visualization_pub_ = pnh_.advertise<visualization_msgs::MarkerArray>("markers",5);  
-          
           return true;
         }
 
@@ -169,11 +161,11 @@ namespace pips
               
               current_transform = origin_base_transform;
               
-              ROS_INFO_STREAM_NAMED(name_,"Origin:Base = (" << model_frame_id << ":" << base_frame_id_ << ")= " << toString(origin_base_transform));
+              ROS_INFO_STREAM_NAMED("updateTransforms","Origin:Base = (" << model_frame_id << ":" << base_frame_id_ << ")= " << toString(origin_base_transform));
               
               
             } catch ( tf2::TransformException &ex ) {
-              ROS_WARN_STREAM ("Problem finding transform:\n" <<ex.what() );
+              ROS_WARN_STREAM_NAMED("updateTransforms","Problem finding transform:\n" <<ex.what() );
               all_good = false;
             }
             
@@ -296,11 +288,11 @@ namespace pips
           }
           else if (urdf::dynamic_pointer_cast<urdf::Mesh>(geom))
           {
-            ROS_ERROR_STREAM("Mesh type not supported!");
+            ROS_WARN_STREAM("Mesh type not supported!");
           }
           else
           {
-            ROS_ERROR_STREAM("Unknown type not supported!");
+            ROS_WARN_STREAM("Unknown type not supported!");
           }
           
           if(model)
@@ -310,12 +302,6 @@ namespace pips
             //Assign things that always need to be assigned
             model->name_ = name;            
             
-//             const urdf::Pose tmp;
-//             if(origin == tmp) //no offset, so just use link's frame
-//             {
-//               model->frame_id_ = link_frame_id;
-//             }
-//             else
             {
               model->origin_ = origin;
               model->frame_id_ = link_frame_id + "/" + name;
@@ -333,12 +319,8 @@ namespace pips
               
               tf2::Stamped<tf2::Transform> tf_origin_pose;
               tf2::fromMsg(origin_pose, tf_origin_pose);
-              
-              tf2::Transform tf_origin_transform = tf_origin_pose.inverse();
-              
-              geometry_msgs::TransformStamped transform = origin_pose;
-              //transform.transform = tf2::toMsg(tf_origin_transform);
-              
+                            
+              geometry_msgs::TransformStamped transform = origin_pose;              
               transform.child_frame_id = model->frame_id_;
               transform.header.frame_id = link_frame_id;
               
@@ -379,9 +361,6 @@ namespace pips
           
           markers->markers.push_back(marker);
           return markers;
-          
-          //        visualization_pub_.publish(markers);
-          
         }
 
         void addMarker(visualization_msgs::MarkerArray::Ptr& markers, const geometry_msgs::Pose& pose, const geometry_models::GenericGeometryModel& model, const std_msgs::Header& header, std::string ns)

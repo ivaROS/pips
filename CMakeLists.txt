@@ -16,7 +16,6 @@ find_package(catkin REQUIRED COMPONENTS
 #  image_view  #Any package intended to run on the robot should not require any gui packages
   tf
   tf2
-  tf2_eigen
   tf2_geometry_msgs
   message_generation
   geometry_msgs

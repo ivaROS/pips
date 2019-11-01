@@ -38,6 +38,8 @@ public :
     cv::Mat generateDepthImage(PoseType pose);
     
     void initImpl();
+    virtual std_msgs::Header getCurrentHeader();
+    
     
 protected:
     cv::Rect getColumnRect(const int x, const int y, const int width, const int height);
@@ -66,18 +68,11 @@ private :
 
     //image_transport::Publisher depthpub_;
     std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_;
-    ros::NodeHandle nh_, pnh_;
     
-
-    //image_transport::ImageTransport it_; // Needs to be after node handles to ensure they are initialized first
-
     bool show_im_, transpose_;
-    //Eigen::Affine3d optical_transform_;
     
     ros::ServiceServer depth_generation_service_;
-    
-    //HallucinatedRobotModelInterface robot_model_;
-    
+        
     unsigned int scale_;
     
     cv::Mat image_,image_ref_;
@@ -85,9 +80,6 @@ private :
     cv_bridge::CvImageConstPtr input_bridge_ref_;
     
     cv_bridge::CvImagePtr input_bridge_, output_bridge_;
-    pips::utils::DurationAccumulator setup_durations_;
-
-
     
 } ;
 

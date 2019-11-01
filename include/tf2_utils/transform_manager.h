@@ -22,13 +22,13 @@ namespace tf2_utils
 public:
   
 
-    TransformManager(ros::Duration buffer_size=ros::Duration(tf2::BufferCore::DEFAULT_CACHE_TIME))
+    TransformManager(ros::Duration buffer_size)
     {
       ros::NodeHandle nh;
       initialize(nh, buffer_size);
     }
     
-    TransformManager(bool create)
+    TransformManager(bool create=false)
     {
       if(create)
       {

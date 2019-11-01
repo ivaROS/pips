@@ -19,15 +19,13 @@ namespace pips
 
         public :
             
-            TransformingCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, std::string name="TransformingCollisionChecker") : 
+            TransformingCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name=DEFAULT_NAME) : 
                 CollisionChecker(nh, pnh, name)
             {}
-            
 
-            
             virtual void setTransform(const geometry_msgs::TransformStamped& base_optical_transform)=0;
             
-
+            static constexpr const char* DEFAULT_NAME="abstract_transforming_collision_checker";
 
         } ;
 

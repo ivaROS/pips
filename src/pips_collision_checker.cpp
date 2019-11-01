@@ -15,8 +15,6 @@
 #include <boost/foreach.hpp>
 #include <sensor_msgs/image_encodings.h>
 #include <tf2_ros/static_transform_broadcaster.h>
-#include <tf2_eigen/tf2_eigen.h>
-
 
 #include <sensor_msgs/image_encodings.h>
 
@@ -57,25 +55,17 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   
 
   PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name, const tf2_utils::TransformManager& tfm) : 
-    pips::collision_testing::GeneralCollisionChecker(nh,pnh,name,tfm),
-    name_(name),
-    nh_(nh, name_),
-    pnh_(pnh, name_),
-    setup_durations_()
+    pips::collision_testing::GeneralCollisionChecker(nh,pnh,name,tfm)
   {
-    ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
+    ROS_DEBUG_STREAM_NAMED(name_+".constructor", "Constructing collision checker");
     show_im_=true;
     transpose_=false;
   }
   
   PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const tf2_utils::TransformManager& tfm, const std::string& name) : 
-    pips::collision_testing::GeneralCollisionChecker(nh,pnh,name,tfm),
-    name_(name),
-    nh_(nh, name_),
-    pnh_(pnh, name_),
-    setup_durations_()
+    pips::collision_testing::GeneralCollisionChecker(nh,pnh,name,tfm)
   {
-    ROS_DEBUG_STREAM_NAMED(name_, "Constructing collision checker");
+    ROS_DEBUG_STREAM_NAMED(name_+".constructor", "Constructing collision checker");
     show_im_=true;
     transpose_=false;
   }
@@ -84,16 +74,9 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   {
     pips::collision_testing::GeneralCollisionChecker::initImpl();
     cam_model_ = getCameraModel();
-      
-      //checker_ = nh_.serviceClient<extended_local::ExtPose>("/ext_check");
-
-      
-      //TODO: This should probably accept a CameraInfo message as an optional parameter, allowing it to be used without a camera
-      depth_generation_service_ = pnh_.advertiseService("generate_depth_image", &PipsCollisionChecker::getDepthImageSrv, this);
-      //posepub_ = pnh_.advertise<geometry_msgs::PoseStamped>("collision_poses",100);
-      
-      //pointpub_ = pnh_.advertise<PointCloud>("collisions",100);
-
+    
+    //TODO: This should probably accept a CameraInfo message as an optional parameter, allowing it to be used without a camera
+    depth_generation_service_ = pnh_.advertiseService("generate_depth_image", &PipsCollisionChecker::getDepthImageSrv, this);
   }
   
   /*
@@ -105,7 +88,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   */ 
   void PipsCollisionChecker::setImage(const sensor_msgs::ImageConstPtr& image_msg)
   {
-    ROS_DEBUG_STREAM_NAMED(name_, "Setting new image" << std::endl);
+    ROS_DEBUG_STREAM_NAMED(name_+".setup", "Setting new image" << std::endl);
     
     auto t1 = ros::WallTime::now();
     
@@ -130,7 +113,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
       }
     }
     catch (cv_bridge::Exception& ex){
-      ROS_ERROR_NAMED(name_, "Failed to convert image");
+      ROS_ERROR_NAMED(name_+".setup", "Failed to convert image");
       return;
     }
         
@@ -164,7 +147,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
       {
         cv::Point3d ray = cam_model_->projectPixelTo3dRay(point.pt);
         cv::Point3d worldPoint = ray * (point.depth / scale_);
-        ROS_DEBUG_STREAM_NAMED(name_, "Collision pixel coordinates: (" << point.pt.x << "," << point.pt.y << "), point: " << worldPoint.x << "," << worldPoint.y << "," << worldPoint.z);
+        ROS_DEBUG_STREAM_NAMED(name_+".collision_points", "Collision pixel coordinates: (" << point.pt.x << "," << point.pt.y << "), point: " << worldPoint.x << "," << worldPoint.y << "," << worldPoint.z);
         
         world_points.push_back(pips::collision_testing::toCollisionPoint(worldPoint));
       }
@@ -206,20 +189,17 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     int img_width = input_bridge_ref_->image.cols;
     int img_height = input_bridge_ref_->image.rows;
     
-    ROS_DEBUG_STREAM_NAMED(name_, "Parent image dimensions: [" << viz.cols << "x" << viz.rows << "], image_ref dimensions: [" << img_width << "x" << img_height << "]");
+    ROS_DEBUG_STREAM_NAMED(name_+".image_generation", "Parent image dimensions: [" << viz.cols << "x" << viz.rows << "], image_ref dimensions: [" << img_width << "x" << img_height << "]");
     
     const std_msgs::Header header = getCurrentHeader();
     
     
-    ROS_DEBUG_STREAM_NAMED(name_,"Pose: " << toString(pose));
-    
-    //visualization_msgs::MarkerArray::Ptr markers = initMarkers(header, "hallucinated");
-    
+    ROS_DEBUG_STREAM_NAMED(name_+".image_generation","Pose: " << toString(pose));
+        
     auto models = robot_model_.getModel<pips::collision_testing::image_geometry_models::ImageGeometryConverter>(pose);
     
     for(const auto& model : models)
     {
-      
       std::vector<COLUMN_TYPE> cols = model->getColumns(cam_model_, img_width, img_height);
       
       for(unsigned int i = 0; i < cols.size(); ++i)
@@ -230,15 +210,11 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
         //col.setTo(depth);
         col = cv::max(col,depth);
       }
-      
     }
-    
-    //visualization_pub_.publish(markers);
-    
+        
     if(transpose_)
     {
       cv::Mat viz_t = viz.t();
-      
       return viz_t;
     }
     
@@ -253,9 +229,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     
     const std_msgs::Header header = getCurrentHeader();
     
-
-    
-    ROS_DEBUG_STREAM_NAMED(name_,"Pose: " << toString(pose));
+    ROS_DEBUG_STREAM_NAMED(name_+".collision_test","Pose: " << toString(pose));
     
     auto models = robot_model_.getModel<pips::collision_testing::image_geometry_models::ImageGeometryConverter>(pose);
     
@@ -304,13 +278,21 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     {
       result.transpose();
     }
-    
-    //visualization_pub_.publish(markers);
-    
-    
+
     return result;
   }
   
+  std_msgs::Header PipsCollisionChecker::getCurrentHeader()
+  {
+    if(input_bridge_ref_)
+    {
+      return input_bridge_ref_->header;
+    }
+    else
+    {
+      return std_msgs::Header();
+    }
+  }
   
   ComparisonResult PipsCollisionChecker::isLessThan(const cv::Mat& col, float depth)
   {    
@@ -322,7 +304,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     // TODO: replace 'show_im_' with more accurate variable name (ex: 'full_details' or something)
     if(show_im_)
     {
-      ROS_DEBUG_STREAM_NAMED(name_,"FULL details!");
+      ROS_DEBUG_STREAM_NAMED(name_+".details","FULL details!");
       return ::utils::isLessThan::fulldetails(col, depth);
     }
     else
@@ -334,7 +316,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   
   bool PipsCollisionChecker::getDepthImageSrv(pips::GenerateDepthImage::Request &req, pips::GenerateDepthImage::Response &res)
   {
-    ROS_INFO_STREAM_NAMED(name_, "Depth image generation request received.");
+    ROS_INFO_STREAM_NAMED(name_+".image_generation_service", "Depth image generation request received.");
 
     cv_bridge::CvImage out_msg;
     //out_msg.header   = ; // Same timestamp and tf frame as input image
@@ -344,7 +326,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     res.image = *out_msg.toImageMsg();
     res.image.header = input_bridge_ref_->header;
     
-    ROS_INFO_STREAM_NAMED(name_, "Image dimensions: [" << res.image.width << "x" << res.image.height << "], data size = " << sizeof(res.image.data) << ", num_elements: " << res.image.data.size());    
+    ROS_INFO_STREAM_NAMED(name_+".image_generation_service", "Image dimensions: [" << res.image.width << "x" << res.image.height << "], data size = " << sizeof(res.image.data) << ", num_elements: " << res.image.data.size());    
     return true;
   }
 
