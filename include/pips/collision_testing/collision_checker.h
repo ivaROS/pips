@@ -56,15 +56,12 @@ public:
   static constexpr const char* DEFAULT_NAME="abstract_collision_checker";
   
 private:
-   bool testCollisionSrv(pips::TestCollision::Request &req, pips::TestCollision::Response &res);
-   
-
-   virtual void initImpl() {}
-
-private :
-  std::string name_;
+  bool testCollisionSrv(pips::TestCollision::Request &req, pips::TestCollision::Response &res);
   
+  virtual void initImpl() {}
+
 protected:
+  std::string name_;
   ros::NodeHandle nh_, pnh_;	// For now, separate node handles for base and derived
   pips::utils::DurationAccumulator setup_durations_;
    

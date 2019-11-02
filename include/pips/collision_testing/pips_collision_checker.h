@@ -61,12 +61,7 @@ private:
     
     
 private :
-    std::string name_ = "PipsCollisionChecker";
     
-    //ros::ServiceClient checker_; 
-
-
-    //image_transport::Publisher depthpub_;
     std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_;
     
     bool show_im_, transpose_;
