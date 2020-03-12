@@ -63,12 +63,11 @@ public:
     std::vector<COLUMN_TYPE> cols;
         
     //TODO make it work without this or using class parameters
-    double robot_length, distance_from_rear, hrw, rd, fd;//hrl is half of the robot length, hrw is half of the robot width, and fd and rd are distance from front and rear
+    double distance_from_rear, hrw, rd, fd;//hrl is half of the robot length, hrw is half of the robot width, and fd and rd are distance from front and rear
     
     distance_from_rear = length_/2; // half way for now.
     
     rd = distance_from_rear;
-    //hrl = robot_length/2;
     hrw = width_/2;
     fd = length_ - rd;
     

@@ -150,8 +150,8 @@ namespace pips
           for(std::shared_ptr<geometry_models::GenericGeometryModel> model : models_)
           {
             const std::string& model_frame_id = model->frame_id_;
-            const std::string& model_name = model->name_;
-            const geometry_msgs::TransformStamped& origin_link_transform = model->origin_transform_;
+            //const std::string& model_name = model->name_;
+            //const geometry_msgs::TransformStamped& origin_link_transform = model->origin_transform_;
             geometry_msgs::TransformStamped& current_transform = model->current_transform_;
             
             

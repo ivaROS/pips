@@ -54,7 +54,7 @@ public:
       listener_(listener)
     {}
     
-    std::shared_ptr<tf2_ros::Buffer> getBuffer()
+    std::shared_ptr<tf2_ros::Buffer> getBuffer() const
     {
       return buffer_;
     }
