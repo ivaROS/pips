@@ -57,7 +57,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include ${OpenCV_INCLUDE_DIRS} #${EIGEN3_INCLUDE_DIR} 
-  LIBRARIES collision_checker pips_collision_checker depth_image_collision_checker
+  LIBRARIES collision_checker pips_collision_checker depth_image_collision_checker robot_model
   CATKIN_DEPENDS image_geometry cv_bridge message_runtime urdf geometry_msgs#extended_local dense_depth_projection
   DEPENDS  OpenCV  #Eigen3
 )
@@ -83,6 +83,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fopenmp")	#TODO: remov
 ## Declare the collision_checker library
 add_library(collision_checker src/collision_checker.cpp)
 # 
+add_library(robot_model src/robot_model.cpp)
+
 add_library(pips_collision_checker src/pips_collision_checker.cpp)
 # 
 add_library(depth_image_collision_checker src/depth_image_collision_checker.cpp)
@@ -117,6 +119,7 @@ target_link_libraries(collision_checker
 
 target_link_libraries(pips_collision_checker
   collision_checker
+  robot_model
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   )
