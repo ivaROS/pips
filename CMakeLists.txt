@@ -104,6 +104,11 @@ add_dependencies(collision_checker
    ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
    )
 #    
+
+add_dependencies(robot_model
+   ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+   )
+
 add_dependencies(pips_collision_checker
    ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
    )
@@ -113,6 +118,10 @@ add_dependencies(depth_image_collision_checker
    )
 
 
+target_link_libraries(robot_model
+  ${catkin_LIBRARIES}
+  )
+  
 target_link_libraries(collision_checker
   ${catkin_LIBRARIES}
   )
