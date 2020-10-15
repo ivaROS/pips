@@ -105,7 +105,7 @@ namespace pips
         
         for(std::shared_ptr<geometry_models::GenericGeometryModel> model : models_)
         {
-          model->adjust(config.safety_expansion, config.floor_tolerance);
+          //model->adjust(config.safety_expansion, config.floor_tolerance);
         }
       }
         
