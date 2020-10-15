@@ -134,6 +134,8 @@ namespace pips
         std::shared_ptr<geometry_models::GenericGeometryModel> getGeometry(const std::string& tf_prefix, const urdf::Link& link, const urdf::Collision& collision, unsigned int collision_ind);
         
         std::shared_ptr<geometry_models::GenericGeometryModel> getGeometry(const urdf::Cylinder& cylinder);
+
+        std::shared_ptr<geometry_models::GenericGeometryModel> getGeometry(const urdf::Sphere& cylinder);
         
         std::shared_ptr<geometry_models::GenericGeometryModel> getGeometry(const urdf::Box& box);
         

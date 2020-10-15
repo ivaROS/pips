@@ -11,6 +11,7 @@
 #include <pips/collision_testing/geometry_models/generic_models.h>
 #include <pips/collision_testing/geometry_models/cylinder.h>
 #include <pips/collision_testing/geometry_models/box.h>
+#include <pips/collision_testing/geometry_models/sphere.h>
 #include <tf2_utils/transform_manager.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -178,7 +179,7 @@ namespace pips
         // https://github.com/ros/urdfdom/blob/06f5f9bc34f09b530d9f3743cb0516934625da54/urdf_parser/src/link.cpp#L547
         if (urdf::dynamic_pointer_cast<urdf::Sphere>(geom))
         {
-          //addSphere((*(urdf::dynamic_pointer_cast<Sphere>(geom).get())));
+          model = getGeometry((*(urdf::dynamic_pointer_cast<urdf::Sphere>(geom).get())));
         }
         else if (urdf::dynamic_pointer_cast<urdf::Box>(geom))
         {
@@ -246,6 +247,13 @@ namespace pips
       {
         ROS_INFO_STREAM("Adding Box primitive. Length=" << box.dim.x << ", Width=" << box.dim.y << ", Height=" << box.dim.z);
         std::shared_ptr<geometry_models::Box> model = std::make_shared<geometry_models::Box>(box.dim.x, box.dim.y, box.dim.z);
+        return model;
+      }
+      
+      std::shared_ptr<geometry_models::GenericGeometryModel> RobotModel::getGeometry(const urdf::Sphere& sphere)
+      {
+        ROS_INFO_STREAM("Adding Sphere primitive. Radius=" << sphere.radius);
+        std::shared_ptr<geometry_models::Sphere> model = std::make_shared<geometry_models::Sphere>(sphere.radius);
         return model;
       }
       
