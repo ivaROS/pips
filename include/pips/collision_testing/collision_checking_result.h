@@ -64,6 +64,8 @@ namespace pips
 {
   namespace collision_testing
   {
+    typedef CollisionPoint_<float> CollisionPoint;
+    
     
 //template <typename S, typename T>
 //void convertPoint(const S pt, T& x, T& y, T& z);

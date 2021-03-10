@@ -140,10 +140,10 @@ public:
     }
 
 
-      if(left >= right)
-      {
-        ROS_ERROR_STREAM("somethings wrong! " << pt << ", left(" << left << ") >= right(" << right << ")");
-      }
+//       if(left > right)
+//       {
+//         ROS_ERROR_STREAM("somethings wrong! " << pt << ", left(" << left << ") >= right(" << right << ")");
+//       }
     
     for(int p_x : cam_model_->getColumnRange(left,right))
     {
@@ -166,7 +166,7 @@ public:
       
       if(b*b - 4*a*c <0)
       {
-        ROS_ERROR_STREAM("complex solution! Left=" << left << ", right=" << right << ", p_x="<< p_x << ", ray=" << ray << ", h_squared="<< h_squared );
+        //ROS_ERROR_STREAM("complex solution! Left=" << left << ", right=" << right << ", p_x="<< p_x << ", ray=" << ray << ", h_squared="<< h_squared );
         continue;
         //ROS_BREAK();
       }
@@ -176,7 +176,7 @@ public:
       }
       
       //This likely does nothing given the above condition checks
-      ROS_ASSERT_MSG(b*b - 4*a*c >=0, "Complex solution for ray-circle intersection!");
+      //ROS_ASSERT_MSG(b*b - 4*a*c >=0, "Complex solution for ray-circle intersection!");
 
       /*
       Solve for parameter t that yields intersection

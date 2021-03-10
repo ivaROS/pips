@@ -49,6 +49,7 @@ namespace pips
           
           std::vector<int> cols;
           
+          //TODO: Should this be <=?
           for(int i = left; i < right; ++i)
           {
             cols.push_back(i);

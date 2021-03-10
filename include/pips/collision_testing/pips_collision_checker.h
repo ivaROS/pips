@@ -37,7 +37,7 @@ public :
     CCResult testCollisionImpl(PoseType pose, CCOptions options=CCOptions());
     cv::Mat generateDepthImage(PoseType pose);
     
-    void initImpl();
+    virtual void initImpl();
     virtual std_msgs::Header getCurrentHeader();
     
     
@@ -60,7 +60,7 @@ private:
     virtual std::shared_ptr<pips::utils::AbstractCameraModel> getCameraModel()=0;
     
     
-private :
+protected :
     
     std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_;
     

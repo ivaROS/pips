@@ -11,6 +11,7 @@
 #include <pips/collision_testing/geometry_models/generic_models.h>
 #include <pips/collision_testing/geometry_models/cylinder.h>
 #include <pips/collision_testing/geometry_models/box.h>
+#include <pips/collision_testing/geometry_models/ellipsoid.h>
 #include <tf2_utils/transform_manager.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -110,7 +111,7 @@ namespace pips
             
             
             //NOTE: Currently, only the position (not orientation) is transformed
-            model_pose.orientation = pose.orientation; //camera_pose_stamped.transform.rotation;
+            //model_pose.orientation = pose.orientation; //camera_pose_stamped.transform.rotation;
             
             auto converted_model = T::convert(model, model_pose);
             if(converted_model)
@@ -138,6 +139,8 @@ namespace pips
         std::shared_ptr<geometry_models::GenericGeometryModel> getGeometry(const urdf::Sphere& cylinder);
         
         std::shared_ptr<geometry_models::GenericGeometryModel> getGeometry(const urdf::Box& box);
+        
+        std::shared_ptr<geometry_models::GenericGeometryModel> getEllipsoid(const urdf::Box& box);
         
         visualization_msgs::MarkerArray::Ptr initMarkers(const std_msgs::Header& header, std::string ns);
 

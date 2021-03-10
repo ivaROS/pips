@@ -32,6 +32,7 @@ namespace pips
               ptr = std::make_shared<pips::collision_testing::image_geometry_models::Cylinder>(std::static_pointer_cast<const pips::collision_testing::geometry_models::Cylinder>(model), model_pose);
               break;
             case 1:
+              ROS_WARN_STREAM("WARNING! Box model not currently working with ImageGeometryConverter!" );
               //ptr = std::make_shared<pips::collision_testing::image_geometry_models::Box>(std::static_pointer_cast<const pips::collision_testing::geometry_models::Box>(model), model_pose);
               break;
             default:

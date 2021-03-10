@@ -21,6 +21,12 @@ namespace tf2_utils
     
 public:
   
+    static TransformManager NoListener(ros::Duration buffer_size=ros::Duration(tf2::BufferCore::DEFAULT_CACHE_TIME))
+    {
+      TransformManager tf;
+      tf.buffer_ = std::make_shared<tf2_ros::Buffer>(buffer_size);
+      return tf;
+    }
 
     TransformManager(ros::Duration buffer_size)
     {

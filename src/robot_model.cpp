@@ -31,6 +31,20 @@ namespace pips
     
     namespace robot_models
     {
+     
+      //Function copied from https://thispointer.com/c-how-to-check-if-a-string-ends-with-an-another-given-string/
+      /*
+       * Case Insensitive Implementation of endsWith()
+       * It checks if the string 'mainStr' ends with given string 'toMatch'
+       */
+      bool endsWithCaseInsensitive(std::string mainStr, std::string toMatch)
+      {
+        auto it = toMatch.begin();
+        return mainStr.size() >= toMatch.size() &&
+        std::all_of(std::next(mainStr.begin(),mainStr.size() - toMatch.size()), mainStr.end(), [&it](const char & c){
+          return ::tolower(c) == ::tolower(*(it++))  ;
+        } );
+      }
 
       RobotModel::RobotModel(ros::NodeHandle nh, ros::NodeHandle pnh, tf2_utils::TransformManager tfm):
         name_("robot_model"),
@@ -183,7 +197,14 @@ namespace pips
         }
         else if (urdf::dynamic_pointer_cast<urdf::Box>(geom))
         {
-          model = getGeometry((*(urdf::dynamic_pointer_cast<urdf::Box>(geom).get())));
+          if(endsWithCaseInsensitive(name, "ellipsoid"))
+          {
+            model = getEllipsoid((*(urdf::dynamic_pointer_cast<urdf::Box>(geom).get())));
+          }
+          else
+          {
+            model = getGeometry((*(urdf::dynamic_pointer_cast<urdf::Box>(geom).get())));
+          }
         }
         else if (urdf::dynamic_pointer_cast<urdf::Cylinder>(geom))
         {
@@ -257,6 +278,13 @@ namespace pips
         return model;
       }
       
+      std::shared_ptr<geometry_models::GenericGeometryModel> RobotModel::getEllipsoid(const urdf::Box& box)
+      {
+        ROS_INFO_STREAM("Adding Ellipsoid primitive. Length=" << box.dim.x << ", Width=" << box.dim.y << ", Height=" << box.dim.z);
+        std::shared_ptr<geometry_models::Ellipsoid> model = std::make_shared<geometry_models::Ellipsoid>(box.dim.x, box.dim.y, box.dim.z);
+        return model;
+      }
+      
       visualization_msgs::MarkerArray::Ptr RobotModel::initMarkers(const std_msgs::Header& header, std::string ns)
       {
         visualization_msgs::MarkerArray::Ptr markers = boost::make_shared<visualization_msgs::MarkerArray>();
@@ -280,6 +308,10 @@ namespace pips
           marker.color.a = .25;
           marker.color.r = 1;
           marker.ns = ns;
+          
+          marker.scale.x = std::max(marker.scale.x, 0.01);
+          marker.scale.y = std::max(marker.scale.y, 0.01);
+          marker.scale.z = std::max(marker.scale.z, 0.01);
           
           marker.pose=pose;
           marker.header = header;
