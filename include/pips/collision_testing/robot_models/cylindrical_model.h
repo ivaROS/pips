@@ -39,7 +39,7 @@ class CylindricalModel : public HallucinatedRobotModelImpl<cv::Point3d>
 
     virtual geometry_msgs::Pose transformPose(const geometry_msgs::Pose& pose);
     
-    std::vector<COLUMN_TYPE> getColumns(const cv::Point3d pt);
+    virtual std::vector<COLUMN_TYPE> getColumns(const cv::Point3d pt);
     
     virtual cv::Mat generateHallucinatedRobotImpl(const cv::Point3d pt);
     

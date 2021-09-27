@@ -8,16 +8,10 @@ namespace pips
   {
     
 
-    DepthImageCollisionChecker::DepthImageCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name, const tf2_utils::TransformManager& tfm) : 
-      PipsCollisionChecker(nh,pnh,name,tfm)
+    DepthImageCollisionChecker::DepthImageCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name) : 
+      PipsCollisionChecker(nh,pnh,name)
     {
-      
-    }
-    
-    DepthImageCollisionChecker::DepthImageCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const tf2_utils::TransformManager& tfm, const std::string& name) :
-      PipsCollisionChecker(nh,pnh,name,tfm)
-    {
-      
+        robot_model_ = std::make_shared<HallucinatedRobotModelInterface>(nh, pnh,"");
     }
 
     std::shared_ptr<pips::utils::AbstractCameraModel> DepthImageCollisionChecker::getCameraModel()
@@ -29,7 +23,6 @@ namespace pips
     void DepthImageCollisionChecker::setImage(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
     {
       cam_model_->setInfo(info_msg);
-      cam_model_->update(); //Not sure if there was a reason for requiring this additional step
       
       PipsCollisionChecker::setImage(image_msg);
     }

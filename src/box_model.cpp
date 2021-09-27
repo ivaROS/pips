@@ -53,7 +53,7 @@
     {
         //TODO Hard codding is the option used now(the two double variable)
         //Pioneer dimentions: length = 455, width = 381, height = 237. all dimentions in mm.
-        double robo_length = 0.455;
+        double robo_length = 0.54;
         double dist_from_rare  = robo_length/2; // for now, mid way
         setParameters(radius, height, robo_length, dist_from_rare, safety_expansion, floor_tolerance, show_im);
     }

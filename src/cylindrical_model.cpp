@@ -43,12 +43,12 @@
       cylinder_.cam_model_ = cam_model_;
       cylinder_.setOrigin(origin);
       tf2::doTransform(cylinder_.origin_transform_, cylinder_.current_transform_, base_optical_transform_); //TODO: don't make so many assumptions
-      
   }
   
 
   geometry_msgs::Pose CylindricalModel::transformPose(const geometry_msgs::Pose& pose)
   {
+
     Eigen::Affine3d pose_eig;
     tf2::fromMsg(pose, pose_eig);
     
@@ -176,7 +176,7 @@
       //TODO: limit rect to image size
       cv::Rect roi = getColumnRect(cols[i].rect);
       cv::Mat col = cv::Mat(this->image_ref_,roi); //cols[i].image;
-      float depth = cols[i].depth;
+      float depth = cols[i].depth*scale_;
       
       ComparisonResult column_result = isLessThan(col, depth);
       

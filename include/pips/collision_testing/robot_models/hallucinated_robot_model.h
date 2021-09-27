@@ -132,9 +132,19 @@ class HallucinatedRobotModelBase
 
     virtual void doPrecomputation(const cv_bridge::CvImage::ConstPtr& cv_image_ref) {}
     
+    virtual cv::Size getCVImageSize()
+    {
+        return cv::Size(cv_image_ref_->image.cols, cv_image_ref_->image.rows);
+    }
+    
+    virtual cv::Size getImageRefSize()
+    {
+        return image_ref_.size();
+    }
+    
     virtual cv::Rect getImageRect()
     {
-      return cv::Rect(cv::Point(0,0), image_ref_.size());
+      return cv::Rect(cv::Point(0,0), getImageRefSize());
     }
    
   protected:
@@ -214,21 +224,22 @@ class HallucinatedRobotModelImpl : public HallucinatedRobotModelBase
     virtual cv::Mat generateHallucinatedRobotImpl(const S pose)
     {
       cv::Mat viz;
+      cv::Size img_size = getImageRefSize();
       if(std::numeric_limits<float>::has_quiet_NaN)
       {
         double dNaN = std::numeric_limits<float>::quiet_NaN();
-        viz = cv::Mat(image_ref_.rows, image_ref_.cols, image_ref_.type(), cv::Scalar(dNaN));
+        viz = cv::Mat(img_size.height, img_size.width, image_ref_.type(), cv::Scalar(dNaN));
       }
       else
       {
-        viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type());
+        viz = cv::Mat::zeros(img_size.height, img_size.width, image_ref_.type());
       }
       return viz;
     }
     
     virtual cv::Rect getROIImpl(const S pose)
     {
-      cv::Rect imageBounds(0,0,cv_image_ref_->image.cols,cv_image_ref_->image.rows);
+      cv::Rect imageBounds(cv::Point(0,0), getCVImageSize());
       return imageBounds;
     }
     

@@ -9,7 +9,7 @@
 
 class BoxModel : public HallucinatedRobotModelImpl<geometry_msgs::Pose>
 {
-  private:
+  protected:
     pips::collision_testing::geometry_models::Box box_;
     
   public:
@@ -30,7 +30,7 @@ class BoxModel : public HallucinatedRobotModelImpl<geometry_msgs::Pose>
     virtual ComparisonResult isLessThanDetails(const cv::Mat& col, float depth);
 
         
-    std::vector<COLUMN_TYPE> getColumns(const geometry_msgs::Pose pose);
+    virtual std::vector<COLUMN_TYPE> getColumns(const geometry_msgs::Pose pose);
         
     virtual cv::Mat generateHallucinatedRobotImpl(const geometry_msgs::Pose pt);
     

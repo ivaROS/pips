@@ -6,7 +6,7 @@
 
 #include <pips/utils/pose_conversions.h>
 
-#include <ros/ros.h>
+#include "ros/ros.h"
 #include <memory>
 
 
@@ -22,7 +22,7 @@ public :
   //EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   typedef geometry_msgs::Pose PoseType;
 
-    CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name=DEFAULT_NAME);
+    CollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, std::string sub_name="CollisionChecker");
 
     CCResult testCollision(PoseType pose, CCOptions options = CCOptions());
     
@@ -39,9 +39,6 @@ public :
       convertPose(pose_in, pose_out);
       return testCollision(pose_out, options);
     }
-    
-    virtual std_msgs::Header getCurrentHeader();
-    
 
     /*
     template<typename T>
@@ -52,24 +49,27 @@ public :
       return generateVisualization(pose_out);
     }
     */
-public:
-  static constexpr const char* DEFAULT_NAME="abstract_collision_checker";
-  
+    
 private:
-  bool testCollisionSrv(pips::TestCollision::Request &req, pips::TestCollision::Response &res);
-  
-  virtual void initImpl() {}
+   bool testCollisionSrv(pips::TestCollision::Request &req, pips::TestCollision::Response &res);
+   
+
+   virtual void initImpl() {}
 
 protected:
-  std::string name_;
-  ros::NodeHandle nh_, pnh_;	// For now, separate node handles for base and derived
-  pips::utils::DurationAccumulator setup_durations_;
+    //ros::Publisher posepub_;
+  
    
-private :    
-    ros::ServiceServer collision_testing_service_;
-    ros::Publisher collision_pub_;    
+private :
+    std::string name_ = "CollisionChecker";
     
-    pips::utils::DurationAccumulator cc_durations_;
+    ros::NodeHandle nh_, pnh_;	// For now, separate node handles for base and derived
+    ros::ServiceServer collision_testing_service_;
+
+    std::string sub_name_;
+    
+    
+    pips::utils::DurationAccumulator durations_;
     bool inited_;
                               
 } ;

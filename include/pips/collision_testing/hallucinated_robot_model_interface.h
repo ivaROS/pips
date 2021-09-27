@@ -21,8 +21,8 @@ public:
   
   HallucinatedRobotModelInterface(ros::NodeHandle nh, ros::NodeHandle pnh, const std::string& name=DEFAULT_NAME);
   
-  void configCB(pips::HallucinatedRobotModelConfig &config, uint32_t level);
-  void init();
+  virtual void configCB(pips::HallucinatedRobotModelConfig &config, uint32_t level);
+  virtual void init();
   
   void setCameraModel(std::shared_ptr<pips::utils::AbstractCameraModel> cam_model);
   
@@ -43,24 +43,27 @@ public:
   void updateModel(const cv_bridge::CvImage::ConstPtr& cv_image_ref, double scale);
   void setTransform(const geometry_msgs::TransformStamped& base_optical_transform);
 
-  
-private:
-  
+protected:
   std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_; // Note: I could get rid of the pointer and pass a reference to the implementation constructor. That would require making sure that cam_model_ was not destructed before model_. I think I've already arranged things properly for that to work, but not worth worrying about
   std::shared_ptr<HallucinatedRobotModelBase> model_;
 
   double scale_;
-  bool show_im_=false;
   
   int model_type_ = -1;
   
   Mutex model_mutex_; // Allows simultaneous read operations; prevents anything else from happening while writing 
   std::string name_;
   
+  ros::NodeHandle nh_, pnh_;
+  
   cv_bridge::CvImage::ConstPtr cv_image_ref_;
   
-  ros::NodeHandle nh_, pnh_;
   geometry_msgs::TransformStamped base_optical_transform_;
+  
+private:
+  
+  
+  bool show_im_=false;
   
   typedef dynamic_reconfigure::Server<pips::HallucinatedRobotModelConfig> ReconfigureServer;
   std::shared_ptr<ReconfigureServer> reconfigure_server_;
