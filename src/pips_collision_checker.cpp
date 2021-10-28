@@ -58,16 +58,14 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     pips::collision_testing::GeneralCollisionChecker(nh,pnh,name,tfm)
   {
     ROS_DEBUG_STREAM_NAMED(name_+".constructor", "Constructing collision checker");
-    show_im_=true;
-    transpose_=false;
+    transpose_=true;
   }
   
   PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const tf2_utils::TransformManager& tfm, const std::string& name) : 
     pips::collision_testing::GeneralCollisionChecker(nh,pnh,name,tfm)
   {
     ROS_DEBUG_STREAM_NAMED(name_+".constructor", "Constructing collision checker");
-    show_im_=true;
-    transpose_=false;
+    transpose_=true;
   }
 
   void PipsCollisionChecker::initImpl()
@@ -116,7 +114,11 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
       ROS_ERROR_NAMED(name_+".setup", "Failed to convert image");
       return;
     }
-        
+    
+    if(transpose_)
+    {
+      image_ref_ = image_ref_.t();
+    }
     
     auto t2 = ros::WallTime::now();
     
@@ -245,14 +247,13 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
         cv::Mat col = cv::Mat(this->image_ref_,roi);
         float depth = std::max(cols[i].depth * scale_, (float)(0));
         
-        ComparisonResult column_result = isLessThan(col, depth);
+        ComparisonResult column_result = isLessThan(col, depth, options);
         
-        if(column_result && options)
+        if(column_result)
         {
-          
-          if(!column_result.hasDetails())
+          if(options.get_details_ && !column_result.hasDetails())
           {
-            column_result = isLessThanDetails(col,depth);
+            column_result = isLessThanDetails(col, depth, options);
           }
           cv::Point offset;
           cv::Size size;
@@ -260,7 +261,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
           
           column_result.addOffset(offset);	
           
-          if(show_im_)
+          if(options.full_details)
           {
             result.addResult(column_result);
           }
@@ -294,15 +295,15 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     }
   }
   
-  ComparisonResult PipsCollisionChecker::isLessThan(const cv::Mat& col, float depth)
+  ComparisonResult PipsCollisionChecker::isLessThan(const cv::Mat& col, float depth, CCOptions options)
   {    
     return ::utils::isLessThan::vectorized(col, depth);
   }
   
-  ComparisonResult PipsCollisionChecker::isLessThanDetails(const cv::Mat& col, float depth)
+  ComparisonResult PipsCollisionChecker::isLessThanDetails(const cv::Mat& col, float depth, CCOptions options)
   {
     // TODO: replace 'show_im_' with more accurate variable name (ex: 'full_details' or something)
-    if(show_im_)
+    if(options.full_details)
     {
       ROS_DEBUG_STREAM_NAMED(name_+".details","FULL details!");
       return ::utils::isLessThan::fulldetails(col, depth);

@@ -42,7 +42,7 @@ public :
     
     virtual std_msgs::Header getCurrentHeader();
     
-
+    std::string getName() const {return name_;}
     /*
     template<typename T>
     auto generateVisualization(const T pose_in) -> decltype(generateVisualization(pose_out))

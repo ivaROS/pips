@@ -57,7 +57,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include ${OpenCV_INCLUDE_DIRS} #${EIGEN3_INCLUDE_DIR} 
-  LIBRARIES collision_checker pips_collision_checker depth_image_collision_checker robot_model
+  LIBRARIES collision_checker pips_collision_checker depth_image_collision_checker robot_model param_utils
   CATKIN_DEPENDS image_geometry cv_bridge message_runtime urdf geometry_msgs#extended_local dense_depth_projection
   DEPENDS  OpenCV  #Eigen3
 )
@@ -89,6 +89,7 @@ add_library(pips_collision_checker src/pips_collision_checker.cpp)
 # 
 add_library(depth_image_collision_checker src/depth_image_collision_checker.cpp)
 
+add_library(param_utils src/param_utils.cpp)
 
 # 
 # #message([WARN] "project Exported: ${${PROJECT_NAME}_EXPORTED_TARGETS}\n catkin exported: ${catkin_EXPORTED_TARGETS} \n gencfg: ${PROJECT_NAME}_gencfg")
@@ -116,7 +117,15 @@ add_dependencies(pips_collision_checker
 add_dependencies(depth_image_collision_checker
    ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
    )
+   
+add_dependencies(param_utils
+   ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+   )
 
+
+target_link_libraries(param_utils
+  ${catkin_LIBRARIES}
+  )
 
 target_link_libraries(robot_model
   ${catkin_LIBRARIES}
