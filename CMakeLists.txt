@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pips)
 
-#LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
+add_compile_options(-Wall)
 
 
 ## Find catkin macros and libraries
@@ -57,38 +57,46 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include ${OpenCV_INCLUDE_DIRS} #${EIGEN3_INCLUDE_DIR} 
-  LIBRARIES collision_checker pips_collision_checker depth_image_collision_checker robot_model
+  LIBRARIES ${PROJECT_NAME}_collision_checker ${PROJECT_NAME}_robot_model ${PROJECT_NAME}_pips_collision_checker ${PROJECT_NAME}_depth_image_collision_checker
   CATKIN_DEPENDS image_geometry cv_bridge message_runtime urdf geometry_msgs#extended_local dense_depth_projection
   DEPENDS  OpenCV  #Eigen3
 )
 
 include_directories(
   include
-
   ${catkin_INCLUDE_DIRS}
-#  ${EIGEN3_INCLUDE_DIR}
-#  ${PROJECT_SOURCE_DIR}
   ${OpenCV_INCLUDE_DIRS}
-
-#  include
 )
 
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fopenmp")	#TODO: remove these and at least switch to add_definitions, though openmp should really only be enabled on target that needs it
-
-
-# add_library(robot_model_interface src/hallucinated_robot_model_interface.cpp)
-# 
 ## Declare the collision_checker library
-add_library(collision_checker src/collision_checker.cpp)
-# 
-add_library(robot_model src/robot_model.cpp)
+add_library(${PROJECT_NAME}_collision_checker src/collision_checker.cpp)
+add_dependencies(${PROJECT_NAME}_collision_checker ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_compile_features(${PROJECT_NAME}_collision_checker PUBLIC cxx_std_11)
+target_link_libraries(${PROJECT_NAME}_collision_checker
+  ${catkin_LIBRARIES}
+  )
 
-add_library(pips_collision_checker src/pips_collision_checker.cpp)
-# 
-add_library(depth_image_collision_checker src/depth_image_collision_checker.cpp)
-
+add_library(${PROJECT_NAME}_robot_model src/robot_model.cpp)
+add_dependencies(${PROJECT_NAME}_robot_model ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_compile_features(${PROJECT_NAME}_robot_model PUBLIC cxx_std_11)
+target_link_libraries(${PROJECT_NAME}_robot_model
+  ${catkin_LIBRARIES}
+  )
+  
+add_library(${PROJECT_NAME}_pips_collision_checker src/pips_collision_checker.cpp)
+target_link_libraries(${PROJECT_NAME}_pips_collision_checker
+  ${PROJECT_NAME}_collision_checker
+  ${PROJECT_NAME}_robot_model
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  )
+  
+add_library(${PROJECT_NAME}_depth_image_collision_checker src/depth_image_collision_checker.cpp)
+target_link_libraries(${PROJECT_NAME}_depth_image_collision_checker
+  ${PROJECT_NAME}_pips_collision_checker
+  ${catkin_LIBRARIES}
+  #${OpenCV_LIBRARIES}
+  )
 
 # 
 # #message([WARN] "project Exported: ${${PROJECT_NAME}_EXPORTED_TARGETS}\n catkin exported: ${catkin_EXPORTED_TARGETS} \n gencfg: ${PROJECT_NAME}_gencfg")
@@ -100,47 +108,6 @@ add_library(depth_image_collision_checker src/depth_image_collision_checker.cpp)
 #    ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} #${PROJECT_NAME}_gencfg 
 #    )
 
-add_dependencies(collision_checker
-   ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
-   )
-#    
-
-add_dependencies(robot_model
-   ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
-   )
-
-add_dependencies(pips_collision_checker
-   ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
-   )
-   
-add_dependencies(depth_image_collision_checker
-   ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
-   )
-
-
-target_link_libraries(robot_model
-  ${catkin_LIBRARIES}
-  )
-  
-target_link_libraries(collision_checker
-  ${catkin_LIBRARIES}
-  )
-
-target_link_libraries(pips_collision_checker
-  collision_checker
-  robot_model
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-  )
-
-target_link_libraries(depth_image_collision_checker
-  pips_collision_checker
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-  )
- 
-
- 
 
 if(OpenCV_VERSION VERSION_LESS "3.0")
   MESSAGE(STATUS "Your OpenCV version is less than 3.0, OpenCL benchmarker will not be built")
@@ -158,6 +125,7 @@ add_executable(omp_benchmarker src/omp_benchmarker.cpp)
 target_link_libraries(omp_benchmarker
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+  ${OpenMP_CXX_FLAGS}
   )
 
 target_compile_options(omp_benchmarker PRIVATE -g  -save-temps -fverbose-asm   -march=native ${OpenMP_CXX_FLAGS} -ftree-vectorize -fassociative-math -fno-signed-zeros -fno-trapping-math  -ffast-math ) # -fopt-info-vec-all  -freciprocal-math #-funsafe-math-optimizations #-fno-math-errno -ffinite-math-only -fno-rounding-math -fno-signaling-nans -fcx-limited-range -fexcess-precision=fast
