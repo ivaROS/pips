@@ -45,8 +45,8 @@ protected:
     cv::Rect getColumnRect(const int x, const int y, const int width, const int height);
     cv::Rect getColumnRect(const cv::Rect& rect);
     ComparisonResult imageSpaceCollisionImpl(const geometry_msgs::Pose pose, CCOptions options);
-    ComparisonResult isLessThan(const cv::Mat& col, float depth);
-    ComparisonResult isLessThanDetails(const cv::Mat& col, float depth);
+    ComparisonResult isLessThan(const cv::Mat& col, float depth, CCOptions options);
+    ComparisonResult isLessThanDetails(const cv::Mat& col, float depth, CCOptions options);
   
     
     static constexpr const char* DEFAULT_NAME="pips_collision_checker";
@@ -64,7 +64,7 @@ protected :
     
     std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_;
     
-    bool show_im_, transpose_;
+    bool transpose_;
     
     ros::ServiceServer depth_generation_service_;
         

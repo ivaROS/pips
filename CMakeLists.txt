@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pips)
 
-add_compile_options(-Wall)
+add_compile_options(-Wall -std=c++14)
 
 
 ## Find catkin macros and libraries
@@ -57,7 +57,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include ${OpenCV_INCLUDE_DIRS} #${EIGEN3_INCLUDE_DIR} 
-  LIBRARIES ${PROJECT_NAME}_collision_checker ${PROJECT_NAME}_robot_model ${PROJECT_NAME}_pips_collision_checker ${PROJECT_NAME}_depth_image_collision_checker
+  LIBRARIES ${PROJECT_NAME}_collision_checker ${PROJECT_NAME}_robot_model ${PROJECT_NAME}_pips_collision_checker ${PROJECT_NAME}_depth_image_collision_checker ${PROJECT_NAME}_param_utils
   CATKIN_DEPENDS image_geometry cv_bridge message_runtime urdf geometry_msgs#extended_local dense_depth_projection
   DEPENDS  OpenCV  #Eigen3
 )
@@ -71,14 +71,14 @@ include_directories(
 ## Declare the collision_checker library
 add_library(${PROJECT_NAME}_collision_checker src/collision_checker.cpp)
 add_dependencies(${PROJECT_NAME}_collision_checker ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_compile_features(${PROJECT_NAME}_collision_checker PUBLIC cxx_std_11)
+#target_compile_features(${PROJECT_NAME}_collision_checker PUBLIC cxx_std_11)
 target_link_libraries(${PROJECT_NAME}_collision_checker
   ${catkin_LIBRARIES}
   )
 
 add_library(${PROJECT_NAME}_robot_model src/robot_model.cpp)
 add_dependencies(${PROJECT_NAME}_robot_model ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_compile_features(${PROJECT_NAME}_robot_model PUBLIC cxx_std_11)
+#target_compile_features(${PROJECT_NAME}_robot_model PUBLIC cxx_std_11)
 target_link_libraries(${PROJECT_NAME}_robot_model
   ${catkin_LIBRARIES}
   )
@@ -96,6 +96,12 @@ target_link_libraries(${PROJECT_NAME}_depth_image_collision_checker
   ${PROJECT_NAME}_pips_collision_checker
   ${catkin_LIBRARIES}
   #${OpenCV_LIBRARIES}
+  )
+
+add_library(${PROJECT_NAME}_param_utils src/param_utils.cpp)
+add_dependencies(${PROJECT_NAME}_param_utils ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(${PROJECT_NAME}_param_utils
+  ${catkin_LIBRARIES}
   )
 
 # 
