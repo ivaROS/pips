@@ -9,6 +9,7 @@ add_compile_options(-Wall -std=c++14)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  std_msgs
   sensor_msgs
   cv_bridge
   image_geometry
@@ -23,8 +24,6 @@ find_package(catkin REQUIRED COMPONENTS
    pcl_ros
    urdf
    visualization_msgs #just for debugging
-#  dense_depth_projection
-#  extended_local
 )
 
 find_package(OpenMP)
@@ -58,7 +57,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include ${OpenCV_INCLUDE_DIRS} #${EIGEN3_INCLUDE_DIR} 
   LIBRARIES ${PROJECT_NAME}_collision_checker ${PROJECT_NAME}_robot_model ${PROJECT_NAME}_pips_collision_checker ${PROJECT_NAME}_depth_image_collision_checker ${PROJECT_NAME}_param_utils
-  CATKIN_DEPENDS image_geometry cv_bridge message_runtime urdf geometry_msgs#extended_local dense_depth_projection
+  CATKIN_DEPENDS roscpp std_msgs sensor_msgs cv_bridge image_geometry image_transport tf tf2 tf2_geometry_msgs message_runtime geometry_msgs dynamic_reconfigure pcl_ros urdf visualization_msgs
   DEPENDS  OpenCV  #Eigen3
 )
 
