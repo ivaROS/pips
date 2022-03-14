@@ -15,12 +15,13 @@ namespace utils
     {
       if (nh.searchParam(name, key))
       {
+        ROS_DEBUG_STREAM_NAMED("parameter_search", "Search located key '" << key << "' on parameter server matching name '" << name << "'");
         return true;
       }
 
-      ROS_WARN_STREAM_NAMED("parameter_search", "Either failed to contact master or '" << name << "' was not found on parameter server; retrying...");
       if(i < num_attempts - 1)
       {  
+        ROS_WARN_STREAM_NAMED("parameter_search", "Either failed to contact master or search was unable to find any match for '" << name << "' on parameter server; retrying...");
         rate.sleep();    
       }
     }
