@@ -23,7 +23,7 @@ namespace pips
       {
 
 
-  class Box : GeometryModel
+  class Box : public GeometryModel
   {
   public:
     double length_, width_, height_;

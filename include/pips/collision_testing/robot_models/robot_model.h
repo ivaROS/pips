@@ -111,7 +111,7 @@ namespace pips
             
             
             //NOTE: Currently, only the position (not orientation) is transformed
-            //model_pose.orientation = pose.orientation; //camera_pose_stamped.transform.rotation;
+            model_pose.orientation = pose.orientation; //camera_pose_stamped.transform.rotation;
             
             auto converted_model = T::convert(model, model_pose);
             if(converted_model)
