@@ -261,7 +261,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
           
           column_result.addOffset(offset);	
           
-          if(options.full_details)
+          if(options.full_details && column_result.hasDetails())
           {
             result.addResult(column_result);
           }
