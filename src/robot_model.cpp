@@ -127,7 +127,7 @@ namespace pips
       {
         if(!inited_)
         { 
-          pips::utils::searchParam(pnh_, "base_frame_id", base_frame_id_, "base_link");
+          pips::utils::searchParam(pnh_, "base_frame_id", base_frame_id_, "hummingbird/base_link");
           ROS_INFO_STREAM_NAMED("init", "[RobotModel]: base_frame_id: " << base_frame_id_);
           
           reconfigure_server_->setCallback(boost::bind(&RobotModel::reconfigureCB, this, _1, _2));
@@ -164,6 +164,7 @@ namespace pips
           }
           
         }
+        ROS_INFO_STREAM_COND_NAMED(all_good, "updateTransforms", "Found all transforms!");
         return all_good;
       }
         
