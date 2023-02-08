@@ -9,7 +9,7 @@
 #include "opencv2/core/version.hpp"
 #if CV_MAJOR_VERSION == 2         //No need to import the whole core.hpp on OpenCV3+
   #include <opencv2/core/core.hpp>
-#elif CV_MAJOR_VERSION == 3
+#elif CV_MAJOR_VERSION >= 3
   #include <opencv2/core/types.hpp>
 #endif
 
