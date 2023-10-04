@@ -64,7 +64,7 @@ public:
     
     // We only calculate the actual side borders of the robot if it is far enough away that they could be seen
     ROS_DEBUG_STREAM("Distance of cylinder origin: " << h << ", radius: " << radius_);
-    if(h > radius_)
+    if(h > radius_ && (pt.z - radius_) > 0) 
     {
       double tangentDist = std::sqrt(h_squared - radius_*radius_);
       
@@ -73,6 +73,10 @@ public:
       
       Xc_l = cv::Point3d(tangentDist*std::sin(theta_c - theta_d), pt.y, tangentDist*std::cos(theta_c - theta_d));
       Xc_r = cv::Point3d(tangentDist*std::sin(theta_c + theta_d), pt.y, tangentDist*std::cos(theta_c + theta_d));
+    }
+    else
+    {
+      return cols;
     }
 
     
@@ -140,10 +144,10 @@ public:
     }
 
 
-      if(left >= right)
-      {
-        ROS_ERROR_STREAM("somethings wrong! " << pt << ", left(" << left << ") >= right(" << right << ")");
-      }
+//       if(left > right)
+//       {
+//         ROS_ERROR_STREAM("somethings wrong! " << pt << ", left(" << left << ") >= right(" << right << ")");
+//       }
     
     for(int p_x : cam_model_->getColumnRange(left,right))
     {
@@ -166,7 +170,7 @@ public:
       
       if(b*b - 4*a*c <0)
       {
-        ROS_ERROR_STREAM("complex solution! Left=" << left << ", right=" << right << ", p_x="<< p_x << ", ray=" << ray << ", h_squared="<< h_squared );
+        //ROS_ERROR_STREAM("complex solution! Left=" << left << ", right=" << right << ", p_x="<< p_x << ", ray=" << ray << ", h_squared="<< h_squared );
         continue;
         //ROS_BREAK();
       }
@@ -176,7 +180,7 @@ public:
       }
       
       //This likely does nothing given the above condition checks
-      ROS_ASSERT_MSG(b*b - 4*a*c >=0, "Complex solution for ray-circle intersection!");
+      //ROS_ASSERT_MSG(b*b - 4*a*c >=0, "Complex solution for ray-circle intersection!");
 
       /*
       Solve for parameter t that yields intersection

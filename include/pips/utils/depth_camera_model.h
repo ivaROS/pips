@@ -49,7 +49,8 @@ namespace pips
           
           std::vector<int> cols;
           
-          for(int i = left; i < right; ++i)
+          //TODO: Should this be <=?
+          for(int i = left + 1; i < right; ++i)
           {
             cols.push_back(i);
           }
@@ -62,7 +63,10 @@ namespace pips
           return point.z;
         }
       
-      
+        cv::Size getImageSize() const
+        {
+          return model_.reducedResolution();
+        }
     };
   
   }

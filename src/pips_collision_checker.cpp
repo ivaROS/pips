@@ -58,16 +58,16 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     pips::collision_testing::GeneralCollisionChecker(nh,pnh,name,tfm)
   {
     ROS_DEBUG_STREAM_NAMED(name_+".constructor", "Constructing collision checker");
-    show_im_=true;
-    transpose_=false;
+    transpose_=true;
+    robot_model_ = std::make_shared<pips::collision_testing::robot_models::RobotModel>(nh, pnh, tfm);
   }
   
   PipsCollisionChecker::PipsCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const tf2_utils::TransformManager& tfm, const std::string& name) : 
     pips::collision_testing::GeneralCollisionChecker(nh,pnh,name,tfm)
   {
     ROS_DEBUG_STREAM_NAMED(name_+".constructor", "Constructing collision checker");
-    show_im_=true;
-    transpose_=false;
+    transpose_=true;
+    robot_model_ = std::make_shared<pips::collision_testing::robot_models::RobotModel>(nh, pnh, tfm);
   }
 
   void PipsCollisionChecker::initImpl()
@@ -91,9 +91,11 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     ROS_DEBUG_STREAM_NAMED(name_+".setup", "Setting new image" << std::endl);
     
     auto t1 = ros::WallTime::now();
-    
-    try {
-      
+
+    boost::mutex::scoped_lock lock(img_mutex_);
+
+    try {  
+
       if(image_msg->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
       {
         input_bridge_ref_ = cv_bridge::toCvShare(image_msg);
@@ -116,7 +118,11 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
       ROS_ERROR_NAMED(name_+".setup", "Failed to convert image");
       return;
     }
-        
+    
+    if(transpose_)
+    {
+      image_ref_ = image_ref_.t();
+    }
     
     auto t2 = ros::WallTime::now();
     
@@ -176,14 +182,15 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   cv::Mat PipsCollisionChecker::generateDepthImage(geometry_msgs::Pose pose)
   {
     cv::Mat viz;
+    cv::Size img_size = getImageRefSize();
     if(std::numeric_limits<float>::has_quiet_NaN)
     {
       double dNaN = std::numeric_limits<float>::quiet_NaN();
-      viz = cv::Mat(image_ref_.rows, image_ref_.cols, image_ref_.type(), cv::Scalar(dNaN));
+      viz = cv::Mat(img_size.height, img_size.width, image_ref_.type(), cv::Scalar(dNaN));
     }
     else
     {
-      viz = cv::Mat::zeros(image_ref_.rows, image_ref_.cols, image_ref_.type());
+      viz = cv::Mat::zeros(img_size.height, img_size.width, image_ref_.type());
     }
     
     int img_width = input_bridge_ref_->image.cols;
@@ -196,7 +203,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     
     ROS_DEBUG_STREAM_NAMED(name_+".image_generation","Pose: " << toString(pose));
         
-    auto models = robot_model_.getModel<pips::collision_testing::image_geometry_models::ImageGeometryConverter>(pose);
+    auto models = robot_model_->getModel<pips::collision_testing::image_geometry_models::ImageGeometryConverter>(pose);
     
     for(const auto& model : models)
     {
@@ -220,10 +227,16 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     
     return viz;
   }
+
+  cv::Size PipsCollisionChecker::getImageRefSize()
+  {
+      return image_ref_.size();
+  }
   
   ComparisonResult PipsCollisionChecker::imageSpaceCollisionImpl(const geometry_msgs::Pose pose, CCOptions options)
   {
-    
+    boost::mutex::scoped_lock lock(img_mutex_);
+
     int img_width = input_bridge_ref_->image.cols;
     int img_height = input_bridge_ref_->image.rows;
     
@@ -231,7 +244,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     
     ROS_DEBUG_STREAM_NAMED(name_+".collision_test","Pose: " << toString(pose));
     
-    auto models = robot_model_.getModel<pips::collision_testing::image_geometry_models::ImageGeometryConverter>(pose);
+    auto models = robot_model_->getModel<pips::collision_testing::image_geometry_models::ImageGeometryConverter>(pose);
     
     ComparisonResult result;
     for(const auto& model : models)
@@ -245,14 +258,13 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
         cv::Mat col = cv::Mat(this->image_ref_,roi);
         float depth = std::max(cols[i].depth * scale_, (float)(0));
         
-        ComparisonResult column_result = isLessThan(col, depth);
+        ComparisonResult column_result = isLessThan(col, depth, options);
         
-        if(column_result && options)
+        if(column_result)
         {
-          
-          if(!column_result.hasDetails())
+          if(options.get_details_ && !column_result.hasDetails())
           {
-            column_result = isLessThanDetails(col,depth);
+            column_result = isLessThanDetails(col, depth, options);
           }
           cv::Point offset;
           cv::Size size;
@@ -260,7 +272,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
           
           column_result.addOffset(offset);	
           
-          if(show_im_)
+          if(options.full_details && column_result.hasDetails())
           {
             result.addResult(column_result);
           }
@@ -278,7 +290,7 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     {
       result.transpose();
     }
-
+      
     return result;
   }
   
@@ -294,15 +306,15 @@ typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     }
   }
   
-  ComparisonResult PipsCollisionChecker::isLessThan(const cv::Mat& col, float depth)
+  ComparisonResult PipsCollisionChecker::isLessThan(const cv::Mat& col, float depth, CCOptions options)
   {    
     return ::utils::isLessThan::vectorized(col, depth);
   }
   
-  ComparisonResult PipsCollisionChecker::isLessThanDetails(const cv::Mat& col, float depth)
+  ComparisonResult PipsCollisionChecker::isLessThanDetails(const cv::Mat& col, float depth, CCOptions options)
   {
     // TODO: replace 'show_im_' with more accurate variable name (ex: 'full_details' or something)
-    if(show_im_)
+    if(options.full_details)
     {
       ROS_DEBUG_STREAM_NAMED(name_+".details","FULL details!");
       return ::utils::isLessThan::fulldetails(col, depth);

@@ -46,7 +46,16 @@
       //auto t1 = std::chrono::high_resolution_clock::now();
       auto t1 = ros::WallTime::now();
 
-      CCResult collided = testCollisionImpl(pose, options);
+      // CCResult collided = testCollisionImpl(pose, options);
+
+      std::vector<CCResult> all_results;
+      std::vector<PoseType> multi_poses = getMultiPoses(pose, deviated_ang_, one_side_num_);
+      for(auto p : multi_poses)
+      {
+        all_results.push_back(testCollisionImpl(p, options));
+      }
+
+      CCResult collided = mergeCCResults(all_results);
       
       //Calculate elapsed time for this computation
       //auto t2 = std::chrono::high_resolution_clock::now();

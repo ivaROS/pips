@@ -4,10 +4,10 @@
 struct CCOptions
 {
   bool get_details_ = true;
-  
+  bool full_details = true;
   
   CCOptions() {}
-  CCOptions(bool get_details) : get_details_(get_details) {}
+  CCOptions(bool get_details, bool full_details=true) : get_details_(get_details), full_details(full_details) {}
   
   operator bool() const
   {

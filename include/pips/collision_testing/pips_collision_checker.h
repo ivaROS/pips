@@ -17,7 +17,7 @@
 #include <chrono>
 #include <memory>
 
-
+#include <boost/thread/mutex.hpp>
 
 
 
@@ -35,18 +35,21 @@ public :
     
     void setImage(const sensor_msgs::ImageConstPtr& image_msg);
     CCResult testCollisionImpl(PoseType pose, CCOptions options=CCOptions());
-    cv::Mat generateDepthImage(PoseType pose);
+    virtual cv::Mat generateDepthImage(PoseType pose);
+
+    virtual cv::Size getImageRefSize();
     
-    void initImpl();
+    virtual void initImpl();
     virtual std_msgs::Header getCurrentHeader();
     
+    boost::mutex img_mutex_;
     
 protected:
     cv::Rect getColumnRect(const int x, const int y, const int width, const int height);
     cv::Rect getColumnRect(const cv::Rect& rect);
-    ComparisonResult imageSpaceCollisionImpl(const geometry_msgs::Pose pose, CCOptions options);
-    ComparisonResult isLessThan(const cv::Mat& col, float depth);
-    ComparisonResult isLessThanDetails(const cv::Mat& col, float depth);
+    virtual ComparisonResult imageSpaceCollisionImpl(const geometry_msgs::Pose pose, CCOptions options);
+    ComparisonResult isLessThan(const cv::Mat& col, float depth, CCOptions options);
+    ComparisonResult isLessThanDetails(const cv::Mat& col, float depth, CCOptions options);
   
     
     static constexpr const char* DEFAULT_NAME="pips_collision_checker";
@@ -60,11 +63,11 @@ private:
     virtual std::shared_ptr<pips::utils::AbstractCameraModel> getCameraModel()=0;
     
     
-private :
+protected :
     
     std::shared_ptr<pips::utils::AbstractCameraModel> cam_model_;
     
-    bool show_im_, transpose_;
+    bool transpose_;
     
     ros::ServiceServer depth_generation_service_;
         

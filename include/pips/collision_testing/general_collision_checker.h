@@ -13,19 +13,18 @@ namespace pips
         {
         protected:
             geometry_msgs::TransformStamped base_optical_transform_;
-            pips::collision_testing::robot_models::RobotModel robot_model_;
+            std::shared_ptr<pips::collision_testing::robot_models::RobotModel> robot_model_;
             
         public :
             
             GeneralCollisionChecker(ros::NodeHandle& nh, ros::NodeHandle& pnh, const std::string& name=DEFAULT_NAME, tf2_utils::TransformManager tfm=tf2_utils::TransformManager(false)) : 
-              TransformingCollisionChecker(nh, pnh, name),
-              robot_model_(nh_, pnh_, tfm)
+              TransformingCollisionChecker(nh, pnh, name)
             {}
 
             virtual void setTransform(const geometry_msgs::TransformStamped& base_optical_transform)
             {
               base_optical_transform_ = base_optical_transform;
-              robot_model_.setTransform(base_optical_transform);
+              robot_model_->setTransform(base_optical_transform);
             }
             
             virtual std_msgs::Header getCurrentHeader()
@@ -35,7 +34,7 @@ namespace pips
             
             virtual void initImpl()
             {
-              robot_model_.init();
+              robot_model_->init();
             }
             
         public:

@@ -23,7 +23,7 @@ namespace pips
       {
 
 
-  class Box : GeometryModel
+  class Box : public GeometryModel
   {
   public:
     double length_, width_, height_;
@@ -122,7 +122,7 @@ public:
     cv::Point3d p1, p2, p3, p4, p5, p6, p7, p8;
     
     // We only calculate the actual side borders of the robot if it is far enough away that they could be seen.
-    if(h > distance)
+    if(h > distance && (pt.z - hd1) > 0)
     {
         //TODO remove the debug message
         ROS_DEBUG_STREAM("H was greater!!" << h);
@@ -334,22 +334,25 @@ public:
         //equations for intersection of ray and plane
         double numera = p1.x*normal.x + p1.y*normal.y + p1.z*normal.z;
         double denom = ray.x*normal.x + ray.y*normal.y + ray.z*normal.z;
-        double t;
+        cv::Point3d intersection;
          if (denom > 1e-6)
         {
-            t = numera/denom;
+            double t = numera/denom;
+            intersection = ray*t;
+            intersection = cutToBoundXZ(intersection, p1, p2);
         }
         else
         {
-            ROS_DEBUG_STREAM("Very small denominator!"<< "p_x="<< pix.x << "ray=" << ray);
+            intersection = cv::Point3d();
+            ROS_DEBUG_STREAM("Very small denominator! Parallel!"<< "p_x="<< pix.x << "ray=" << ray << " intersect=" << intersection << " denom=" << denom);
             //TODO find a better way. 
             //can I skipp this column?
             //small t means the palne and the ray are close to being parallel 
-            t = 1e-6;
+            // t = 1e-6;
+            
         }
         
         //Get world coordinates of intersection
-        cv::Point3d intersection = ray*t;
         intersection.y = p1.y;
         
         //for top:
@@ -368,6 +371,30 @@ public:
         
         return col;
         
+  }
+
+  cv::Point3d cutToBoundXZ(cv::Point3d pt, cv::Point3d p1, cv::Point3d p2) const
+  {
+    cv::Point3d direct = p2 - p1;
+    cv::Point3d pt_direct = pt - p1;
+
+    double dot_prod = direct.x * pt_direct.x + direct.z * pt_direct.z;
+    double direct_len = sqrt(direct.x * direct.x + direct.z * direct.z);
+    double pt_direct_len = sqrt(pt_direct.x * pt_direct.x + pt_direct.z * pt_direct.z);
+
+    if(dot_prod > 0)
+    {
+        if(pt_direct_len > direct_len)
+        {
+            return p2;
+        }
+        else
+            return pt;
+    }
+    else
+    {
+        return p1;
+    }
   }
 
 

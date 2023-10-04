@@ -64,6 +64,8 @@ namespace pips
 {
   namespace collision_testing
   {
+    typedef CollisionPoint_<float> CollisionPoint;
+    
     
 //template <typename S, typename T>
 //void convertPoint(const S pt, T& x, T& y, T& z);
@@ -133,6 +135,13 @@ struct CCResult
     collides_ = true;
     has_details_ = true;
     collision_points_.push_back(collision_point);
+  }
+
+  void addPoints(std::vector<CollisionPoint> collision_points)
+  {
+    collides_ = true;
+    has_details_ = true;
+    collision_points_.insert( collision_points_.end(), collision_points.begin(), collision_points.end() );
   }
   
   operator bool() const
